@@ -1,0 +1,94 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── בדיקות Backend ──────────────────────────────────────────────────────────
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+        working-directory: .
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:testpass@localhost:5432/testdb
+          SECRET_KEY: test-secret-key-for-ci-only
+        run: pytest tests/ -v --tb=short
+        working-directory: backend
+
+  # ── בדיקות Frontend ─────────────────────────────────────────────────────────
+  test-frontend:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+        env:
+          VITE_API_URL: https://api.example.com/api
+
+  # ── פריסה לפרודקשן (רק ב-merge ל-main) ────────────────────────────────────
+  deploy:
+    name: Deploy
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Railway
+        # אם משתמשים ב-Railway — מתקין Railway CLI ומדפלוי
+        run: |
+          curl -fsSL https://railway.app/install.sh | sh
+          railway up --service backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # אם VPS — uncomment זה במקום:
+      # - name: Deploy via SSH
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.SERVER_HOST }}
+      #     username: ${{ secrets.SERVER_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       cd /opt/car-rental
+      #       git pull origin main
+      #       docker-compose -f docker-compose.prod.yml up -d --build
+      #       docker-compose exec backend alembic upgrade head

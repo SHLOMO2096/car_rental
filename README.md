@@ -1,0 +1,186 @@
+# 🚘 מערכת ניהול השכרת רכבים
+
+מערכת production-ready לניהול השכרת רכבים — FastAPI + React + PostgreSQL.
+
+## ארכיטקטורה
+
+```
+Backend:   Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+Frontend:  React 18 + Vite + React Router + Zustand + Recharts
+Auth:      JWT (8 שעות) + bcrypt + הרשאות admin/agent
+Email:     SMTP עם תבניות HTML
+DevOps:    Docker + Nginx + GitHub Actions CI/CD
+```
+
+## הרצה מקומית
+
+### דרישות
+- Docker + Docker Compose
+- Node.js 20+
+- Python 3.12+
+
+### התחלה מהירה
+
+```bash
+# 1. שכפל את הפרויקט
+git clone https://github.com/your-org/car-rental.git
+cd car-rental
+
+# 2. צור קובץ .env
+cp backend/.env.example backend/.env
+# ערוך את backend/.env:
+#   SECRET_KEY=$(openssl rand -hex 32)
+
+# 3. הפעל עם Docker
+docker-compose up -d
+
+# 4. נתוני התחלה (פעם אחת)
+docker-compose exec backend python seed.py
+
+# 5. כניסה
+# Frontend: http://localhost:5173
+# API Docs:  http://localhost:8000/docs
+# אימייל:   admin@rental.co.il
+# סיסמה:   Admin1234!
+```
+
+### הרצה ידנית (ללא Docker)
+
+```bash
+# Backend
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+## מיגרציות DB (Alembic)
+
+```bash
+# יצירת מיגרציה חדשה
+cd backend
+alembic revision --autogenerate -m "add column X"
+
+# הרצת מיגרציות
+alembic upgrade head
+
+# חזרה אחורה
+alembic downgrade -1
+```
+
+## בדיקות
+
+```bash
+cd backend
+pytest tests/ -v
+```
+
+## פריסה ל-Railway
+
+1. צור חשבון ב-[railway.app](https://railway.app)
+2. צור פרויקט חדש → Add Service → GitHub Repo
+3. הוסף PostgreSQL: Add Service → Database → PostgreSQL
+4. הגדר env vars:
+   - `DATABASE_URL` — מקבל אוטומטית מ-Railway
+   - `SECRET_KEY` — `openssl rand -hex 32`
+   - `FRONTEND_URL` — URL של ה-frontend
+5. Push ל-main → deploy אוטומטי
+
+## פריסה ל-VPS (Ubuntu) — שלבים מלאים
+
+### 1. דרישות בשרת
+```bash
+sudo apt update && sudo apt install -y docker.io docker-compose-plugin git certbot
+sudo usermod -aG docker $USER   # אופציונלי: הרצת docker ללא sudo
+```
+
+### 2. שכפול הפרויקט
+```bash
+git clone https://github.com/your-org/car-rental.git /opt/car-rental
+cd /opt/car-rental
+```
+
+### 3. קובץ סביבה לפרודקשן
+```bash
+cp .env.production.example .env
+```
+ערוך `.env` ומלא:
+- `DB_PASSWORD` — סיסמה חזקה לבסיס הנתונים
+- `SECRET_KEY` — הרץ `openssl rand -hex 32` וקבל ערך
+- `FRONTEND_URL` — הדומיין שלך (למשל `https://rental.mysite.co.il`)
+
+### 4. SSL עם Certbot (לפני הרצת Docker)
+```bash
+sudo certbot certonly --standalone -d your-domain.co.il
+```
+
+### 5. עדכן את שם הדומיין ב-nginx.conf
+```bash
+sed -i 's/your-domain.co.il/YOUR_ACTUAL_DOMAIN/g' nginx.conf
+```
+
+### 6. הרצה
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+### 7. יצירת משתמש admin ודאטה ראשוני (פעם אחת בלבד)
+```bash
+docker compose -f docker-compose.prod.yml exec backend python seed.py
+```
+
+### 8. בדיקה
+```bash
+curl https://your-domain.co.il/health
+# ציפייה: {"status":"ok"}
+```
+
+### חידוש SSL אוטומטי (crontab)
+```bash
+echo "0 3 * * * certbot renew --quiet && docker compose -f /opt/car-rental/docker-compose.prod.yml restart nginx" | sudo crontab -
+```
+
+### עדכון גרסה עתידי
+```bash
+cd /opt/car-rental
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+## הוספת מודול חדש
+
+1. `backend/app/models/module_name.py` — מודל SQLAlchemy
+2. `backend/app/schemas/module_name.py` — סכמות Pydantic
+3. `backend/app/crud/module_name.py` — יורש `CRUDBase`
+4. `backend/app/routers/module_name.py` — endpoints
+5. `backend/app/main.py` — `app.include_router(...)`
+6. `frontend/src/api/module_name.js` — קריאות API
+7. `frontend/src/pages/ModuleName.jsx` — עמוד
+8. `frontend/src/App.jsx` — הוסף Route + NavLink
+
+## הרשאות
+
+| פעולה              | agent | admin |
+|--------------------|-------|-------|
+| צפייה ברכבים       | ✅    | ✅    |
+| יצירת הזמנה        | ✅    | ✅    |
+| עריכת הזמנה שלו    | ✅    | ✅    |
+| עריכת כל הזמנה     | ❌    | ✅    |
+| הוספת רכב          | ❌    | ✅    |
+| מחיקת הזמנה        | ❌    | ✅    |
+| ניהול משתמשים      | ❌    | ✅    |
+
+## משתני סביבה
+
+| שם                          | תיאור                              | חובה |
+|-----------------------------|------------------------------------|------|
+| `DATABASE_URL`              | חיבור PostgreSQL                   | ✅   |
+| `SECRET_KEY`                | מפתח JWT (32 bytes hex)            | ✅   |
+| `FRONTEND_URL`              | URL ה-frontend לCORS               | ✅   |
+| `EMAILS_ENABLED`            | הפעלת שליחת אימיילים               | ❌   |
+| `SMTP_HOST/USER/PASSWORD`   | פרטי שרת SMTP                      | ❌   |

@@ -1,0 +1,35 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+from app.db.session import engine, Base
+import app.models.user    # noqa
+import app.models.car     # noqa
+import app.models.booking # noqa
+from app.routers import auth, cars, bookings, reports
+
+# יצירת טבלאות (בפרודקשן — השתמש ב-Alembic)
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    docs_url="/docs" if settings.DEBUG else None,   # Swagger רק ב-dev
+    redoc_url=None,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.FRONTEND_URL, "http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth.router,     prefix="/api/auth",     tags=["Auth"])
+app.include_router(cars.router,     prefix="/api/cars",     tags=["Cars"])
+app.include_router(bookings.router, prefix="/api/bookings", tags=["Bookings"])
+app.include_router(reports.router,  prefix="/api/reports",  tags=["Reports"])
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "version": settings.APP_VERSION}
