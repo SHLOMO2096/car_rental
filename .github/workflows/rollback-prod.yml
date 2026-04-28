@@ -47,7 +47,8 @@ jobs:
         run: |
           set -euo pipefail
           PORT="${PROD_PORT:-22}"
-          ssh -o StrictHostKeyChecking=accept-new -p "$PORT" "${PROD_USER}@${PROD_HOST}" "TARGET_SHA='$TARGET_SHA' bash -s" <<'EOF'
+          ssh -o StrictHostKeyChecking=accept-new -p "$PORT" "${PROD_USER}@${PROD_HOST}" \
+            "TARGET_SHA='$TARGET_SHA' bash -s" <<'ENDSSH'
           set -euo pipefail
           REPO_DIR="/opt/car-rental"
           cd "$REPO_DIR"
@@ -55,7 +56,15 @@ jobs:
           git checkout --force "$TARGET_SHA"
           git reset --hard "$TARGET_SHA"
           docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build --remove-orphans
-          curl -fsS http://localhost/health > /dev/null
+          echo "Waiting for health check..."
+          for i in $(seq 1 10); do
+            if curl -fsS http://localhost/health > /dev/null 2>&1; then
+              echo "Health check passed"
+              break
+            fi
+            [ "$i" -eq 10 ] && { echo "Health check failed"; exit 1; }
+            sleep 3
+          done
           echo "Rollback completed to $TARGET_SHA"
-          EOF
+          ENDSSH
 

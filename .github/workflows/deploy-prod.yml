@@ -93,18 +93,55 @@ jobs:
           PROD_PORT: ${{ secrets.PROD_PORT }}
           PROD_USER: ${{ secrets.PROD_USER }}
           TARGET_SHA: ${{ steps.resolve.outputs.sha }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
         run: |
           set -euo pipefail
           PORT="${PROD_PORT:-22}"
-          ssh -o StrictHostKeyChecking=accept-new -p "$PORT" "${PROD_USER}@${PROD_HOST}" "TARGET_SHA='$TARGET_SHA' bash -s" <<'EOF'
+          ssh -o StrictHostKeyChecking=accept-new -p "$PORT" "${PROD_USER}@${PROD_HOST}" \
+            "TARGET_SHA='$TARGET_SHA' REPO_URL='$REPO_URL' bash -s" <<'ENDSSH'
           set -euo pipefail
           REPO_DIR="/opt/car-rental"
+
+          # ── Bootstrap: clone if first deploy ──────────────────────────────
+          if [ ! -d "$REPO_DIR/.git" ]; then
+            echo "First deploy: cloning repository..."
+            sudo mkdir -p "$REPO_DIR"
+            sudo chown -R "$(whoami)":"$(whoami)" "$REPO_DIR"
+            git clone "$REPO_URL" "$REPO_DIR"
+          fi
+
           cd "$REPO_DIR"
+
+          # ── Checkout exact commit ─────────────────────────────────────────
           git fetch --all --tags --prune
           git checkout --force "$TARGET_SHA"
           git reset --hard "$TARGET_SHA"
+
+          # ── Verify env file exists ────────────────────────────────────────
+          if [ ! -f ".env.production" ]; then
+            echo "ERROR: .env.production not found in $REPO_DIR"
+            echo "Run: cp .env.production.example .env.production && nano .env.production"
+            exit 1
+          fi
+
+          # ── Deploy ────────────────────────────────────────────────────────
           docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build --remove-orphans
-          curl -fsS http://localhost/health > /dev/null
+
+          # ── Health check (wait up to 30s) ─────────────────────────────────
+          echo "Waiting for health check..."
+          for i in $(seq 1 10); do
+            if curl -fsS http://localhost/health > /dev/null 2>&1; then
+              echo "Health check passed on attempt $i"
+              break
+            fi
+            if [ "$i" -eq 10 ]; then
+              echo "Health check failed after 30s"
+              docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=50
+              exit 1
+            fi
+            sleep 3
+          done
+
           echo "Production deploy completed for $TARGET_SHA"
-          EOF
+          ENDSSH
 
