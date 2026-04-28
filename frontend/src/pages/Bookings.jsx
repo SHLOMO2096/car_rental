@@ -1,7 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { getUserFacingErrorMessage, getRetryAfterSeconds } from "../api/errors";
 import { bookingsAPI } from "../api/bookings";
 import { carsAPI } from "../api/cars";
+import { suggestionsAPI } from "../api/suggestions";
 import { useAuthStore } from "../store/auth";
+import { toast } from "../store/toast";
+import { Permissions } from "../permissions";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
@@ -13,13 +18,24 @@ const STATUS_OPTIONS = [
 ];
 const statusMap = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s]));
 
-const EMPTY_FORM = {
-  car_id:"", customer_name:"", customer_email:"",
-  customer_phone:"", customer_id_num:"",
-  start_date:"", end_date:"", notes:"",
-};
+function todayISO() { return new Date().toISOString().split("T")[0]; }
+function tomorrowISO() {
+  const d = new Date(); d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+}
+function makeEmptyForm() {
+  return {
+    car_id: "", customer_name: "", customer_email: "",
+    customer_phone: "", customer_id_num: "",
+    start_date: todayISO(),    start_time: "08:00",
+    end_date:   tomorrowISO(), end_time:   "08:00",
+    notes: "",
+  };
+}
 
 export default function Bookings() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [bookings, setBookings]   = useState([]);
   const [cars, setCars]           = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -27,16 +43,37 @@ export default function Bookings() {
   const [statusFilter, setStatus] = useState("all");
   const [modal, setModal]         = useState(null);
   const [editBooking, setEdit]    = useState(null);
-  const [form, setForm]           = useState(EMPTY_FORM);
+  const [form, setForm]           = useState(makeEmptyForm);
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState("");
   const [confirm, setConfirm]     = useState(null);
   const [page, setPage]           = useState(1);
   const PER_PAGE = 15;
-  const isAdmin = useAuthStore(s => s.isAdmin());
+  const canDeleteBookings    = useAuthStore(s => s.can(Permissions.BOOKINGS_DELETE));
+  const canApplySuggestions  = useAuthStore(s => s.can(Permissions.SUGGESTIONS_APPLY));
+
+  // Smart conflict suggestions state
+  const [conflictSuggestions, setConflictSuggestions] = useState([]);
+  const [suggestionsLoading,  setSuggestionsLoading]  = useState(false);
+  const [applyingToken,       setApplyingToken]       = useState(null);
+  const [cooldownUntil,       setCooldownUntil]       = useState(null);
+  const [cooldownSecs,        setCooldownSecs]        = useState(0);
+
+  // Cooldown ticker
+  useEffect(() => {
+    if (!cooldownUntil) { setCooldownSecs(0); return; }
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setCooldownSecs(rem);
+      if (rem <= 0) setCooldownUntil(null);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
 
   const load = useCallback(() => {
-    Promise.all([
+    return Promise.all([
       bookingsAPI.list(),
       carsAPI.list({ active_only: false }),
     ]).then(([b, c]) => { setBookings(b); setCars(c); })
@@ -44,6 +81,22 @@ export default function Bookings() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const prefill = location.state?.bookingPrefill;
+    if (!prefill) return;
+
+    setForm({
+      ...makeEmptyForm(),
+      car_id: prefill.car_id || "",
+      start_date: prefill.start_date || todayISO(),
+      end_date: prefill.end_date || tomorrowISO(),
+    });
+    setEdit(null);
+    setFormError("");
+    setModal("create");
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state, navigate]);
 
   const carsMap = Object.fromEntries(cars.map(c => [c.id, c]));
 
@@ -64,16 +117,34 @@ export default function Bookings() {
   const paginated  = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
 
   function openCreate() {
-    setForm(EMPTY_FORM); setEdit(null); setFormError(""); setModal("create");
+    setForm(makeEmptyForm()); setEdit(null); setFormError(""); setModal("create");
+    setConflictSuggestions([]); setSuggestionsLoading(false);
   }
   function openEdit(b) {
     setForm({
+      ...makeEmptyForm(),
       car_id: String(b.car_id), customer_name: b.customer_name,
       customer_email: b.customer_email||"", customer_phone: b.customer_phone||"",
       customer_id_num: b.customer_id_num||"", start_date: b.start_date,
       end_date: b.end_date, notes: b.notes||"",
     });
     setEdit(b); setFormError(""); setModal("edit");
+    setConflictSuggestions([]); setSuggestionsLoading(false);
+  }
+
+  function buildBookingPayload(form, carId) {
+    return {
+      car_id:          carId,
+      customer_name:   form.customer_name.trim() || null,
+      customer_email:  form.customer_email.trim()  || null,
+      customer_phone:  form.customer_phone.trim()  || null,
+      customer_id_num: form.customer_id_num.trim() || null,
+      start_date:      form.start_date || null,
+      end_date:        form.end_date || null,
+      pickup_time:     form.start_time || null,
+      return_time:     form.end_time   || null,
+      notes:           form.notes.trim()           || null,
+    };
   }
 
   async function handleSave() {
@@ -82,26 +153,77 @@ export default function Bookings() {
     if (!form.start_date)       return setFormError("יש לבחור תאריך התחלה");
     if (!form.end_date)         return setFormError("יש לבחור תאריך סיום");
     if (form.end_date < form.start_date) return setFormError("תאריך סיום לפני תחילה");
-    setSaving(true); setFormError("");
+    setSaving(true); setFormError(""); setConflictSuggestions([]);
     try {
-      const data = { ...form, car_id: +form.car_id };
+      const data = buildBookingPayload(form, +form.car_id);
       if (modal === "create") await bookingsAPI.create(data);
       else await bookingsAPI.update(editBooking.id, data);
       await load(); setModal(null);
+      toast.success(modal === "create" ? "ההזמנה נוצרה בהצלחה" : "ההזמנה עודכנה בהצלחה");
     } catch (e) {
-      setFormError(typeof e === "string" ? e : "שגיאה בשמירה");
+      if (e.status === 409 && modal === "create") {
+        setFormError("🔍 הרכב תפוס — מחפש חלופות חכמות...");
+        fetchConflictSuggestions(form.car_id, form.start_date, form.end_date);
+      } else {
+        setFormError(getUserFacingErrorMessage(e));
+      }
     } finally { setSaving(false); }
   }
 
+  async function fetchConflictSuggestions(carId, start, end) {
+    setSuggestionsLoading(true);
+    try {
+      const results = await suggestionsAPI.search({ car_id: Number(carId), start_date: start, end_date: end });
+      setConflictSuggestions(results || []);
+      setFormError(results?.length ? "הרכב תפוס בתאריכים אלו. בחר חלופה מוצעת:" : "הרכב תפוס בתאריכים אלו ולא נמצאו חלופות זמינות.");
+    } catch (e) {
+      const retryAfter = getRetryAfterSeconds(e);
+      if (retryAfter > 0) setCooldownUntil(Date.now() + retryAfter * 1000);
+      setFormError(getUserFacingErrorMessage(e));
+    } finally { setSuggestionsLoading(false); }
+  }
+
+  async function handlePickAlternative(item) {
+    if (item.type === "C") {
+      if (!item.apply_token) return;
+      setApplyingToken(item.apply_token);
+      try {
+        const res = await suggestionsAPI.apply({ apply_token: item.apply_token, operator_note: "Applied via smart booking" });
+        await bookingsAPI.create(buildBookingPayload(form, res.freed_car_id));
+        await load(); setModal(null); setConflictSuggestions([]);
+        toast.success("שיבוץ מחדש הוחל וההזמנה נוצרה בהצלחה! 🎉");
+      } catch (e) {
+        setFormError(getUserFacingErrorMessage(e));
+      } finally { setApplyingToken(null); }
+    } else {
+      setSaving(true);
+      try {
+        await bookingsAPI.create(buildBookingPayload(form, item.car_id));
+        await load(); setModal(null); setConflictSuggestions([]);
+        toast.success(`ההזמנה נוצרה בהצלחה עם ${item.car_name}`);
+      } catch (e) {
+        setFormError(getUserFacingErrorMessage(e));
+      } finally { setSaving(false); }
+    }
+  }
+
   async function handleCancel(b) {
-    try { await bookingsAPI.update(b.id, { status: "cancelled" }); await load(); }
-    catch (e) { alert(typeof e === "string" ? e : "שגיאה"); }
+    try {
+      await bookingsAPI.update(b.id, { status: "cancelled" });
+      await load();
+      toast.success("ההזמנה בוטלה בהצלחה");
+    }
+    catch (e) { toast.error(getUserFacingErrorMessage(e)); }
     finally { setConfirm(null); }
   }
 
   async function handleDelete(b) {
-    try { await bookingsAPI.delete(b.id); await load(); }
-    catch (e) { alert(typeof e === "string" ? e : "שגיאה"); }
+    try {
+      await bookingsAPI.delete(b.id);
+      await load();
+      toast.success("ההזמנה נמחקה בהצלחה");
+    }
+    catch (e) { toast.error(getUserFacingErrorMessage(e)); }
     finally { setConfirm(null); }
   }
 
@@ -180,7 +302,7 @@ export default function Bookings() {
                         <button onClick={() => setConfirm({ action:"cancel", item:b })}
                           style={s.btnIcon} title="בטל הזמנה">🚫</button>
                       )}
-                      {isAdmin && (
+                      {canDeleteBookings && (
                         <button onClick={() => setConfirm({ action:"delete", item:b })}
                           style={s.btnIcon} title="מחק">🗑️</button>
                       )}
@@ -211,7 +333,7 @@ export default function Bookings() {
       )}
 
       {/* Create / Edit Modal */}
-      <Modal open={!!modal} onClose={() => setModal(null)}
+      <Modal open={!!modal} onClose={() => { setModal(null); setConflictSuggestions([]); }}
         title={modal==="create" ? "הזמנה חדשה" : "עריכת הזמנה"} wide>
         <div style={s.formGrid}>
           <div style={{ gridColumn:"1/-1" }}>
@@ -247,14 +369,26 @@ export default function Bookings() {
               onChange={e => setForm(f=>({...f,customer_id_num:e.target.value}))} style={s.input} />
           </div>
           <div>
-            <label style={s.label}>מתאריך *</label>
-            <input type="date" value={form.start_date}
-              onChange={e => setForm(f=>({...f,start_date:e.target.value}))} style={s.input} />
+            <label style={s.label}>מתאריך * <span style={s.timeHint}>שעת איסוף</span></label>
+            <div style={{ display:"flex", gap:6 }}>
+              <input type="date" value={form.start_date}
+                onChange={e => setForm(f=>({...f,start_date:e.target.value}))}
+                style={{...s.input, flex:2}} />
+              <input type="time" value={form.start_time}
+                onChange={e => setForm(f=>({...f,start_time:e.target.value}))}
+                style={{...s.input, flex:1}} />
+            </div>
           </div>
           <div>
-            <label style={s.label}>עד תאריך *</label>
-            <input type="date" value={form.end_date} min={form.start_date}
-              onChange={e => setForm(f=>({...f,end_date:e.target.value}))} style={s.input} />
+            <label style={s.label}>עד תאריך * <span style={s.timeHint}>שעת החזרה</span></label>
+            <div style={{ display:"flex", gap:6 }}>
+              <input type="date" value={form.end_date} min={form.start_date}
+                onChange={e => setForm(f=>({...f,end_date:e.target.value}))}
+                style={{...s.input, flex:2}} />
+              <input type="time" value={form.end_time}
+                onChange={e => setForm(f=>({...f,end_time:e.target.value}))}
+                style={{...s.input, flex:1}} />
+            </div>
           </div>
           <div style={{ gridColumn:"1/-1" }}>
             <label style={s.label}>הערות</label>
@@ -273,8 +407,69 @@ export default function Bookings() {
         )}
 
         {formError && <div style={s.errorBox}>{formError}</div>}
+
+        {/* ── Smart Conflict Suggestions ──────────────────────────── */}
+        {suggestionsLoading && (
+          <div style={s.suggestLoading}>⏳ מחפש חלופות חכמות...</div>
+        )}
+        {conflictSuggestions.length > 0 && (
+          <div style={s.suggestPanel}>
+            <div style={s.suggestTitle}>💡 חלופות זמינות</div>
+            {cooldownSecs > 0 && (
+              <div style={s.cooldownBox}>⏳ הגבלת קצב — נסה שוב בעוד {cooldownSecs} שניות</div>
+            )}
+            {conflictSuggestions.map((item, idx) => {
+              const typeLabel = { A: "התאמה ישירה", B: "חלופה דומה", C: "שיבוץ מחדש" }[item.type] || item.type;
+              const typeColor = { A: "#059669", B: "#1d4ed8", C: "#7c3aed" }[item.type] || "#475569";
+              const canApply  = item.type === "C" && canApplySuggestions && !!item.apply_token;
+              const busy      = applyingToken === item.apply_token;
+              return (
+                <div key={idx} style={s.suggestCard}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+                    <div>
+                      <span style={{ ...s.typeBadge, background: typeColor + "15", color: typeColor, borderColor: typeColor + "40" }}>
+                        {typeLabel}
+                      </span>
+                      <span style={s.carName}>{item.car_name}</span>
+                      {item.car_group && <span style={s.carMeta}> קבוצה {item.car_group}</span>}
+                      <span style={s.carMeta}> · ₪{item.price_per_day}/יום</span>
+                      {item.price_delta !== 0 && (
+                        <span style={{ color: item.price_delta > 0 ? "#f59e0b" : "#059669", fontSize:11, marginRight:4 }}>
+                          ({item.price_delta > 0 ? "+" : ""}₪{item.price_delta}/יום)
+                        </span>
+                      )}
+                    </div>
+                    <span style={s.riskBadge(item.risk_level)}>{item.risk_level}</span>
+                  </div>
+                  <div style={s.suggestSummary}>{item.operator_summary}</div>
+                  {item.type === "C" && item.affected_customer_name && (
+                    <div style={s.suggestMeta}>
+                      🔄 הזמנת {item.affected_customer_name} תועבר לרכב: <strong>{item.replacement_car_name}</strong>
+                    </div>
+                  )}
+                  <div style={{ marginTop:8, display:"flex", gap:6 }}>
+                    {(item.type === "A" || item.type === "B") && (
+                      <button disabled={saving || cooldownSecs > 0}
+                        onClick={() => handlePickAlternative(item)}
+                        style={{ ...s.btnAlt, background: typeColor }}>
+                        {saving ? "שומר..." : `הזמן עם ${item.car_name}`}
+                      </button>
+                    )}
+                    {canApply && (
+                      <button disabled={busy || cooldownSecs > 0}
+                        onClick={() => handlePickAlternative(item)}
+                        style={{ ...s.btnAlt, background: "#7c3aed" }}>
+                        {busy ? "מחיל שיבוץ..." : cooldownSecs > 0 ? `המתן ${cooldownSecs}s` : "החל שיבוץ והזמן →"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
         <div style={s.modalFooter}>
-          <button onClick={() => setModal(null)} style={s.btnSecondary}>ביטול</button>
+          <button onClick={() => { setModal(null); setConflictSuggestions([]); }} style={s.btnSecondary}>ביטול</button>
           <button onClick={handleSave} disabled={saving} style={s.btnPrimary}>
             {saving ? "שומר..." : modal==="create" ? "אשר הזמנה" : "שמור שינויים"}
           </button>
@@ -330,6 +525,7 @@ const s = {
   input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e2e8f0",
                 fontSize:14, outline:"none", boxSizing:"border-box" },
   label:      { display:"block", fontSize:12, fontWeight:600, color:"#475569", marginBottom:5 },
+  timeHint:   { fontSize:10, color:"#94a3b8", fontWeight:400, marginRight:4 },
   formGrid:   { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 },
   modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 },
   errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:8,
@@ -339,4 +535,28 @@ const s = {
   pagination: { display:"flex", gap:6, justifyContent:"center", marginTop:16 },
   pageBtn:    { width:36, height:36, borderRadius:8, border:"1px solid #e2e8f0",
                 cursor:"pointer", fontWeight:600, fontSize:13 },
+
+  // Smart suggestions panel
+  suggestLoading: { marginTop:10, padding:"10px 14px", background:"#fefce8",
+                    border:"1px solid #fde68a", borderRadius:8, color:"#92400e", fontSize:13 },
+  suggestPanel: { marginTop:10, border:"1px solid #e0e7ff", borderRadius:10, overflow:"hidden" },
+  suggestTitle: { background:"#eef2ff", padding:"8px 14px", fontWeight:700,
+                  fontSize:13, color:"#3730a3", borderBottom:"1px solid #e0e7ff" },
+  suggestCard:  { padding:"12px 14px", borderBottom:"1px solid #f1f5f9", background:"#fff" },
+  typeBadge:    { display:"inline-block", borderRadius:999, padding:"2px 8px", fontSize:11,
+                  fontWeight:700, border:"1px solid", marginLeft:6 },
+  carName:      { fontWeight:700, fontSize:14, color:"#0f172a" },
+  carMeta:      { fontSize:11, color:"#64748b" },
+  suggestSummary: { marginTop:5, fontSize:12, color:"#475569" },
+  suggestMeta:  { marginTop:4, fontSize:11, color:"#7c3aed", fontWeight:600 },
+  btnAlt:       { color:"#fff", border:"none", borderRadius:7, padding:"6px 14px",
+                  fontWeight:700, cursor:"pointer", fontSize:12 },
+  cooldownBox:  { padding:"6px 10px", background:"#fff7ed", border:"1px solid #fdba74",
+                  color:"#9a3412", borderRadius:6, fontSize:12, marginBottom:6 },
+  riskBadge: (level) => ({
+    fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:999,
+    background: level==="low" ? "#dcfce7" : level==="medium" ? "#fef9c3" : "#fee2e2",
+    color:      level==="low" ? "#166534" : level==="medium" ? "#854d0e" : "#991b1b",
+    flexShrink: 0,
+  }),
 };

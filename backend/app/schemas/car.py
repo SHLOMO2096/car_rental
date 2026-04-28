@@ -6,7 +6,9 @@ from app.models.car import CarType
 
 class CarCreate(BaseModel):
     name:          str
+    make:          Optional[str] = None
     type:          CarType
+    group:         Optional[str] = None
     year:          int
     plate:         str
     color:         Optional[str] = None
@@ -30,7 +32,9 @@ class CarCreate(BaseModel):
 
 class CarUpdate(BaseModel):
     name:          Optional[str]   = None
+    make:          Optional[str]   = None
     color:         Optional[str]   = None
+    group:         Optional[str]   = None
     price_per_day: Optional[float] = None
     description:   Optional[str]   = None
     image_url:     Optional[str]   = None
@@ -39,7 +43,9 @@ class CarUpdate(BaseModel):
 class CarOut(BaseModel):
     id:            int
     name:          str
+    make:          Optional[str]
     type:          CarType
+    group:         Optional[str]
     year:          int
     plate:         str
     color:         Optional[str]

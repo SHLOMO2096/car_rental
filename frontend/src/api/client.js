@@ -17,11 +17,33 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status || 0;
+    const rawDetail = err.response?.data?.detail;
+    // Pydantic v2 returns detail as an array of validation-error objects — flatten to string
+    let detail;
+    if (typeof rawDetail === "string") {
+      detail = rawDetail;
+    } else if (Array.isArray(rawDetail)) {
+      detail = rawDetail.map(e => e.msg || e.message || JSON.stringify(e)).join("; ");
+    } else if (rawDetail && typeof rawDetail === "object") {
+      detail = rawDetail.msg || rawDetail.message || "שגיאת אימות";
+    } else {
+      detail = "שגיאה בשרת";
+    }
+    const headers = err.response?.headers || {};
+
+    // Logout only for expired/invalid AUTH JWT, not for suggestion apply-token failures.
+    if (status === 401 && detail === "אסימון לא תקין או פג תוקף") {
       localStorage.removeItem("token");
       window.location.href = "/login";
     }
-    return Promise.reject(err.response?.data?.detail || "שגיאה בשרת");
+
+    return Promise.reject({
+      status,
+      detail,
+      headers,
+      raw: err,
+    });
   }
 );
 

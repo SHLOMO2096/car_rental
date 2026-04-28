@@ -20,7 +20,9 @@ class Car(Base):
 
     id            = Column(Integer, primary_key=True, index=True)
     name          = Column(String(255), nullable=False)
+    make          = Column(String(100))                   # יצרן (e.g. Toyota, Kia)
     type          = Column(Enum(CarType), nullable=False)
+    group         = Column(String(10))                    # קבוצת רכב (A, B, C, D, E, G …)
     year          = Column(Integer, nullable=False)
     plate         = Column(String(20), unique=True, nullable=False, index=True)
     color         = Column(String(50))

@@ -1,10 +1,17 @@
+import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from app.core.config import settings
-import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_recipients(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [email.strip() for email in raw.split(",") if email.strip()]
+
 
 def _send(to: str, subject: str, html: str) -> bool:
     if not settings.EMAILS_ENABLED:
@@ -13,8 +20,8 @@ def _send(to: str, subject: str, html: str) -> bool:
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = f"{settings.EMAILS_FROM_NAME} <{settings.EMAILS_FROM}>"
-        msg["To"]      = to
+        msg["From"] = f"{settings.EMAILS_FROM_NAME} <{settings.EMAILS_FROM}>"
+        msg["To"] = to
         msg.attach(MIMEText(html, "html", "utf-8"))
 
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as srv:
@@ -25,6 +32,7 @@ def _send(to: str, subject: str, html: str) -> bool:
     except Exception as e:
         logger.error(f"Failed to send email to {to}: {e}")
         return False
+
 
 # ── Templates ──────────────────────────────────────────────────────────────────
 def _base_template(title: str, body: str) -> str:
@@ -42,6 +50,7 @@ def _base_template(title: str, body: str) -> str:
         {settings.APP_NAME} | נשלח אוטומטית — אין להשיב למייל זה
       </div>
     </div>"""
+
 
 def send_booking_confirmation(to: str, customer_name: str, car_name: str,
                                start: str, end: str, total: float, booking_id: int) -> bool:
@@ -75,6 +84,7 @@ def send_booking_confirmation(to: str, customer_name: str, car_name: str,
     return _send(to, f"אישור הזמנה #{booking_id} — {settings.APP_NAME}",
                  _base_template("אישור הזמנה", body))
 
+
 def send_booking_cancellation(to: str, customer_name: str, car_name: str,
                                booking_id: int) -> bool:
     body = f"""
@@ -85,6 +95,7 @@ def send_booking_cancellation(to: str, customer_name: str, car_name: str,
     return _send(to, f"ביטול הזמנה #{booking_id} — {settings.APP_NAME}",
                  _base_template("הזמנה בוטלה", body))
 
+
 def send_booking_reminder(to: str, customer_name: str, car_name: str,
                            start: str, booking_id: int) -> bool:
     body = f"""
@@ -94,3 +105,111 @@ def send_booking_reminder(to: str, customer_name: str, car_name: str,
     <p>נסיעה טובה! 🚗</p>"""
     return _send(to, f"תזכורת להזמנה #{booking_id} — {settings.APP_NAME}",
                  _base_template("תזכורת להזמנה", body))
+
+
+def send_booking_delete_alert(*, booking_id: int, customer_name: str, car_name: str,
+                              start: str, end: str, actor_email: str, actor_role: str) -> bool:
+    recipients = _parse_recipients(settings.SECURITY_ALERT_RECIPIENTS)
+    if not recipients:
+        logger.info("[ALERT EMAIL SKIPPED] No SECURITY_ALERT_RECIPIENTS configured")
+        return False
+
+    body = f"""
+    <p><strong>התראת אבטחה/תפעול:</strong> בוצעה מחיקה של הזמנה.</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0">
+      <tr style="background:#fef2f2">
+        <td style="padding:10px;font-weight:bold">מספר הזמנה</td>
+        <td style="padding:10px">#{booking_id}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">לקוח</td>
+        <td style="padding:10px">{customer_name}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">רכב</td>
+        <td style="padding:10px">{car_name}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">מתאריך</td>
+        <td style="padding:10px">{start}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">עד תאריך</td>
+        <td style="padding:10px">{end}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">בוצע ע"י</td>
+        <td style="padding:10px">{actor_email} ({actor_role})</td>
+      </tr>
+    </table>
+    <p style="color:#b91c1c;font-weight:bold">נדרשת בדיקה של הפעולה לפי נוהל.</p>"""
+
+    subject = f"[ALERT] Booking #{booking_id} deleted — {settings.APP_NAME}"
+    success = True
+    for recipient in recipients:
+        success = _send(recipient, subject, _base_template("התראת מחיקת הזמנה", body)) and success
+    return success
+
+
+def send_reassignment_apply_alert(
+    *,
+    affected_booking_id: int,
+    affected_customer_name: str,
+    blocked_car_name: str,
+    replacement_car_name: str,
+    requested_start: str,
+    requested_end: str,
+    actor_email: str,
+    actor_role: str,
+    operator_note: str | None = None,
+) -> bool:
+    recipients = _parse_recipients(settings.SECURITY_ALERT_RECIPIENTS)
+    if not recipients:
+        logger.info("[ALERT EMAIL SKIPPED] No SECURITY_ALERT_RECIPIENTS configured")
+        return False
+
+    note_html = ""
+    if operator_note:
+        note_html = f"""
+      <tr>
+        <td style="padding:10px;font-weight:bold">הערת מפעיל</td>
+        <td style="padding:10px">{operator_note}</td>
+      </tr>"""
+
+    body = f"""
+    <p><strong>התראת תפעול:</strong> הוחל שיבוץ מחדש להזמנה קיימת.</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0">
+      <tr style="background:#fff7ed">
+        <td style="padding:10px;font-weight:bold">מספר הזמנה מושפעת</td>
+        <td style="padding:10px">#{affected_booking_id}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">לקוח מושפע</td>
+        <td style="padding:10px">{affected_customer_name}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">רכב שהתפנה לבקשה חדשה</td>
+        <td style="padding:10px">{blocked_car_name}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">רכב חלופי ללקוח הקיים</td>
+        <td style="padding:10px">{replacement_car_name}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">חלון בקשה חדש</td>
+        <td style="padding:10px">{requested_start} עד {requested_end}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">בוצע ע"י</td>
+        <td style="padding:10px">{actor_email} ({actor_role})</td>
+      </tr>
+      {note_html}
+    </table>
+    <p style="color:#b45309;font-weight:bold">הפעולה דורשת תיעוד ובקרה לפי נוהל.</p>"""
+
+    subject = f"[ALERT] Reassignment applied for booking #{affected_booking_id} — {settings.APP_NAME}"
+    success = True
+    for recipient in recipients:
+        success = _send(recipient, subject, _base_template("התראת שיבוץ מחדש", body)) and success
+    return success
+

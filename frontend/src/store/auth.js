@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { authAPI } from "../api/auth";
+import { roleCan } from "../permissions";
 
 export const useAuthStore = create(
   persist(
@@ -22,6 +23,7 @@ export const useAuthStore = create(
       },
 
       isAdmin: () => get().user?.role === "admin",
+      can: (permission) => roleCan(get().user?.role, permission),
     }),
     { name: "auth-store", partialize: (s) => ({ token: s.token, user: s.user, isAuthenticated: s.isAuthenticated }) }
   )

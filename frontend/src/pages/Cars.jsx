@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+import { getUserFacingErrorMessage } from "../api/errors";
 import { carsAPI } from "../api/cars";
 import { useAuthStore } from "../store/auth";
+import { toast } from "../store/toast";
+import { Permissions } from "../permissions";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
@@ -32,7 +35,7 @@ export default function Cars() {
   const [formError, setFormError] = useState("");
   const [confirm, setConfirm]   = useState(null);   // car to delete
   const [editCar, setEditCar]   = useState(null);
-  const isAdmin = useAuthStore(s => s.isAdmin());
+  const canManageCars = useAuthStore(s => s.can(Permissions.CARS_MANAGE));
 
   const load = () => carsAPI.list({ active_only: false })
     .then(setCars).finally(() => setLoading(false));
@@ -66,8 +69,9 @@ export default function Cars() {
       if (modal === "create") await carsAPI.create(data);
       else await carsAPI.update(editCar.id, data);
       await load(); closeModal();
+      toast.success(modal === "create" ? "הרכב נוסף בהצלחה" : "פרטי הרכב עודכנו בהצלחה");
     } catch (e) {
-      setFormError(typeof e === "string" ? e : "שגיאה בשמירה");
+      setFormError(getUserFacingErrorMessage(e));
     } finally { setSaving(false); }
   }
 
@@ -75,14 +79,20 @@ export default function Cars() {
     try {
       await carsAPI.delete(car.id);
       await load();
+      toast.success("הרכב הוסר בהצלחה");
     } catch (e) {
-      alert(typeof e === "string" ? e : "לא ניתן למחוק רכב זה");
+      toast.error(getUserFacingErrorMessage(e), { title: "לא ניתן למחוק רכב" });
     } finally { setConfirm(null); }
   }
 
   async function toggleActive(car) {
-    await carsAPI.update(car.id, { is_active: !car.is_active });
-    await load();
+    try {
+      await carsAPI.update(car.id, { is_active: !car.is_active });
+      await load();
+      toast.success(car.is_active ? "הרכב הושבת" : "הרכב הופעל מחדש");
+    } catch (e) {
+      toast.error(getUserFacingErrorMessage(e));
+    }
   }
 
   if (loading) return <Loader />;
@@ -99,7 +109,7 @@ export default function Cars() {
             <option value="all">כל הסוגים</option>
             {CAR_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
-          {isAdmin && (
+          {canManageCars && (
             <button onClick={openCreate} style={s.btnPrimary}>+ הוסף רכב</button>
           )}
         </div>
@@ -132,7 +142,7 @@ export default function Cars() {
               {car.description && (
                 <div style={s.desc}>{car.description}</div>
               )}
-              {isAdmin && (
+              {canManageCars && (
                 <div style={{ display:"flex", gap:6, marginTop:12 }}>
                   <button onClick={() => openEdit(car)} style={s.btnEdit}>✏️ ערוך</button>
                   <button onClick={() => toggleActive(car)}

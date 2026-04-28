@@ -21,6 +21,8 @@ class Booking(Base):
     customer_id_num = Column(String(20))
     start_date      = Column(Date, nullable=False, index=True)
     end_date        = Column(Date, nullable=False, index=True)
+    pickup_time     = Column(String(5))   # "HH:MM"
+    return_time     = Column(String(5))   # "HH:MM"
     total_price     = Column(Float)
     status          = Column(Enum(BookingStatus), default=BookingStatus.active, nullable=False, index=True)
     notes           = Column(Text)

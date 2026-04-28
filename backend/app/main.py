@@ -5,7 +5,8 @@ from app.db.session import engine, Base
 import app.models.user    # noqa
 import app.models.car     # noqa
 import app.models.booking # noqa
-from app.routers import auth, cars, bookings, reports
+import app.models.audit_log # noqa
+from app.routers import auth, cars, bookings, reports, suggestions
 
 # יצירת טבלאות (בפרודקשן — השתמש ב-Alembic)
 Base.metadata.create_all(bind=engine)
@@ -25,10 +26,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router,     prefix="/api/auth",     tags=["Auth"])
-app.include_router(cars.router,     prefix="/api/cars",     tags=["Cars"])
-app.include_router(bookings.router, prefix="/api/bookings", tags=["Bookings"])
-app.include_router(reports.router,  prefix="/api/reports",  tags=["Reports"])
+app.include_router(auth.router,        prefix="/api/auth",        tags=["Auth"])
+app.include_router(cars.router,        prefix="/api/cars",        tags=["Cars"])
+app.include_router(bookings.router,    prefix="/api/bookings",    tags=["Bookings"])
+app.include_router(reports.router,     prefix="/api/reports",     tags=["Reports"])
+app.include_router(suggestions.router, prefix="/api/suggestions", tags=["Suggestions"])
 
 @app.get("/health")
 def health():
