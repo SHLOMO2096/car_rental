@@ -1,0 +1,61 @@
+name: Rollback Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: "Commit SHA / tag to rollback to"
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve rollback SHA
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --prune origin
+          TARGET_SHA="$(git rev-parse "${{ github.event.inputs.git_ref }}")"
+          echo "sha=${TARGET_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Rolling back to: ${TARGET_SHA}"
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+
+      - name: Rollback on VPS
+        shell: bash
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_PORT: ${{ secrets.PROD_PORT }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          TARGET_SHA: ${{ steps.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          PORT="${PROD_PORT:-22}"
+          ssh -o StrictHostKeyChecking=accept-new -p "$PORT" "${PROD_USER}@${PROD_HOST}" "bash -s" <<'EOF'
+          set -euo pipefail
+          REPO_DIR="/opt/car-rental"
+          cd "$REPO_DIR"
+          git fetch --all --tags --prune
+          git checkout --force "$TARGET_SHA"
+          git reset --hard "$TARGET_SHA"
+          docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build --remove-orphans
+          curl -fsS http://localhost/health > /dev/null
+          echo "Rollback completed to $TARGET_SHA"
+          EOF
+
