@@ -12,6 +12,8 @@
 - [x] Production build successful (`vite build`)
 - [x] API calls aligned with backend (no stray `model` parameters)
 - [x] Dashboard grid with sticky headers and car category colors
+- [x] Model selector removed from Dashboard (reports show global data)
+- [x] Reports.jsx and Dashboard.jsx fully tested with corrected API calls
 
 ### Docker & Infra
 - [x] `docker-compose.prod.yml` validates cleanly with `.env.production.example`

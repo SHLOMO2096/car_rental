@@ -27,7 +27,9 @@ ROLE_PERMISSIONS = {
         Permissions.BOOKINGS_CANCEL,
         Permissions.BOOKINGS_DELETE,
         Permissions.CARS_VIEW,
+        Permissions.REPORTS_VIEW,        # agent sees own reports in dashboard
         Permissions.SUGGESTIONS_VIEW,
+        Permissions.SUGGESTIONS_APPLY,   # agent can apply within scope
     },
     UserRole.admin: {
         Permissions.BOOKINGS_VIEW,

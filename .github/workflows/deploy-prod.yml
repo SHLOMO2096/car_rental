@@ -96,7 +96,7 @@ jobs:
         run: |
           set -euo pipefail
           PORT="${PROD_PORT:-22}"
-          ssh -o StrictHostKeyChecking=accept-new -p "$PORT" "${PROD_USER}@${PROD_HOST}" "bash -s" <<'EOF'
+          ssh -o StrictHostKeyChecking=accept-new -p "$PORT" "${PROD_USER}@${PROD_HOST}" "TARGET_SHA='$TARGET_SHA' bash -s" <<'EOF'
           set -euo pipefail
           REPO_DIR="/opt/car-rental"
           cd "$REPO_DIR"

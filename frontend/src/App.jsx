@@ -1,12 +1,19 @@
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "./store/auth";
-import Login            from "./pages/Login";
-import { Dashboard }    from "./pages/Dashboard";
-import { CalendarPage } from "./pages/CalendarPage";
-import Cars             from "./pages/Cars";
-import Bookings         from "./pages/Bookings";
-import Reports          from "./pages/Reports";
-import Users            from "./pages/Users";
+import ToastHost        from "./components/ui/ToastHost";
+import { Permissions } from "./permissions";
+
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
+const CalendarPage = lazy(() => import("./pages/CalendarPage").then((m) => ({ default: m.CalendarPage })));
+const Cars = lazy(() => import("./pages/Cars"));
+const Bookings = lazy(() => import("./pages/Bookings"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Users = lazy(() => import("./pages/Users"));
+
+const APP_VERSION = __APP_VERSION__;
+const BUILD_TIME = new Date(__BUILD_TIME__).toLocaleString("he-IL");
 
 function PrivateRoute({ children }) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
@@ -21,7 +28,7 @@ function AdminRoute({ children }) {
 }
 
 function Layout({ children }) {
-  const { user, logout, isAdmin } = useAuthStore();
+  const { user, logout, isAdmin, can } = useAuthStore();
   const nav = useNavigate();
 
   const links = [
@@ -29,8 +36,8 @@ function Layout({ children }) {
     { to:"/cars",      label:"רכבים",       icon:"🚗" },
     { to:"/bookings",  label:"הזמנות",      icon:"📋" },
     { to:"/calendar",  label:"לוח שנה",     icon:"📅" },
-    { to:"/reports",   label:"דוחות",       icon:"📈" },
-    ...(isAdmin() ? [{ to:"/users", label:"משתמשים", icon:"👥" }] : []),
+    ...(can(Permissions.REPORTS_VIEW) ? [{ to:"/reports", label:"דוחות", icon:"📈" }] : []),
+    ...(can(Permissions.USERS_MANAGE) ? [{ to:"/users", label:"משתמשים", icon:"👥" }] : []),
   ];
 
   return (
@@ -92,6 +99,10 @@ function Layout({ children }) {
             border:"1px solid rgba(239,68,68,0.25)", color:"#fca5a5",
             borderRadius:7, padding:"7px 0", fontSize:13, cursor:"pointer", fontWeight:600,
           }}>🚪 יציאה</button>
+          <div style={{ marginTop:10, color:"#64748b", fontSize:11, lineHeight:1.5 }}>
+            <div>גרסה: v{APP_VERSION}</div>
+            <div>Build: {BUILD_TIME}</div>
+          </div>
         </div>
       </aside>
 
@@ -107,24 +118,60 @@ function Layout({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/*" element={
-          <PrivateRoute>
-            <Layout>
-              <Routes>
-                <Route path="/"         element={<Dashboard />} />
-                <Route path="/cars"     element={<Cars />} />
-                <Route path="/bookings" element={<Bookings />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/reports"  element={<Reports />} />
-                <Route path="/users"    element={<AdminRoute><Users /></AdminRoute>} />
-                <Route path="*"         element={<Navigate to="/" replace />} />
-              </Routes>
-            </Layout>
-          </PrivateRoute>
-        } />
-      </Routes>
+      <ToastHost />
+      <BuildInfoBadge />
+      <Suspense fallback={<RouteLoader />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/*" element={
+            <PrivateRoute>
+              <Layout>
+                <Routes>
+                  <Route path="/"         element={<Dashboard />} />
+                  <Route path="/cars"     element={<Cars />} />
+                  <Route path="/bookings" element={<Bookings />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/reports"  element={<AdminRoute><Reports /></AdminRoute>} />
+                  <Route path="/users"    element={<AdminRoute><Users /></AdminRoute>} />
+                  <Route path="*"         element={<Navigate to="/" replace />} />
+                </Routes>
+              </Layout>
+            </PrivateRoute>
+          } />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
+
+function BuildInfoBadge() {
+  return (
+    <div style={{
+      position: "fixed",
+      left: 12,
+      bottom: 12,
+      zIndex: 9999,
+      background: "rgba(15,23,42,0.88)",
+      color: "#cbd5e1",
+      border: "1px solid rgba(148,163,184,0.35)",
+      borderRadius: 8,
+      padding: "6px 10px",
+      fontSize: 11,
+      lineHeight: 1.4,
+      direction: "ltr",
+      pointerEvents: "none",
+    }}>
+      <div>v{APP_VERSION}</div>
+      <div>{BUILD_TIME}</div>
+    </div>
+  );
+}
+
+function RouteLoader() {
+  return (
+    <div dir="rtl" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
+      <div style={{ color: "#64748b", fontSize: 14, fontWeight: 600 }}>טוען מסך...</div>
+    </div>
+  );
+}
+

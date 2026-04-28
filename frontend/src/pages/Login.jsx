@@ -1,7 +1,9 @@
 // ══════════════════════════════════════════════════════════════════════════════
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getUserFacingErrorMessage } from "../api/errors";
 import { useAuthStore } from "../store/auth";
+import { toast } from "../store/toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,7 +20,9 @@ export default function Login() {
       await login(email, password);
       nav("/");
     } catch (err) {
-      setError(typeof err === "string" ? err : "שגיאה בהתחברות");
+      const msg = getUserFacingErrorMessage(err);
+      setError(msg);
+      toast.error(msg, { title: "התחברות נכשלה" });
     } finally {
       setLoading(false);
     }

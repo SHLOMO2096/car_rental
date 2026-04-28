@@ -1,6 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getRetryAfterSeconds, getUserFacingErrorMessage, normalizeApiError } from "../api/errors";
 import { suggestionsAPI } from "../api/suggestions";
 import { carsAPI } from "../api/cars";
+import { useAuthStore } from "../store/auth";
+import { toast } from "../store/toast";
+import { Permissions } from "../permissions";
 
 const EMPTY_FORM = {
   car_id: "",
@@ -16,6 +21,7 @@ const TYPE_LABEL = {
 };
 
 export default function Suggestions() {
+  const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY_FORM);
   const [mode, setMode] = useState("car");
   const [cars, setCars] = useState([]);
@@ -25,6 +31,40 @@ export default function Suggestions() {
   const [applyingToken, setApplyingToken] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [cooldownUntil, setCooldownUntil] = useState(null);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const canApplySuggestions = useAuthStore((s) => s.can(Permissions.SUGGESTIONS_APPLY));
+
+  useEffect(() => {
+    if (!cooldownUntil) {
+      setCooldownSeconds(0);
+      return undefined;
+    }
+
+    const tick = () => {
+      const remain = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setCooldownSeconds(remain);
+      if (remain <= 0) setCooldownUntil(null);
+    };
+
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [cooldownUntil]);
+
+  const isCoolingDown = cooldownSeconds > 0;
+
+  function goToCreateBooking(carId) {
+    navigate("/bookings", {
+      state: {
+        bookingPrefill: {
+          car_id: carId ? String(carId) : "",
+          start_date: form.start_date,
+          end_date: form.end_date,
+        },
+      },
+    });
+  }
 
   const canSearch = useMemo(() => {
     const hasTarget = mode === "car" ? !!form.car_id : !!form.group.trim();
@@ -38,16 +78,12 @@ export default function Suggestions() {
       const data = await carsAPI.list({ active_only: true });
       setCars(data);
     } catch (e) {
-      setError(typeof e === "string" ? e : "שגיאה בטעינת רכבים");
+      const msg = getUserFacingErrorMessage(e);
+      setError(msg);
+      toast.error(msg, { title: "טעינת רכבים" });
     } finally {
       setLoadingCars(false);
     }
-  }
-
-  function normalizeError(e) {
-    if (typeof e === "string") return e;
-    if (e?.detail) return e.detail;
-    return "אירעה שגיאה, נסה שוב";
   }
 
   async function onSearch(e) {
@@ -55,6 +91,11 @@ export default function Suggestions() {
     setError("");
     setSuccess("");
     setResults([]);
+
+    if (isCoolingDown) {
+      setError(`יש להמתין ${cooldownSeconds} שניות לפני ניסיון נוסף.`);
+      return;
+    }
 
     if (!canSearch) {
       setError("נא למלא יעד ותאריכים");
@@ -76,17 +117,32 @@ export default function Suggestions() {
     try {
       const data = await suggestionsAPI.search(payload);
       setResults(data || []);
-      if (!data?.length) setError("לא נמצאו חלופות בטווח התאריכים שנבחר");
+      if (!data?.length) {
+        setError("לא נמצאו חלופות בטווח התאריכים שנבחר");
+        toast.info("לא נמצאו חלופות בטווח התאריכים שנבחר");
+      } else {
+        toast.success(`נמצאו ${data.length} הצעות`);
+      }
     } catch (err) {
-      setError(normalizeError(err));
+      const retryAfter = getRetryAfterSeconds(err);
+      if (retryAfter > 0) {
+        setCooldownUntil(Date.now() + retryAfter * 1000);
+      }
+      const msg = getUserFacingErrorMessage(err);
+      setError(msg);
+      toast.error(msg, { title: "חיפוש חלופות" });
     } finally {
       setSearching(false);
     }
   }
 
-  async function onApply(item) {
+  async function onApply(item, { continueToBooking = false } = {}) {
     if (!item?.apply_token) {
       setError("לא נמצא apply_token להצעה זו");
+      return;
+    }
+    if (isCoolingDown) {
+      setError(`יש להמתין ${cooldownSeconds} שניות לפני Apply נוסף.`);
       return;
     }
 
@@ -101,11 +157,38 @@ export default function Suggestions() {
         apply_token: item.apply_token,
         operator_note: "Applied from suggestions screen",
       });
-      setSuccess(res?.message || "השיבוץ הוחל בהצלחה");
+      const okMsg = res?.message || "השיבוץ הוחל בהצלחה";
+      setSuccess(okMsg);
+      toast.success(okMsg);
       // Remove applied item to avoid duplicate apply on stale token.
       setResults((prev) => prev.filter((x) => x.apply_token !== item.apply_token));
+      if (continueToBooking && res?.freed_car_id) {
+        navigate("/bookings", {
+          state: {
+            bookingPrefill: {
+              car_id: String(res.freed_car_id),
+              start_date: form.start_date,
+              end_date: form.end_date,
+            },
+          },
+        });
+        return;
+      }
     } catch (err) {
-      setError(normalizeError(err));
+      const apiErr = normalizeApiError(err);
+      const retryAfter = getRetryAfterSeconds(err);
+      if (retryAfter > 0) {
+        setCooldownUntil(Date.now() + retryAfter * 1000);
+      }
+      if (apiErr.status === 401) {
+        const msg = "תוקף ההצעה פג או שהיא כבר לא תקפה. בצע חיפוש מחדש.";
+        setError(msg);
+        toast.error(msg, { title: "החלת הצעה" });
+      } else {
+        const msg = getUserFacingErrorMessage(err);
+        setError(msg);
+        toast.error(msg, { title: "החלת הצעה" });
+      }
     } finally {
       setApplyingToken(null);
     }
@@ -114,9 +197,15 @@ export default function Suggestions() {
   return (
     <div dir="rtl">
       <div style={s.header}>
-        <h1 style={s.h1}>Smart Suggestions</h1>
+        <h1 style={s.h1}>הצעות חכמות</h1>
         <div style={s.subtitle}>חלופות חכמות ושיבוץ מחדש להזמנות</div>
       </div>
+
+      {isCoolingDown && (
+        <div style={s.cooldownBox}>
+          ⏳ הגבלת קצב פעילה. אפשר לבצע ניסיון נוסף בעוד <strong>{cooldownSeconds}</strong> שניות.
+        </div>
+      )}
 
       <form onSubmit={onSearch} style={s.card}>
         <div style={s.row}>
@@ -195,8 +284,8 @@ export default function Suggestions() {
         </div>
 
         <div style={s.footer}>
-          <button type="submit" disabled={!canSearch || searching} style={s.primaryBtn}>
-            {searching ? "מחפש..." : "חפש חלופות"}
+          <button type="submit" disabled={!canSearch || searching || isCoolingDown} style={s.primaryBtn}>
+            {searching ? "מחפש..." : isCoolingDown ? `המתן ${cooldownSeconds}s` : "חפש חלופות"}
           </button>
         </div>
       </form>
@@ -206,7 +295,7 @@ export default function Suggestions() {
 
       <div style={s.listWrap}>
         {results.map((item, idx) => {
-          const canApply = item.type === "C" && !!item.apply_token;
+          const canApply = canApplySuggestions && item.type === "C" && !!item.apply_token;
           const applyBusy = applyingToken === item.apply_token;
           return (
             <div key={`${item.type}-${item.car_id}-${idx}`} style={s.resultCard}>
@@ -227,9 +316,24 @@ export default function Suggestions() {
               </div>
 
               {canApply && (
+                <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button disabled={applyBusy || isCoolingDown} onClick={() => onApply(item)} style={s.applyBtn}>
+                    {applyBusy ? "מחיל..." : isCoolingDown ? `המתן ${cooldownSeconds}s` : "Apply Reassignment"}
+                  </button>
+                  <button
+                    disabled={applyBusy || isCoolingDown}
+                    onClick={() => onApply(item, { continueToBooking: true })}
+                    style={s.secondaryBtn}
+                  >
+                    {applyBusy ? "מחיל..." : isCoolingDown ? `המתן ${cooldownSeconds}s` : "החל והמשך להזמנה"}
+                  </button>
+                </div>
+              )}
+
+              {(item.type === "A" || item.type === "B") && (
                 <div style={{ marginTop: 10 }}>
-                  <button disabled={applyBusy} onClick={() => onApply(item)} style={s.applyBtn}>
-                    {applyBusy ? "מחיל..." : "Apply Reassignment"}
+                  <button onClick={() => goToCreateBooking(item.car_id)} style={s.secondaryBtn}>
+                    צור הזמנה עם רכב זה
                   </button>
                 </div>
               )}
@@ -285,6 +389,15 @@ const s = {
     fontWeight: 700,
     cursor: "pointer",
   },
+  secondaryBtn: {
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    border: "1px solid #bfdbfe",
+    borderRadius: 8,
+    padding: "7px 14px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
   listWrap: { marginTop: 16, display: "grid", gap: 10 },
   resultCard: {
     background: "#fff",
@@ -320,6 +433,15 @@ const s = {
     background: "#ecfdf5",
     border: "1px solid #a7f3d0",
     color: "#047857",
+    borderRadius: 8,
+    padding: "10px 12px",
+    fontSize: 13,
+  },
+  cooldownBox: {
+    marginBottom: 12,
+    background: "#fff7ed",
+    border: "1px solid #fdba74",
+    color: "#9a3412",
     borderRadius: 8,
     padding: "10px 12px",
     fontSize: 13,

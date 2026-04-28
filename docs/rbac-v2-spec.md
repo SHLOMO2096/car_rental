@@ -17,9 +17,9 @@ Enable fast operational work for agents while keeping strict administrative cont
 | Bookings | Create booking | Yes | Yes |
 | Bookings | Edit booking | Yes (scope-limited) | Yes (all) |
 | Bookings | Cancel booking | Yes (scope-limited) | Yes (all) |
-| Bookings | Hard delete booking | No | Yes |
+| Bookings | Hard delete booking | Yes (scope-limited) | Yes (all) |
 | Suggestions | View smart alternatives | Yes | Yes |
-| Suggestions | Apply reassignment plan | No (request only) | Yes |
+| Suggestions | Apply reassignment plan | Yes (scope-limited + manager alert) | Yes |
 | Reports | View analytics and financial reports | No | Yes |
 | Users | Manage users/roles/status | No | Yes |
 | Security | View audit/security events | No | Yes |
@@ -33,16 +33,16 @@ Enable fast operational work for agents while keeping strict administrative cont
 1. Deny-by-default for any new endpoint unless explicitly mapped.
 2. Backend enforcement is mandatory; frontend gating is UX-only.
 3. No privilege escalation by non-admin users.
-4. Smart suggestions are advisory and non-destructive by default.
-5. Hard delete allowed only for admin and only for future bookings; otherwise use cancel.
+4. Smart suggestions are advisory by default; apply flow is explicit, audited, and alerts manager immediately.
+5. Hard delete allowed for agent (scope-limited) and admin, and always triggers immediate email alert.
 6. Every sensitive mutation creates an audit event.
 
 ## Security Event Alerts (Email)
 Send alert emails to admin/security recipients for:
 1. Role change (`agent` <-> `admin`).
 2. User deactivation/reactivation.
-3. Booking hard delete.
-4. Booking reassignment override by admin.
+3. Booking hard delete (any role, immediate alert).
+4. Booking reassignment apply/override by any role (manager alert required).
 5. Forbidden access spikes (repeated 401/403 from same actor/IP).
 6. High-rate cancellations by same actor in short window.
 
@@ -97,11 +97,12 @@ Add `audit_logs` table:
 ## Acceptance Criteria (v1)
 1. Agent cannot access reports/users endpoints or pages.
 2. Agent can create/update/cancel only own bookings.
-3. Agent cannot hard delete bookings.
-4. Admin can fully manage users and perform booking hard delete.
+3. Agent can hard delete scope-allowed bookings, and each delete triggers email alert.
+4. Admin can fully manage users and perform booking hard delete on any booking.
 5. Security-sensitive actions create audit records.
 6. Alert emails are triggered for configured events.
-7. Existing login flow remains backward-compatible.
+7. Agent can apply scope-allowed reassignment plans, and each apply action triggers immediate manager alert.
+8. Existing login flow remains backward-compatible.
 
 ## Implementation Phases
 
@@ -119,7 +120,7 @@ Add `audit_logs` table:
 
 ### Phase 4 - Smart suggestions governance
 - Expose suggestions to agents.
-- Keep reassignment apply action admin-only until confidence is high.
+- Allow reassignment apply to agents within scope, with mandatory manager alert, audit log, and safe-guard checks.
 
 ## Test Plan
 - Unit tests: permission map and scope evaluators.
@@ -129,6 +130,5 @@ Add `audit_logs` table:
 
 ## Open Decisions
 1. Do agents need team/branch scope immediately, or own-only first?
-2. Should hard delete be disabled entirely in production and replaced with cancel?
-3. Who receives security emails (single mailbox vs distribution list)?
+2. Who receives security emails (single mailbox vs distribution list)?
 

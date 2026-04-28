@@ -80,6 +80,22 @@ cd backend
 pytest tests/ -v
 ```
 
+### בדיקת אינטגרציה ל-Rate Limit עם Redis
+
+```powershell
+docker compose up -d redis
+cd backend
+$env:TEST_REDIS_URL = "redis://localhost:6379/15"
+python -m pytest tests/test_rate_limit_redis_integration.py -q
+```
+
+```powershell
+docker compose up -d redis
+cd backend
+$env:TEST_REDIS_URL = "redis://localhost:6379/15"
+python -m pytest tests/test_suggestions_redis_api_integration.py -q
+```
+
 ## פריסה ל-Railway
 
 1. צור חשבון ב-[railway.app](https://railway.app)
@@ -152,6 +168,25 @@ git pull
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+## GitOps לפרודקשן (GitHub Actions)
+
+הפרויקט כולל כעת אוטומציה מלאה ב-`.github/workflows/`:
+
+- `ci.yml` - בדיקות backend + build ל-frontend בכל PR/Push.
+- `deploy-prod.yml` - פריסה אוטומטית ל-production ב-push ל-`main` (או ידנית ל-ref ספציפי).
+- `rollback-prod.yml` - rollback ידני לפי tag/SHA.
+
+### סודות נדרשים ב-GitHub Environment בשם `production`
+
+- `PROD_HOST`
+- `PROD_USER`
+- `PROD_PORT` (אופציונלי, ברירת מחדל 22)
+- `PROD_SSH_KEY`
+
+### מסמך הפעלה מלא
+
+ראה: `docs/gitops-runbook.md`
+
 ## הוספת מודול חדש
 
 1. `backend/app/models/module_name.py` — מודל SQLAlchemy
@@ -182,5 +217,9 @@ docker compose -f docker-compose.prod.yml up -d --build
 | `DATABASE_URL`              | חיבור PostgreSQL                   | ✅   |
 | `SECRET_KEY`                | מפתח JWT (32 bytes hex)            | ✅   |
 | `FRONTEND_URL`              | URL ה-frontend לCORS               | ✅   |
+| `RATE_LIMIT_BACKEND`        | `memory` או `redis`                | ❌   |
+| `RATE_LIMIT_REDIS_URL`      | כתובת Redis (נדרש אם backend=redis) | ❌   |
+| `RATE_LIMIT_REDIS_KEY_PREFIX` | prefix למפתחות rate-limit        | ❌   |
+| `SUGGESTIONS_RATE_LIMIT_WINDOW_SECONDS` | חלון זמן ל-rate-limit      | ❌   |
 | `EMAILS_ENABLED`            | הפעלת שליחת אימיילים               | ❌   |
 | `SMTP_HOST/USER/PASSWORD`   | פרטי שרת SMTP                      | ❌   |

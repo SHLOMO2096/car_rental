@@ -10,3 +10,10 @@ frontend/dist/
 # IDE
 .idea/workspace.xml
 
+# Environment files
+.env
+.env.production
+
+# Local deployment notes
+deploy.log
+

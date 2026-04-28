@@ -50,3 +50,13 @@ export function getUserFacingErrorMessage(err) {
   return apiErr.detail || "אירעה שגיאה. נסה שוב.";
 }
 
+
+export function getRetryAfterSeconds(err) {
+  const apiErr = normalizeApiError(err);
+  const raw = apiErr.headers?.["retry-after"] || apiErr.headers?.["Retry-After"];
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return Math.ceil(value);
+}
+
+

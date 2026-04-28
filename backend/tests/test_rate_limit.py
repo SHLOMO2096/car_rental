@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from fastapi import HTTPException
 
+from app.core.config import settings
 from app.core.rate_limit import clear_rate_limits, enforce_rate_limit
 
 
@@ -47,4 +48,17 @@ def test_clear_rate_limits_resets_bucket_state():
 
     clear_rate_limits()
     enforce_rate_limit(actor_id=9, scope="x", limit_per_minute=1, now=now)
+
+
+def test_unsupported_backend_falls_back_to_memory(monkeypatch):
+    clear_rate_limits()
+    monkeypatch.setattr(settings, "RATE_LIMIT_BACKEND", "bogus")
+    now = datetime(2044, 1, 1, tzinfo=timezone.utc)
+
+    enforce_rate_limit(actor_id=11, scope="fallback", limit_per_minute=1, now=now)
+    with pytest.raises(HTTPException) as exc:
+        enforce_rate_limit(actor_id=11, scope="fallback", limit_per_minute=1, now=now)
+
+    assert exc.value.status_code == 429
+
 

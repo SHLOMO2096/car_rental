@@ -46,10 +46,31 @@ class SuggestionResult(BaseModel):
     # The car the affected customer would be moved to (Type C)
     replacement_car_id:     Optional[int]  = None
     replacement_car_name:   Optional[str]  = None
+    apply_token:            Optional[str]  = None
 
     why:             str    # machine rationale
     operator_summary: str   # short Hebrew UI copy
     risk_level:      str    # "low" | "medium" | "high"
 
     model_config = {"from_attributes": True}
+
+
+class SuggestionApplyRequest(BaseModel):
+    """Apply payload for a one-step reassignment suggestion (Type C)."""
+
+    apply_token: str
+    operator_note: Optional[str] = None
+
+
+
+class SuggestionApplyResult(BaseModel):
+    applied: bool
+    affected_booking_id: int
+    from_car_id: int
+    to_car_id: int
+    freed_car_id: int
+    requested_start: date
+    requested_end: date
+    alert_enqueued: bool
+    message: str
 

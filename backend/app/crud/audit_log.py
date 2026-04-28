@@ -4,8 +4,10 @@ from app.models.audit_log import AuditLog, AuditSeverity
 
 
 def _snapshot_model(model_obj) -> dict | None:
-    if not model_obj:
+    if model_obj is None:
         return None
+    if isinstance(model_obj, dict):
+        return model_obj
     data = {}
     for col in model_obj.__table__.columns:
         # Never persist password hashes in audit snapshots.
@@ -44,4 +46,3 @@ def log_audit_event(
         db.commit()
     except Exception:
         db.rollback()
-

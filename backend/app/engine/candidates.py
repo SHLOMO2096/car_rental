@@ -10,13 +10,14 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.models.car import Car
 from app.models.booking import Booking, BookingStatus
 from app.engine.constraints import is_car_available, get_overlapping_bookings
 from app.engine.scoring import score_direct, score_reassignment, group_rank
 from app.engine.explainer import explain_direct, explain_reassignment
+from app.core.security import create_suggestion_apply_token
 from app.schemas.suggestion import SuggestionResult
 
 MAX_SUGGESTIONS = 10
@@ -44,6 +45,7 @@ def generate_suggestions(
     start: date,
     end: date,
     today: date,
+    actor_user_id: int,
 ) -> list[SuggestionResult]:
 
     results: list[SuggestionResult] = []
@@ -193,6 +195,16 @@ def generate_suggestions(
                         affected_booking_start=affected_booking.start_date,
                         replacement_car_id=replacement.id,
                         replacement_car_name=replacement.name,
+                        apply_token=create_suggestion_apply_token(
+                            actor_user_id,
+                            {
+                                "blocked_car_id": blocked_car.id,
+                                "affected_booking_id": affected_booking.id,
+                                "replacement_car_id": replacement.id,
+                                "requested_start": str(start),
+                                "requested_end": str(end),
+                            },
+                        ),
                         why=why,
                         operator_summary=summary,
                         risk_level=risk,

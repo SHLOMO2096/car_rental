@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════════
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from datetime import date as Date
 from app.db.session import get_db
@@ -8,17 +8,28 @@ from app.models.car import Car
 from app.models.user import User, UserRole
 from app.schemas.booking import BookingCreate, BookingUpdate, BookingOut
 from app.crud.booking import crud_booking
-from app.core.security import get_current_user, require_admin
-from app.core.email import send_booking_confirmation, send_booking_cancellation
+from app.core.permissions import Permissions
+from app.core.security import (
+    require_permission,
+    require_booking_scope_or_admin,
+)
+from app.core.email import (
+    send_booking_confirmation,
+    send_booking_cancellation,
+    send_booking_delete_alert,
+)
+from app.crud.audit_log import log_audit_event
+from app.models.audit_log import AuditSeverity
 
 router = APIRouter()
+
 
 @router.get("/", response_model=list[BookingOut])
 def list_bookings(
     status: str | None = None,
     car_id: int | None = None,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permissions.BOOKINGS_VIEW)),
 ):
     q = db.query(Booking)
     if status:
@@ -27,22 +38,33 @@ def list_bookings(
         q = q.filter(Booking.car_id == car_id)
     return q.order_by(Booking.created_at.desc()).all()
 
+
 @router.get("/calendar", response_model=list[BookingOut])
-def calendar(start: Date, end: Date,
-             db: Session = Depends(get_db), _=Depends(get_current_user)):
+def calendar(
+    start: Date,
+    end: Date,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permissions.BOOKINGS_VIEW)),
+):
     return crud_booking.get_range(db, start, end)
 
+
 @router.get("/{booking_id}", response_model=BookingOut)
-def get_booking(booking_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
-    b = crud_booking.get(db, booking_id)
-    if not b:
-        raise HTTPException(404, "הזמנה לא נמצאה")
-    return b
+def get_booking(
+    booking: Booking = Depends(require_booking_scope_or_admin),
+    _=Depends(require_permission(Permissions.BOOKINGS_VIEW)),
+):
+    return booking
+
 
 @router.post("/", response_model=BookingOut, status_code=201)
-def create_booking(data: BookingCreate, bg: BackgroundTasks,
-                   db: Session = Depends(get_db),
-                   current_user: User = Depends(get_current_user)):
+def create_booking(
+    data: BookingCreate,
+    bg: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permissions.BOOKINGS_CREATE)),
+    request: Request = None,
+):
     car = db.query(Car).filter(Car.id == data.car_id, Car.is_active == True).first()
     if not car:
         raise HTTPException(404, "רכב לא נמצא")
@@ -64,12 +86,27 @@ def create_booking(data: BookingCreate, bg: BackgroundTasks,
         )
         booking.email_sent = True
         db.commit()
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="booking.create",
+        entity_type="booking",
+        entity_id=str(booking.id),
+        after_obj=booking,
+        ip_address=request.client.host if request and request.client else None,
+    )
     return booking
 
+
 @router.patch("/{booking_id}", response_model=BookingOut)
-def update_booking(booking_id: int, data: BookingUpdate, bg: BackgroundTasks,
-                   db: Session = Depends(get_db),
-                   current_user: User = Depends(get_current_user)):
+def update_booking(
+    booking_id: int,
+    data: BookingUpdate,
+    bg: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permissions.BOOKINGS_UPDATE)),
+    request: Request = None,
+):
     b = crud_booking.get(db, booking_id)
     if not b:
         raise HTTPException(404, "הזמנה לא נמצאה")
@@ -77,10 +114,21 @@ def update_booking(booking_id: int, data: BookingUpdate, bg: BackgroundTasks,
         raise HTTPException(403, "אין הרשאה לערוך הזמנה זו")
 
     new_start = data.start_date or b.start_date
-    new_end   = data.end_date   or b.end_date
-    if (data.start_date or data.end_date):
+    new_end = data.end_date or b.end_date
+    if data.start_date or data.end_date:
         if crud_booking.has_overlap(db, b.car_id, new_start, new_end, exclude_id=b.id):
             raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
+
+    before_state = {
+        "id": b.id,
+        "car_id": b.car_id,
+        "created_by": b.created_by,
+        "customer_name": b.customer_name,
+        "start_date": str(b.start_date),
+        "end_date": str(b.end_date),
+        "status": b.status.value if hasattr(b.status, "value") else str(b.status),
+        "total_price": b.total_price,
+    }
 
     updated = crud_booking.update(db, b, data)
 
@@ -93,15 +141,63 @@ def update_booking(booking_id: int, data: BookingUpdate, bg: BackgroundTasks,
             car_name=b.car.name,
             booking_id=b.id,
         )
+
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="booking.update",
+        entity_type="booking",
+        entity_id=str(updated.id),
+        before_obj=before_state,
+        after_obj=updated,
+        ip_address=request.client.host if request and request.client else None,
+        severity=AuditSeverity.warning if data.status == BookingStatus.cancelled else AuditSeverity.info,
+    )
     return updated
 
+
 @router.delete("/{booking_id}", status_code=204)
-def delete_booking(booking_id: int, db: Session = Depends(get_db),
-                   _=Depends(require_admin)):
-    b = crud_booking.get(db, booking_id)
-    if not b:
-        raise HTTPException(404, "הזמנה לא נמצאה")
-    crud_booking.delete(db, booking_id)
+def delete_booking(
+    bg: BackgroundTasks,
+    booking: Booking = Depends(require_booking_scope_or_admin),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permissions.BOOKINGS_DELETE)),
+    request: Request = None,
+):
+    before_state = {
+        "id": booking.id,
+        "car_id": booking.car_id,
+        "created_by": booking.created_by,
+        "customer_name": booking.customer_name,
+        "start_date": str(booking.start_date),
+        "end_date": str(booking.end_date),
+        "status": booking.status.value if hasattr(booking.status, "value") else str(booking.status),
+        "total_price": booking.total_price,
+    }
+    car_name = booking.car.name if booking.car else "לא ידוע"
+    actor_email = current_user.email
+    actor_role = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    crud_booking.delete(db, booking.id)
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="booking.delete",
+        entity_type="booking",
+        entity_id=str(booking.id),
+        before_obj=before_state,
+        ip_address=request.client.host if request and request.client else None,
+        severity=AuditSeverity.warning,
+    )
+    bg.add_task(
+        send_booking_delete_alert,
+        booking_id=booking.id,
+        customer_name=before_state["customer_name"],
+        car_name=car_name,
+        start=before_state["start_date"],
+        end=before_state["end_date"],
+        actor_email=actor_email,
+        actor_role=actor_role,
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════

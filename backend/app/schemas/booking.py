@@ -13,6 +13,8 @@ class BookingCreate(BaseModel):
     customer_id_num: Optional[str]      = None
     start_date:      date
     end_date:        date
+    pickup_time:     Optional[str]      = None   # "HH:MM"
+    return_time:     Optional[str]      = None   # "HH:MM"
     notes:           Optional[str]      = None
 
     @model_validator(mode="after")
@@ -40,6 +42,8 @@ class BookingOut(BaseModel):
     customer_id_num: Optional[str] = None
     start_date:      date
     end_date:        date
+    pickup_time:     Optional[str] = None
+    return_time:     Optional[str] = None
     total_price:     Optional[float] = None
     status:          BookingStatus
     notes:           Optional[str] = None
