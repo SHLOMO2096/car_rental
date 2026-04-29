@@ -221,6 +221,7 @@ class TestBookings:
         client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "ראשון",
+            "customer_has_no_email": True,
             "start_date": "2030-07-01",
             "end_date":   "2030-07-10",
         }, headers=auth_headers)
@@ -228,6 +229,7 @@ class TestBookings:
         r = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "שני",
+            "customer_has_no_email": True,
             "start_date": "2030-07-05",
             "end_date":   "2030-07-15",
         }, headers=auth_headers)
@@ -525,6 +527,7 @@ class TestRBAC:
         created_a = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "Admin Booking",
+            "customer_has_no_email": True,
             "start_date": "2031-01-01",
             "end_date": "2031-01-03",
         }, headers=auth_headers)
@@ -534,6 +537,7 @@ class TestRBAC:
         created_b = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "Agent Booking",
+            "customer_has_no_email": True,
             "start_date": "2031-01-05",
             "end_date": "2031-01-07",
         }, headers=agent_headers)
@@ -566,6 +570,7 @@ class TestRBAC:
         created = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "Agent Delete",
+            "customer_has_no_email": True,
             "start_date": "2031-02-01",
             "end_date": "2031-02-03",
         }, headers=agent_headers)
@@ -621,6 +626,7 @@ class TestSuggestions:
         client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "BlockerB",
+            "customer_has_no_email": True,
             "start_date": "2040-03-01",
             "end_date":   "2040-03-10",
         }, headers=auth_headers)
@@ -650,6 +656,7 @@ class TestSuggestions:
         client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "BlockerC",
+            "customer_has_no_email": True,
             "start_date": "2040-05-01",
             "end_date":   "2040-05-10",
         }, headers=auth_headers)
@@ -708,6 +715,7 @@ class TestSuggestions:
         blocked = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "Apply Target",
+            "customer_has_no_email": True,
             "start_date": "2042-01-10",
             "end_date": "2042-01-15",
         }, headers=auth_headers)
@@ -767,6 +775,7 @@ class TestSuggestions:
         blocked = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "Admin Owned",
+            "customer_has_no_email": True,
             "start_date": "2042-02-10",
             "end_date": "2042-02-15",
         }, headers=auth_headers)
@@ -811,6 +820,7 @@ class TestSuggestions:
         blocked = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "Blocked For Conflict",
+            "customer_has_no_email": True,
             "start_date": "2042-03-10",
             "end_date": "2042-03-15",
         }, headers=auth_headers)
@@ -843,6 +853,7 @@ class TestSuggestions:
         conflict_booking = client.post("/api/bookings/", json={
             "car_id": c_item["replacement_car_id"],
             "customer_name": "Conflict Owner",
+            "customer_has_no_email": True,
             "start_date": "2042-03-11",
             "end_date": "2042-03-14",
         }, headers=auth_headers)
@@ -864,6 +875,7 @@ class TestSuggestions:
         blocked = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "Tamper Target",
+            "customer_has_no_email": True,
             "start_date": "2042-04-10",
             "end_date": "2042-04-15",
         }, headers=auth_headers)
@@ -908,6 +920,7 @@ class TestSuggestions:
         blocked = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "Expired Token Target",
+            "customer_has_no_email": True,
             "start_date": "2042-05-10",
             "end_date": "2042-05-15",
         }, headers=auth_headers)
