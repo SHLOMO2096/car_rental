@@ -24,8 +24,12 @@ services:
       FRONTEND_URL: ${FRONTEND_URL}
       EMAILS_ENABLED: ${EMAILS_ENABLED:-false}
       SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAILS_FROM: ${EMAILS_FROM:-noreply@carrental.co.il}
+      EMAILS_FROM_NAME: ${EMAILS_FROM_NAME:-השכרת רכבים}
+      SECURITY_ALERT_RECIPIENTS: ${SECURITY_ALERT_RECIPIENTS:-}
     depends_on:
       db:
         condition: service_healthy
