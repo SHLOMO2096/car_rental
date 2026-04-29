@@ -46,6 +46,25 @@ cp .env.production.example .env.production
 
 Edit `.env.production` with real secrets.
 
+### Important: changing `DB_PASSWORD` on existing data
+
+If `pg_data` already exists, changing `DB_PASSWORD` in `.env.production` does **not** automatically rotate the DB user's password.
+
+Use one of these options:
+
+1. Keep data and rotate password in PostgreSQL:
+
+```bash
+cd /opt/car-rental
+source .env.production
+docker compose --env-file .env.production -f docker-compose.prod.yml exec db \
+  psql -U "$DB_USER" -d postgres -c "ALTER USER \"$DB_USER\" WITH PASSWORD 'NEW_PASSWORD';"
+```
+
+2. Recreate database (data loss): delete `pg_data` volume and redeploy.
+
+Recommended: option 1.
+
 ## 4) CI workflow
 
 File: `.github/workflows/ci.yml`
@@ -53,6 +72,8 @@ File: `.github/workflows/ci.yml`
 - Runs on push/PR.
 - Executes backend tests (`pytest -q`).
 - Builds frontend (`npm run build`).
+
+Note: `.github/workflows/deploy.yml` is legacy and disabled. Use only `ci.yml`, `deploy-prod.yml`, and `rollback-prod.yml`.
 
 ## 5) Production deploy workflow
 
