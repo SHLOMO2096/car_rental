@@ -5,7 +5,7 @@ from typing import Optional
 class Settings(BaseSettings):
     # ── App ───────────────────────────────────────────────────────────────────
     APP_NAME: str = "השכרת רכבים"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "2.0.0"
     DEBUG: bool = False
     FRONTEND_URL: str = "http://localhost:5173"
 

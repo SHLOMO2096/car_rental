@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { getUserFacingErrorMessage, getRetryAfterSeconds } from "../api/errors";
 import { bookingsAPI } from "../api/bookings";
 import { carsAPI } from "../api/cars";
+import { customersAPI } from "../api/customers";
 import { suggestionsAPI } from "../api/suggestions";
 import { useAuthStore } from "../store/auth";
 import { toast } from "../store/toast";
@@ -23,9 +24,16 @@ function tomorrowISO() {
   const d = new Date(); d.setDate(d.getDate() + 1);
   return d.toISOString().split("T")[0];
 }
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
 function makeEmptyForm() {
   return {
+    customer_id: "",
     car_id: "", customer_name: "", customer_email: "",
+    customer_has_no_email: false,
     customer_phone: "", customer_id_num: "",
     start_date: todayISO(),    start_time: "08:00",
     end_date:   tomorrowISO(), end_time:   "08:00",
@@ -48,6 +56,8 @@ export default function Bookings() {
   const [formError, setFormError] = useState("");
   const [confirm, setConfirm]     = useState(null);
   const [page, setPage]           = useState(1);
+  const [dateFilter, setDateFilter] = useState("all"); // "all" | "today" | "tomorrow" | "custom"
+  const [customDate, setCustomDate] = useState("");
   const PER_PAGE = 15;
   const canDeleteBookings    = useAuthStore(s => s.can(Permissions.BOOKINGS_DELETE));
   const canApplySuggestions  = useAuthStore(s => s.can(Permissions.SUGGESTIONS_APPLY));
@@ -58,6 +68,8 @@ export default function Bookings() {
   const [applyingToken,       setApplyingToken]       = useState(null);
   const [cooldownUntil,       setCooldownUntil]       = useState(null);
   const [cooldownSecs,        setCooldownSecs]        = useState(0);
+  const [customerMatches, setCustomerMatches] = useState([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
 
   // Cooldown ticker
   useEffect(() => {
@@ -89,6 +101,12 @@ export default function Bookings() {
     setForm({
       ...makeEmptyForm(),
       car_id: prefill.car_id || "",
+      customer_id: prefill.customer_id ? String(prefill.customer_id) : "",
+      customer_name: prefill.customer_name || "",
+      customer_email: prefill.customer_email || "",
+      customer_has_no_email: !prefill.customer_email,
+      customer_phone: prefill.customer_phone || "",
+      customer_id_num: prefill.customer_id_num || "",
       start_date: prefill.start_date || todayISO(),
       end_date: prefill.end_date || tomorrowISO(),
     });
@@ -98,10 +116,42 @@ export default function Bookings() {
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.pathname, location.state, navigate]);
 
+  useEffect(() => {
+    if (modal !== "create") return;
+    const q = form.customer_name.trim();
+    if (q.length < 2) {
+      setCustomerMatches([]);
+      return;
+    }
+    const id = setTimeout(async () => {
+      setCustomersLoading(true);
+      try {
+        const rows = await customersAPI.search(q, 8);
+        setCustomerMatches(rows || []);
+      } catch {
+        setCustomerMatches([]);
+      } finally {
+        setCustomersLoading(false);
+      }
+    }, 180);
+    return () => clearTimeout(id);
+  }, [form.customer_name, modal]);
+
   const carsMap = Object.fromEntries(cars.map(c => [c.id, c]));
+
+  // Resolve the active date filter to a date string (or null)
+  const activeDateStr =
+    dateFilter === "today"    ? todayISO() :
+    dateFilter === "tomorrow" ? tomorrowISO() :
+    dateFilter === "custom"   ? customDate :
+    null;
 
   const filtered = bookings.filter(b => {
     if (statusFilter !== "all" && b.status !== statusFilter) return false;
+    if (activeDateStr) {
+      // Show bookings that are active on the selected date
+      if (b.start_date > activeDateStr || b.end_date < activeDateStr) return false;
+    }
     if (search) {
       const q = search.toLowerCase();
       const car = carsMap[b.car_id];
@@ -119,24 +169,30 @@ export default function Bookings() {
   function openCreate() {
     setForm(makeEmptyForm()); setEdit(null); setFormError(""); setModal("create");
     setConflictSuggestions([]); setSuggestionsLoading(false);
+    setCustomerMatches([]);
   }
   function openEdit(b) {
     setForm({
       ...makeEmptyForm(),
+      customer_id: b.customer_id ? String(b.customer_id) : "",
       car_id: String(b.car_id), customer_name: b.customer_name,
       customer_email: b.customer_email||"", customer_phone: b.customer_phone||"",
+      customer_has_no_email: !b.customer_email,
       customer_id_num: b.customer_id_num||"", start_date: b.start_date,
       end_date: b.end_date, notes: b.notes||"",
     });
     setEdit(b); setFormError(""); setModal("edit");
     setConflictSuggestions([]); setSuggestionsLoading(false);
+    setCustomerMatches([]);
   }
 
   function buildBookingPayload(form, carId) {
     return {
       car_id:          carId,
+      customer_id:     form.customer_id ? Number(form.customer_id) : null,
       customer_name:   form.customer_name.trim() || null,
       customer_email:  form.customer_email.trim()  || null,
+      ...(modal === "create" ? { customer_has_no_email: !!form.customer_has_no_email } : {}),
       customer_phone:  form.customer_phone.trim()  || null,
       customer_id_num: form.customer_id_num.trim() || null,
       start_date:      form.start_date || null,
@@ -150,6 +206,12 @@ export default function Bookings() {
   async function handleSave() {
     if (!form.car_id)           return setFormError("יש לבחור רכב");
     if (!form.customer_name.trim()) return setFormError("יש להזין שם לקוח");
+    if (!form.customer_has_no_email && !form.customer_email.trim()) {
+      return setFormError("יש להזין כתובת מייל תקינה או לסמן שאין מייל ללקוח");
+    }
+    if (!form.customer_has_no_email && form.customer_email.trim() && !isValidEmail(form.customer_email)) {
+      return setFormError("כתובת המייל אינה תקינה");
+    }
     if (!form.start_date)       return setFormError("יש לבחור תאריך התחלה");
     if (!form.end_date)         return setFormError("יש לבחור תאריך סיום");
     if (form.end_date < form.start_date) return setFormError("תאריך סיום לפני תחילה");
@@ -227,6 +289,19 @@ export default function Bookings() {
     finally { setConfirm(null); }
   }
 
+  function pickCustomer(customer) {
+    setForm((f) => ({
+      ...f,
+      customer_id: String(customer.id),
+      customer_name: customer.name || "",
+      customer_email: customer.email || "",
+      customer_has_no_email: !customer.email,
+      customer_phone: customer.phone || "",
+      customer_id_num: customer.id_number || "",
+    }));
+    setCustomerMatches([]);
+  }
+
   // price preview
   const previewCar  = form.car_id ? carsMap[+form.car_id] : null;
   const days        = form.start_date && form.end_date
@@ -251,6 +326,32 @@ export default function Bookings() {
           </select>
           <button onClick={openCreate} style={s.btnPrimary}>+ הזמנה חדשה</button>
         </div>
+      </div>
+
+      {/* Date filter bar */}
+      <div style={s.dateFilterBar}>
+        {[
+          { key:"all",      label:"כל התאריכים" },
+          { key:"today",    label:"היום" },
+          { key:"tomorrow", label:"מחר" },
+          { key:"custom",   label:"תאריך ספציפי 📅" },
+        ].map(opt => (
+          <button key={opt.key}
+            onClick={() => { setDateFilter(opt.key); setPage(1); }}
+            style={dateFilter === opt.key ? s.dateFilterBtnActive : s.dateFilterBtn}>
+            {opt.label}
+          </button>
+        ))}
+        {dateFilter === "custom" && (
+          <input type="date" value={customDate}
+            onChange={e => { setCustomDate(e.target.value); setPage(1); }}
+            style={s.datePickerInline} />
+        )}
+        {activeDateStr && dateFilter !== "all" && (
+          <span style={s.dateFilterHint}>
+            📋 מציג הזמנות פעילות ב-{new Date(activeDateStr).toLocaleDateString("he-IL")}
+          </span>
+        )}
       </div>
 
       {/* Counter */}
@@ -333,7 +434,7 @@ export default function Bookings() {
       )}
 
       {/* Create / Edit Modal */}
-      <Modal open={!!modal} onClose={() => { setModal(null); setConflictSuggestions([]); }}
+      <Modal open={!!modal} onClose={() => { setModal(null); setConflictSuggestions([]); setCustomerMatches([]); }}
         title={modal==="create" ? "הזמנה חדשה" : "עריכת הזמנה"} wide>
         <div style={s.formGrid}>
           <div style={{ gridColumn:"1/-1" }}>
@@ -350,13 +451,48 @@ export default function Bookings() {
           </div>
           <div>
             <label style={s.label}>שם לקוח *</label>
-            <input value={form.customer_name}
-              onChange={e => setForm(f=>({...f,customer_name:e.target.value}))} style={s.input} />
+            <div style={{ position:"relative" }}>
+              <input value={form.customer_name}
+                onChange={e => setForm(f=>({...f, customer_id:"", customer_name:e.target.value, customer_id_num:""}))}
+                style={s.input}
+                placeholder="הקלד לפחות 2 תווים לחיפוש לקוח" />
+              {modal === "create" && form.customer_name.trim().length >= 2 && (
+                <div style={s.customerDropdown}>
+                  {customersLoading && <div style={s.customerItemMuted}>מחפש לקוחות...</div>}
+                  {!customersLoading && customerMatches.length === 0 && (
+                    <div style={s.customerItemMuted}>לא נמצא לקוח קיים, ייווצר לקוח חדש בשמירה</div>
+                  )}
+                  {!customersLoading && customerMatches.map((c) => (
+                    <button key={c.id} type="button" style={s.customerItem} onClick={() => pickCustomer(c)}>
+                      <span style={{ fontWeight:700 }}>{c.name}</span>
+                      <span style={s.customerMeta}>{[c.id_number, c.phone, c.email].filter(Boolean).join(" · ") || "ללא פרטי קשר"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <label style={s.label}>אימייל (לאישור)</label>
             <input type="email" value={form.customer_email}
-              onChange={e => setForm(f=>({...f,customer_email:e.target.value}))} style={s.input} />
+              onChange={e => setForm(f=>({...f, customer_email:e.target.value, customer_has_no_email:false}))}
+              style={s.input}
+              disabled={form.customer_has_no_email}
+              placeholder={form.customer_has_no_email ? "סומן שאין מייל ללקוח" : "name@example.com"} />
+            {modal === "create" && (
+              <label style={s.checkboxRow}>
+                <input
+                  type="checkbox"
+                  checked={!!form.customer_has_no_email}
+                  onChange={e => setForm(f => ({
+                    ...f,
+                    customer_has_no_email: e.target.checked,
+                    customer_email: e.target.checked ? "" : f.customer_email,
+                  }))}
+                />
+                <span>אין מייל ללקוח</span>
+              </label>
+            )}
           </div>
           <div>
             <label style={s.label}>טלפון</label>
@@ -469,7 +605,7 @@ export default function Bookings() {
           </div>
         )}
         <div style={s.modalFooter}>
-          <button onClick={() => { setModal(null); setConflictSuggestions([]); }} style={s.btnSecondary}>ביטול</button>
+          <button onClick={() => { setModal(null); setConflictSuggestions([]); setCustomerMatches([]); }} style={s.btnSecondary}>ביטול</button>
           <button onClick={handleSave} disabled={saving} style={s.btnPrimary}>
             {saving ? "שומר..." : modal==="create" ? "אשר הזמנה" : "שמור שינויים"}
           </button>
@@ -525,6 +661,7 @@ const s = {
   input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e2e8f0",
                 fontSize:14, outline:"none", boxSizing:"border-box" },
   label:      { display:"block", fontSize:12, fontWeight:600, color:"#475569", marginBottom:5 },
+  checkboxRow:{ display:"flex", alignItems:"center", gap:8, marginTop:8, fontSize:12, color:"#475569" },
   timeHint:   { fontSize:10, color:"#94a3b8", fontWeight:400, marginRight:4 },
   formGrid:   { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 },
   modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 },
@@ -551,6 +688,17 @@ const s = {
   suggestMeta:  { marginTop:4, fontSize:11, color:"#7c3aed", fontWeight:600 },
   btnAlt:       { color:"#fff", border:"none", borderRadius:7, padding:"6px 14px",
                   fontWeight:700, cursor:"pointer", fontSize:12 },
+  customerDropdown: {
+    position:"absolute", left:0, right:0, top:"calc(100% + 4px)", zIndex:20,
+    background:"#fff", border:"1px solid #e2e8f0", borderRadius:8,
+    boxShadow:"0 8px 20px rgba(15,23,42,0.08)", maxHeight:200, overflowY:"auto",
+  },
+  customerItem: {
+    width:"100%", textAlign:"right", border:"none", background:"transparent",
+    padding:"8px 10px", cursor:"pointer", display:"flex", flexDirection:"column", gap:2,
+  },
+  customerItemMuted: { padding:"8px 10px", fontSize:12, color:"#64748b" },
+  customerMeta: { fontSize:11, color:"#64748b" },
   cooldownBox:  { padding:"6px 10px", background:"#fff7ed", border:"1px solid #fdba74",
                   color:"#9a3412", borderRadius:6, fontSize:12, marginBottom:6 },
   riskBadge: (level) => ({
@@ -559,4 +707,18 @@ const s = {
     color:      level==="low" ? "#166534" : level==="medium" ? "#854d0e" : "#991b1b",
     flexShrink: 0,
   }),
+
+  // Date filter bar
+  dateFilterBar: { display:"flex", alignItems:"center", gap:8, flexWrap:"wrap",
+                   marginBottom:14, padding:"8px 12px", background:"#f8fafc",
+                   borderRadius:10, border:"1px solid #e2e8f0" },
+  dateFilterBtn: { padding:"5px 14px", borderRadius:999, border:"1px solid #e2e8f0",
+                   background:"#fff", color:"#475569", fontSize:13, cursor:"pointer",
+                   fontWeight:500 },
+  dateFilterBtnActive: { padding:"5px 14px", borderRadius:999, border:"1px solid #1d4ed8",
+                         background:"#1d4ed8", color:"#fff", fontSize:13, cursor:"pointer",
+                         fontWeight:700 },
+  datePickerInline: { padding:"5px 10px", borderRadius:8, border:"1px solid #cbd5e1",
+                      fontSize:13, outline:"none", background:"#fff" },
+  dateFilterHint: { fontSize:12, color:"#1d4ed8", fontWeight:600, marginRight:4 },
 };

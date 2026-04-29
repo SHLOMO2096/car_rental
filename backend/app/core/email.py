@@ -107,6 +107,22 @@ def send_booking_reminder(to: str, customer_name: str, car_name: str,
                  _base_template("תזכורת להזמנה", body))
 
 
+def send_customer_message(*, to: str, customer_name: str, subject: str, body: str) -> bool:
+    import re as _re
+    # If body contains HTML tags render as-is; otherwise escape + preserve newlines
+    if _re.search(r'<[a-zA-Z][^>]*>', body):
+        rendered = f'<div style="line-height:1.8">{body}</div>'
+    else:
+        safe = body.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        rendered = f'<div style="line-height:1.8;white-space:pre-wrap">{safe}</div>'
+    html = f"""
+    <p>שלום <strong>{customer_name}</strong>,</p>
+    {rendered}
+    <p style="margin-top:20px">בברכה,<br />{settings.APP_NAME}</p>
+    """
+    return _send(to, subject, _base_template(subject, html))
+
+
 def send_booking_delete_alert(*, booking_id: int, customer_name: str, car_name: str,
                               start: str, end: str, actor_email: str, actor_role: str) -> bool:
     recipients = _parse_recipients(settings.SECURITY_ALERT_RECIPIENTS)
@@ -148,6 +164,68 @@ def send_booking_delete_alert(*, booking_id: int, customer_name: str, car_name: 
     success = True
     for recipient in recipients:
         success = _send(recipient, subject, _base_template("התראת מחיקת הזמנה", body)) and success
+    return success
+
+
+def send_missing_customer_email_alert(
+    *,
+    booking_id: int,
+    customer_name: str,
+    customer_phone: str | None,
+    customer_id_num: str | None,
+    car_name: str,
+    start: str,
+    end: str,
+    actor_email: str,
+    actor_role: str,
+) -> bool:
+    recipients = _parse_recipients(settings.SECURITY_ALERT_RECIPIENTS)
+    if not recipients:
+        logger.info("[ALERT EMAIL SKIPPED] No SECURITY_ALERT_RECIPIENTS configured")
+        return False
+
+    body = f"""
+    <p><strong>התראת תפעול:</strong> נוצרה הזמנה חדשה ללא כתובת מייל ללקוח, לאחר סימון מפורש של המפעיל.</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0">
+      <tr style="background:#fff7ed">
+        <td style="padding:10px;font-weight:bold">מספר הזמנה</td>
+        <td style="padding:10px">#{booking_id}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">לקוח</td>
+        <td style="padding:10px">{customer_name}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">טלפון</td>
+        <td style="padding:10px">{customer_phone or 'לא הוזן'}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">תעודת זהות</td>
+        <td style="padding:10px">{customer_id_num or 'לא הוזן'}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">רכב</td>
+        <td style="padding:10px">{car_name}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">מתאריך</td>
+        <td style="padding:10px">{start}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">עד תאריך</td>
+        <td style="padding:10px">{end}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">בוצע ע"י</td>
+        <td style="padding:10px">{actor_email} ({actor_role})</td>
+      </tr>
+    </table>
+    <p style="color:#b45309;font-weight:bold">יש להשלים דרך התקשרות חלופית או לתעד חוסר במייל לפי הנוהל.</p>"""
+
+    subject = f"[ALERT] Booking #{booking_id} created without customer email — {settings.APP_NAME}"
+    success = True
+    for recipient in recipients:
+        success = _send(recipient, subject, _base_template("התראת חוסר מייל ללקוח", body)) and success
     return success
 
 

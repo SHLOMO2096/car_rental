@@ -190,11 +190,27 @@ def generate_suggestions(
                         price_delta=_price_delta(
                             blocked_car, requested_car, target_group
                         ),
+                        # Affected booking – full details for informed decision
                         affected_booking_id=affected_booking.id,
                         affected_customer_name=affected_booking.customer_name,
                         affected_booking_start=affected_booking.start_date,
+                        affected_booking_end=affected_booking.end_date,
+                        affected_booking_total_price=affected_booking.total_price,
+                        affected_booking_pickup_time=affected_booking.pickup_time,
+                        affected_booking_return_time=affected_booking.return_time,
+                        affected_booking_notes=affected_booking.notes,
+                        affected_customer_phone=affected_booking.customer_phone,
+                        affected_customer_email=affected_booking.customer_email,
+                        affected_customer_id_num=affected_booking.customer_id_num,
+                        # Replacement car details
                         replacement_car_id=replacement.id,
                         replacement_car_name=replacement.name,
+                        replacement_car_make=replacement.make,
+                        replacement_car_group=replacement.group,
+                        replacement_price_per_day=replacement.price_per_day,
+                        replacement_price_delta=round(
+                            replacement.price_per_day - blocked_car.price_per_day, 2
+                        ),
                         apply_token=create_suggestion_apply_token(
                             actor_user_id,
                             {

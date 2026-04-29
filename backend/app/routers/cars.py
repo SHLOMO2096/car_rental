@@ -9,6 +9,7 @@ from app.schemas.car import CarCreate, CarUpdate, CarOut
 from app.core.permissions import Permissions
 from app.core.security import require_permission
 from app.crud.audit_log import log_audit_event
+from app.models.audit_log import AuditSeverity
 
 router = APIRouter()
 
@@ -139,6 +140,43 @@ def delete_car(
         before_obj=before_state,
         after_obj=car,
         ip_address=request.client.host if request and request.client else None,
+    )
+
+
+@router.delete("/{car_id}/permanent", status_code=204)
+def permanently_delete_car(
+    car_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_permission(Permissions.CARS_DELETE)),
+    request: Request = None,
+):
+    car = db.query(Car).filter(Car.id == car_id).first()
+    if not car:
+        raise HTTPException(404, "רכב לא נמצא")
+
+    booking_count = db.query(Booking).filter(Booking.car_id == car_id).count()
+    if booking_count:
+        raise HTTPException(400, "לא ניתן למחוק רכב לצמיתות כאשר קיימת היסטוריית הזמנות")
+
+    before_state = {
+        "id": car.id,
+        "name": car.name,
+        "type": car.type.value if hasattr(car.type, "value") else str(car.type),
+        "year": car.year,
+        "plate": car.plate,
+        "is_active": car.is_active,
+    }
+    db.delete(car)
+    db.commit()
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="car.delete_permanent",
+        entity_type="car",
+        entity_id=str(car_id),
+        before_obj=before_state,
+        ip_address=request.client.host if request and request.client else None,
+        severity=AuditSeverity.warning,
     )
 
 

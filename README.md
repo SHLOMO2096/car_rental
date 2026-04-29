@@ -2,6 +2,11 @@
 
 מערכת production-ready לניהול השכרת רכבים — FastAPI + React + PostgreSQL.
 
+## גרסאות ועדכונים
+
+- גרסה נוכחית: `2.0.0`
+- פירוט מלא של החידושים: `CHANGELOG.md`
+
 ## ארכיטקטורה
 
 ```
@@ -78,6 +83,52 @@ alembic downgrade -1
 ```bash
 cd backend
 pytest tests/ -v
+```
+
+## מודול לקוחות חדש
+
+- לשונית `לקוחות` לניהול לקוחות, חיפוש מהיר והזמנה ישירה ללקוח.
+- יצירת הזמנה עם חיפוש חכם (autocomplete) לפי שם/טלפון/מייל/תעודת זהות.
+- אם מזינים לקוח חדש בהזמנה, הוא נשמר אוטומטית בטבלת `customers`.
+- מסך לקוחות כולל היסטוריית הזמנות ללקוח וכפתור WhatsApp מהיר אם קיים מספר טלפון.
+- במסך לקוחות יש גם עריכה, מחיקה, שליחת מייל, וייבוא קובץ CSV/Excel.
+- אחרי ייבוא מוצג דוח מפורט עם שורות שדולגו ואזהרות/שגיאות לפי שורה.
+
+### ניקוי וייבוא CSV לקוחות
+
+הסקריפט/מסך הייבוא יודעים לקרוא קבצי CSV ו-Excel גם אם סדר העמודות שונה, כל עוד יש כותרות שאפשר למפות לשדות הרלוונטיים.
+
+השדות הנתמכים:
+- `name`
+- `address`
+- `phone`
+- `email`
+- `id_number`
+
+```powershell
+cd backend
+python scripts/import_customers_from_csv.py --source "C:\Users\shlomo\Downloads\AccountsList.csv" --clean-out "data/customers_clean.csv"
+```
+
+ייבוא לבסיס הנתונים:
+
+```powershell
+cd backend
+python scripts/import_customers_from_csv.py --source "C:\Users\shlomo\Downloads\AccountsList.csv" --clean-out "data/customers_clean.csv" --import-db
+```
+
+אם מריצים **מתוך Docker**, הנתיב `C:\Users\...` לא קיים בתוך הקונטיינר. במקרה כזה יש להשתמש בקובץ שנמצא בתוך `backend/data`:
+
+```powershell
+cd C:\Users\shlomo\PycharmProjects\car_rental
+docker compose exec backend python scripts/import_customers_from_csv.py --source "data/customers_clean.csv" --clean-out "data/customers_clean.csv" --import-db
+```
+
+אם מריצים מקומית מחוץ ל-Docker, אפשר להגדיר DB אחר זמני:
+
+```powershell
+cd backend
+python scripts/import_customers_from_csv.py --source "C:\Users\shlomo\Downloads\AccountsList.csv" --clean-out "data/customers_clean.csv" --import-db --database-url "sqlite:///./customers_import_test.db"
 ```
 
 ### בדיקת אינטגרציה ל-Rate Limit עם Redis

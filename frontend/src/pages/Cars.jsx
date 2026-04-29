@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getUserFacingErrorMessage } from "../api/errors";
 import { carsAPI } from "../api/cars";
 import { useAuthStore } from "../store/auth";
@@ -25,6 +26,7 @@ const EMPTY_FORM = { name:"", type:"sedan", year: new Date().getFullYear(),
                      plate:"", color:"", price_per_day:"", description:"", image_url:"" };
 
 export default function Cars() {
+  const navigate = useNavigate();
   const [cars, setCars]         = useState([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState("");
@@ -33,9 +35,10 @@ export default function Cars() {
   const [form, setForm]         = useState(EMPTY_FORM);
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState("");
-  const [confirm, setConfirm]   = useState(null);   // car to delete
+  const [confirmPermanentDelete, setConfirmPermanentDelete] = useState(null);
   const [editCar, setEditCar]   = useState(null);
   const canManageCars = useAuthStore(s => s.can(Permissions.CARS_MANAGE));
+  const canDeleteCars = useAuthStore(s => s.can(Permissions.CARS_DELETE));
 
   const load = () => carsAPI.list({ active_only: false })
     .then(setCars).finally(() => setLoading(false));
@@ -75,14 +78,14 @@ export default function Cars() {
     } finally { setSaving(false); }
   }
 
-  async function handleDelete(car) {
+  async function handlePermanentDelete(car) {
     try {
-      await carsAPI.delete(car.id);
+      await carsAPI.deletePermanent(car.id);
       await load();
-      toast.success("הרכב הוסר בהצלחה");
+      toast.success("הרכב נמחק לצמיתות");
     } catch (e) {
-      toast.error(getUserFacingErrorMessage(e), { title: "לא ניתן למחוק רכב" });
-    } finally { setConfirm(null); }
+      toast.error(getUserFacingErrorMessage(e), { title: "לא ניתן למחוק רכב לצמיתות" });
+    } finally { setConfirmPermanentDelete(null); }
   }
 
   async function toggleActive(car) {
@@ -142,16 +145,30 @@ export default function Cars() {
               {car.description && (
                 <div style={s.desc}>{car.description}</div>
               )}
-              {canManageCars && (
-                <div style={{ display:"flex", gap:6, marginTop:12 }}>
-                  <button onClick={() => openEdit(car)} style={s.btnEdit}>✏️ ערוך</button>
-                  <button onClick={() => toggleActive(car)}
-                    style={car.is_active ? s.btnWarn : s.btnSuccess}>
-                    {car.is_active ? "⏸ השבת" : "▶ הפעל"}
+              <div style={{ display:"flex", gap:6, marginTop:12, flexWrap:"wrap" }}>
+                {car.is_active && (
+                  <button
+                    onClick={() => navigate("/bookings", {
+                      state: { bookingPrefill: { car_id: car.id } }
+                    })}
+                    style={s.btnBook}>📅 הזמן
                   </button>
-                  <button onClick={() => setConfirm(car)} style={s.btnDanger}>🗑</button>
-                </div>
-              )}
+                )}
+                {canManageCars && (
+                  <>
+                    <button onClick={() => openEdit(car)} style={s.btnEdit}>✏️ ערוך</button>
+                    <button onClick={() => toggleActive(car)}
+                      style={car.is_active ? s.btnWarn : s.btnSuccess}>
+                      {car.is_active ? "⏸ השבת" : "▶ הפעל"}
+                    </button>
+                    {canDeleteCars && (
+                      <button onClick={() => setConfirmPermanentDelete(car)} style={s.btnDanger}>
+                        🗑 מחיקה לצמיתות
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           );
         })}
@@ -203,10 +220,11 @@ export default function Cars() {
       </Modal>
 
       {/* Delete confirm */}
-      <Confirm open={!!confirm}
-        message={`האם למחוק את "${confirm?.name}"? לא ניתן לבטל פעולה זו.`}
-        onConfirm={() => handleDelete(confirm)}
-        onCancel={() => setConfirm(null)} />
+      <Confirm open={!!confirmPermanentDelete}
+        message={`למחוק לצמיתות את "${confirmPermanentDelete?.name}"? הפעולה אינה ניתנת לביטול, וזמינה רק לרכב ללא היסטוריית הזמנות.`}
+        confirmLabel="מחק לצמיתות"
+        onConfirm={() => handlePermanentDelete(confirmPermanentDelete)}
+        onCancel={() => setConfirmPermanentDelete(null)} />
     </div>
   );
 }
@@ -256,6 +274,8 @@ const s = {
                  borderRadius:8, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
   btnEdit:    { background:"#eff6ff", color:"#3b82f6", border:"1px solid #bfdbfe",
                 borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:13 },
+  btnBook:    { background:"#f0fdf4", color:"#15803d", border:"1px solid #86efac",
+                borderRadius:7, padding:"5px 12px", cursor:"pointer", fontSize:13, fontWeight:700 },
   btnWarn:    { background:"#fff7ed", color:"#c2410c", border:"1px solid #fed7aa",
                 borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:13 },
   btnSuccess: { background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0",

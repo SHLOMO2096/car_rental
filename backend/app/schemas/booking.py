@@ -7,8 +7,10 @@ from app.schemas.car import CarOut
 
 class BookingCreate(BaseModel):
     car_id:          int
+    customer_id:     Optional[int]      = None
     customer_name:   str
     customer_email:  Optional[EmailStr] = None
+    customer_has_no_email: bool         = False
     customer_phone:  Optional[str]      = None
     customer_id_num: Optional[str]      = None
     start_date:      date
@@ -21,9 +23,14 @@ class BookingCreate(BaseModel):
     def dates_valid(self):
         if self.end_date < self.start_date:
             raise ValueError("תאריך סיום חייב להיות אחרי תאריך התחלה")
+        if self.customer_has_no_email and self.customer_email:
+            raise ValueError("לא ניתן לסמן שאין מייל וגם להזין כתובת מייל")
+        if not self.customer_has_no_email and not self.customer_email:
+            raise ValueError("יש להזין כתובת מייל תקינה או לסמן שאין מייל ללקוח")
         return self
 
 class BookingUpdate(BaseModel):
+    customer_id:     Optional[int]           = None
     customer_name:   Optional[str]           = None
     customer_email:  Optional[EmailStr]      = None
     customer_phone:  Optional[str]           = None
@@ -36,6 +43,7 @@ class BookingUpdate(BaseModel):
 class BookingOut(BaseModel):
     id:              int
     car_id:          int
+    customer_id:     Optional[int] = None
     customer_name:   str
     customer_email:  Optional[str] = None
     customer_phone:  Optional[str] = None

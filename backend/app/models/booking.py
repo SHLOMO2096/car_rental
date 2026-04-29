@@ -14,6 +14,7 @@ class Booking(Base):
 
     id              = Column(Integer, primary_key=True, index=True)
     car_id          = Column(Integer, ForeignKey("cars.id", ondelete="RESTRICT"), nullable=False)
+    customer_id     = Column(Integer, ForeignKey("customers.id", ondelete="SET NULL"), nullable=True, index=True)
     created_by      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     customer_name   = Column(String(255), nullable=False)
     customer_email  = Column(String(255), index=True)     # לשליחת אימיילים
@@ -31,4 +32,5 @@ class Booking(Base):
     updated_at      = Column(DateTime(timezone=True), onupdate=func.now())
 
     car          = relationship("Car", back_populates="bookings")
+    customer     = relationship("Customer", back_populates="bookings")
     agent        = relationship("User", foreign_keys=[created_by])

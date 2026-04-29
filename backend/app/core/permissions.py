@@ -10,6 +10,10 @@ class Permissions:
 
     CARS_VIEW = "cars:view"
     CARS_MANAGE = "cars:manage"
+    CARS_DELETE = "cars:delete"
+    CUSTOMERS_VIEW = "customers:view"
+    CUSTOMERS_MANAGE = "customers:manage"
+    CUSTOMERS_BULK_EMAIL = "customers:bulk_email"
 
     REPORTS_VIEW = "reports:view"
     USERS_MANAGE = "users:manage"
@@ -27,6 +31,8 @@ ROLE_PERMISSIONS = {
         Permissions.BOOKINGS_CANCEL,
         Permissions.BOOKINGS_DELETE,
         Permissions.CARS_VIEW,
+        Permissions.CUSTOMERS_VIEW,
+        Permissions.CUSTOMERS_MANAGE,
         Permissions.REPORTS_VIEW,        # agent sees own reports in dashboard
         Permissions.SUGGESTIONS_VIEW,
         Permissions.SUGGESTIONS_APPLY,   # agent can apply within scope
@@ -39,6 +45,10 @@ ROLE_PERMISSIONS = {
         Permissions.BOOKINGS_DELETE,
         Permissions.CARS_VIEW,
         Permissions.CARS_MANAGE,
+        Permissions.CARS_DELETE,
+        Permissions.CUSTOMERS_VIEW,
+        Permissions.CUSTOMERS_MANAGE,
+        Permissions.CUSTOMERS_BULK_EMAIL,
         Permissions.REPORTS_VIEW,
         Permissions.USERS_MANAGE,
         Permissions.SUGGESTIONS_VIEW,

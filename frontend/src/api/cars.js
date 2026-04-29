@@ -6,6 +6,7 @@ export const carsAPI = {
   create:       (data)      => api.post("/cars/", data).then(r => r.data),
   update:       (id, data)  => api.patch(`/cars/${id}`, data).then(r => r.data),
   delete:       (id)        => api.delete(`/cars/${id}`),
+  deletePermanent:(id)      => api.delete(`/cars/${id}/permanent`),
   availability: (id, s, e)  => api.get(`/cars/${id}/availability`, {
     params: { start: s, end: e }
   }).then(r => r.data),

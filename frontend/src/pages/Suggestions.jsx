@@ -146,7 +146,7 @@ export default function Suggestions() {
       return;
     }
 
-    const ok = window.confirm("להחיל את ההצעה? הפעולה נרשמת ב-audit ונשלחת התראה.");
+    const ok = window.confirm("להחיל את ההצעה? הפעולה תירשם במערכת.");
     if (!ok) return;
 
     setError("");
@@ -314,6 +314,90 @@ export default function Suggestions() {
                 )}
                 <span>Risk: <strong>{item.risk_level}</strong></span>
               </div>
+
+              {item.type === "C" && (
+                <div style={s.affectedBox}>
+                  <div style={s.affectedTitle}>📋 פרטי ההזמנה הקיימת (שתועבר)</div>
+                  <div style={s.affectedGrid}>
+                    <div style={s.affectedRow}>
+                      <span style={s.affectedLabel}>לקוח:</span>
+                      <strong>{item.affected_customer_name || "—"}</strong>
+                    </div>
+                    {item.affected_customer_phone && (
+                      <div style={s.affectedRow}>
+                        <span style={s.affectedLabel}>טלפון:</span>
+                        <strong>{item.affected_customer_phone}</strong>
+                      </div>
+                    )}
+                    {item.affected_customer_email && (
+                      <div style={s.affectedRow}>
+                        <span style={s.affectedLabel}>אימייל:</span>
+                        <strong>{item.affected_customer_email}</strong>
+                      </div>
+                    )}
+                    {item.affected_customer_id_num && (
+                      <div style={s.affectedRow}>
+                        <span style={s.affectedLabel}>ת.ז.:</span>
+                        <strong>{item.affected_customer_id_num}</strong>
+                      </div>
+                    )}
+                    <div style={s.affectedRow}>
+                      <span style={s.affectedLabel}>תאריכים:</span>
+                      <strong>
+                        {item.affected_booking_start} → {item.affected_booking_end || "—"}
+                      </strong>
+                    </div>
+                    {(item.affected_booking_pickup_time || item.affected_booking_return_time) && (
+                      <div style={s.affectedRow}>
+                        <span style={s.affectedLabel}>שעות:</span>
+                        <strong>
+                          איסוף {item.affected_booking_pickup_time || "—"} / החזרה {item.affected_booking_return_time || "—"}
+                        </strong>
+                      </div>
+                    )}
+                    {item.affected_booking_total_price != null && (
+                      <div style={s.affectedRow}>
+                        <span style={s.affectedLabel}>מחיר כולל:</span>
+                        <strong>₪{item.affected_booking_total_price.toLocaleString()}</strong>
+                      </div>
+                    )}
+                    {item.affected_booking_notes && (
+                      <div style={{ ...s.affectedRow, alignItems: "flex-start" }}>
+                        <span style={s.affectedLabel}>הערות:</span>
+                        <span style={{ color: "#334155" }}>{item.affected_booking_notes}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={s.replacementTitle}>🔄 רכב חלופי ללקוח הקיים</div>
+                  <div style={s.affectedGrid}>
+                    <div style={s.affectedRow}>
+                      <span style={s.affectedLabel}>רכב:</span>
+                      <strong>
+                        {item.replacement_car_name}
+                        {item.replacement_car_make ? ` (${item.replacement_car_make})` : ""}
+                        {item.replacement_car_group ? ` · קבוצה ${item.replacement_car_group}` : ""}
+                      </strong>
+                    </div>
+                    {item.replacement_price_per_day != null && (
+                      <div style={s.affectedRow}>
+                        <span style={s.affectedLabel}>מחיר ליום:</span>
+                        <strong>₪{item.replacement_price_per_day.toLocaleString()}</strong>
+                        {item.replacement_price_delta != null && item.replacement_price_delta !== 0 && (
+                          <span style={{
+                            marginRight: 6,
+                            color: item.replacement_price_delta > 0 ? "#b45309" : "#047857",
+                            fontSize: 11,
+                            fontWeight: 700,
+                          }}>
+                            ({item.replacement_price_delta > 0 ? "+" : ""}₪{item.replacement_price_delta} ביחס לרכב המקורי)
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {canApply && (
                 <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>

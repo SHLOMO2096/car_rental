@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════════════════════════════════════════
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { reportsAPI } from "../api/reports";
 import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
@@ -45,6 +46,7 @@ function fmtDay(d) {
 }
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const [summary, setSummary]   = useState(null);
   const [monthly, setMonthly]   = useState([]);
   const [topCars, setTopCars]   = useState([]);
@@ -163,7 +165,7 @@ export function Dashboard() {
       </div>
 
       {/* Availability Grid */}
-      <AvailabilityGrid cars={filteredCars} startDate={rangeStart} endDate={rangeEnd} />
+      <AvailabilityGrid cars={filteredCars} startDate={rangeStart} endDate={rangeEnd} navigate={navigate} />
 
       {/* Charts row */}
       <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:20, marginTop:20 }}>
@@ -205,7 +207,7 @@ export function Dashboard() {
 }
 
 // ── Availability Grid ──────────────────────────────────────────────────────────
-function AvailabilityGrid({ cars, startDate, endDate }) {
+function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
   const [bookings, setBookings]   = useState([]);
   const [loadingGrid, setLoadingGrid] = useState(false);
 
@@ -308,7 +310,19 @@ function AvailabilityGrid({ cars, startDate, endDate }) {
                   {activeCars.map(car => {
                     const b  = occ[`${ds}:${car.id}`];
                     if (!b) {
-                      return <td key={car.id} style={{ ...gtd, textAlign:"center", background:"#dcfce7", color:"#15803d" }}>✓</td>;
+                      return (
+                        <td key={car.id}
+                            title={`לחץ להזמנת ${car.name} ב-${ds}`}
+                            onClick={() => navigate("/bookings", {
+                              state: { bookingPrefill: { car_id: car.id, start_date: ds } }
+                            })}
+                            style={{ ...gtd, textAlign:"center", background:"#dcfce7",
+                                     color:"#15803d", cursor:"pointer" }}
+                            onMouseEnter={e => { e.currentTarget.style.background="#bbf7d0"; e.currentTarget.style.fontWeight="700"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background="#dcfce7"; e.currentTarget.style.fontWeight="normal"; }}>
+                          ✓
+                        </td>
+                      );
                     }
                     const isFirst   = b.start_date === ds;
                     const isLast    = b.end_date   === ds;
@@ -353,8 +367,9 @@ const dot = (bg, fg) => ({
 const fieldWrap = { display:"flex", flexDirection:"column", gap:6, minWidth:160 };
 const fieldLabel = { fontSize:12, color:"#64748b", fontWeight:600 };
 const inputStyle = {
-  border:"1px solid #cbd5e1", borderRadius:8, padding:"9px 12px", fontSize:13,
-  background:"#fff", color:"#0f172a", minHeight:38,
+  border:"1px solid #cbd5e1", borderRadius:8, padding:"0 12px", fontSize:13,
+  background:"#fff", color:"#0f172a", height:38, boxSizing:"border-box",
+  display:"block",
 };
 const chipStyle = {
   padding:"8px 10px", borderRadius:999, border:"1px solid #cbd5e1", background:"#fff",

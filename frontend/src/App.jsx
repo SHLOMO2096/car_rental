@@ -8,6 +8,7 @@ const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
 const CalendarPage = lazy(() => import("./pages/CalendarPage").then((m) => ({ default: m.CalendarPage })));
 const Cars = lazy(() => import("./pages/Cars"));
+const Customers = lazy(() => import("./pages/Customers"));
 const Bookings = lazy(() => import("./pages/Bookings"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Users = lazy(() => import("./pages/Users"));
@@ -34,6 +35,7 @@ function Layout({ children }) {
   const links = [
     { to:"/",          label:"לוח בקרה",   icon:"📊" },
     { to:"/cars",      label:"רכבים",       icon:"🚗" },
+    ...(can(Permissions.CUSTOMERS_VIEW) ? [{ to:"/customers", label:"לקוחות", icon:"👤" }] : []),
     { to:"/bookings",  label:"הזמנות",      icon:"📋" },
     { to:"/calendar",  label:"לוח שנה",     icon:"📅" },
     ...(can(Permissions.REPORTS_VIEW) ? [{ to:"/reports", label:"דוחות", icon:"📈" }] : []),
@@ -129,6 +131,7 @@ export default function App() {
                 <Routes>
                   <Route path="/"         element={<Dashboard />} />
                   <Route path="/cars"     element={<Cars />} />
+                  <Route path="/customers" element={<Customers />} />
                   <Route path="/bookings" element={<Bookings />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/reports"  element={<AdminRoute><Reports /></AdminRoute>} />

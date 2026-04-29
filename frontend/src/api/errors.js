@@ -26,6 +26,18 @@ export function normalizeApiError(err) {
 
 export function getUserFacingErrorMessage(err) {
   const apiErr = normalizeApiError(err);
+  const detail = String(apiErr.detail || "");
+
+  if (apiErr.status === 422 && detail.toLowerCase().includes("field required")) {
+    if (detail.toLowerCase().includes("file")) {
+      return "יש לבחור קובץ לייבוא.";
+    }
+    return "חסר שדה חובה בטופס. בדוק את הנתונים ונסה שוב.";
+  }
+
+  if (apiErr.status === 422 && (detail.toLowerCase().includes("valid email") || detail.toLowerCase().includes("email address"))) {
+    return "כתובת המייל אינה תקינה.";
+  }
 
   if (apiErr.status === 429) {
     const retryAfter = apiErr.headers?.["retry-after"] || apiErr.headers?.["Retry-After"];

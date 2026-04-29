@@ -6,8 +6,10 @@ from app.db.session import get_db
 from app.models.booking import Booking, BookingStatus
 from app.models.car import Car
 from app.models.user import User, UserRole
+from app.models.customer import Customer
 from app.schemas.booking import BookingCreate, BookingUpdate, BookingOut
 from app.crud.booking import crud_booking
+from app.crud.customer import crud_customer
 from app.core.permissions import Permissions
 from app.core.security import (
     require_permission,
@@ -17,6 +19,7 @@ from app.core.email import (
     send_booking_confirmation,
     send_booking_cancellation,
     send_booking_delete_alert,
+    send_missing_customer_email_alert,
 )
 from app.crud.audit_log import log_audit_event
 from app.models.audit_log import AuditSeverity
@@ -71,7 +74,23 @@ def create_booking(
     if crud_booking.has_overlap(db, data.car_id, data.start_date, data.end_date):
         raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
 
-    booking = crud_booking.create_booking(db, data, current_user.id, car)
+    customer = None
+    if data.customer_id:
+        customer = db.query(Customer).filter(Customer.id == data.customer_id).first()
+        if not customer:
+            raise HTTPException(404, "לקוח לא נמצא")
+    else:
+        customer = crud_customer.upsert_contact(
+            db,
+            name=data.customer_name,
+            phone=data.customer_phone,
+            email=str(data.customer_email) if data.customer_email else None,
+        )
+
+    payload = data.model_dump(exclude={"customer_has_no_email"})
+    payload["customer_id"] = customer.id if customer else None
+
+    booking = crud_booking.create_booking(db, payload, current_user.id, car)
 
     if data.customer_email:
         bg.add_task(
@@ -86,6 +105,19 @@ def create_booking(
         )
         booking.email_sent = True
         db.commit()
+    elif data.customer_has_no_email:
+        bg.add_task(
+            send_missing_customer_email_alert,
+            booking_id=booking.id,
+            customer_name=data.customer_name,
+            customer_phone=data.customer_phone,
+            customer_id_num=data.customer_id_num,
+            car_name=car.name,
+            start=str(data.start_date),
+            end=str(data.end_date),
+            actor_email=current_user.email,
+            actor_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
+        )
     log_audit_event(
         db,
         actor_user_id=current_user.id,
@@ -118,6 +150,10 @@ def update_booking(
     if data.start_date or data.end_date:
         if crud_booking.has_overlap(db, b.car_id, new_start, new_end, exclude_id=b.id):
             raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
+    if data.customer_id is not None:
+        exists = db.query(Customer).filter(Customer.id == data.customer_id).first()
+        if not exists:
+            raise HTTPException(404, "לקוח לא נמצא")
 
     before_state = {
         "id": b.id,

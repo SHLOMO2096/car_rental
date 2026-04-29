@@ -20,12 +20,13 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             q = q.filter(Booking.id != exclude_id)
         return q.first() is not None
 
-    def create_booking(self, db: Session, data: BookingCreate,
+    def create_booking(self, db: Session, data: BookingCreate | dict,
                        user_id: int, car: Car) -> Booking:
-        days  = max((data.end_date - data.start_date).days, 1)
+        payload = data.model_dump() if hasattr(data, "model_dump") else dict(data)
+        days  = max((payload["end_date"] - payload["start_date"]).days, 1)
         total = car.price_per_day * days
         b = Booking(
-            **data.model_dump(),
+            **payload,
             created_by=user_id,
             total_price=total,
         )

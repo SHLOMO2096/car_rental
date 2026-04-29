@@ -40,13 +40,25 @@ class SuggestionResult(BaseModel):
     price_delta:    float       # vs. requested car; positive = upgrade, negative = downgrade
 
     # Type C only – the existing booking that would be moved
-    affected_booking_id:    Optional[int]  = None
-    affected_customer_name: Optional[str]  = None
-    affected_booking_start: Optional[date] = None
+    affected_booking_id:            Optional[int]   = None
+    affected_customer_name:         Optional[str]   = None
+    affected_booking_start:         Optional[date]  = None
+    affected_booking_end:           Optional[date]  = None
+    affected_booking_total_price:   Optional[float] = None
+    affected_booking_pickup_time:   Optional[str]   = None
+    affected_booking_return_time:   Optional[str]   = None
+    affected_booking_notes:         Optional[str]   = None
+    affected_customer_phone:        Optional[str]   = None
+    affected_customer_email:        Optional[str]   = None
+    affected_customer_id_num:       Optional[str]   = None
     # The car the affected customer would be moved to (Type C)
-    replacement_car_id:     Optional[int]  = None
-    replacement_car_name:   Optional[str]  = None
-    apply_token:            Optional[str]  = None
+    replacement_car_id:             Optional[int]   = None
+    replacement_car_name:           Optional[str]   = None
+    replacement_car_make:           Optional[str]   = None
+    replacement_car_group:          Optional[str]   = None
+    replacement_price_per_day:      Optional[float] = None
+    replacement_price_delta:        Optional[float] = None  # vs. affected booking's original car
+    apply_token:                    Optional[str]   = None
 
     why:             str    # machine rationale
     operator_summary: str   # short Hebrew UI copy

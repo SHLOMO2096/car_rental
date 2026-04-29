@@ -1,7 +1,10 @@
 import os
+from datetime import date
+from io import BytesIO
 
 import pytest
 from fastapi.testclient import TestClient
+from openpyxl import Workbook
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -14,12 +17,14 @@ from app.db.session import Base, get_db
 from app.core.security import hash_password
 from app.models.user import User, UserRole
 from app.models.car import Car, CarType
-from app.models.booking import Booking
+from app.models.booking import Booking, BookingStatus
+from app.models.customer import Customer
 from app.models.audit_log import AuditLog
 from app.core.config import settings
 from app.core.rate_limit import clear_rate_limits
 from app.core import security as security_module
 from app.routers import bookings as bookings_router
+from app.routers import customers as customers_router
 from app.routers import suggestions as suggestions_router
 
 # ── DB in-memory לבדיקות ───────────────────────────────────────────────────
@@ -167,12 +172,43 @@ class TestCars:
         assert r.status_code == 200
         assert r.json()["available"] is True
 
+    def test_permanent_delete_car_without_bookings(self, client, auth_headers, db):
+        car = Car(
+            name="Delete Me",
+            type=CarType.sedan,
+            year=2024,
+            plate="DEL-100",
+            color="שחור",
+            price_per_day=180.0,
+        )
+        db.add(car)
+        db.commit()
+        db.refresh(car)
+
+        deleted = client.delete(f"/api/cars/{car.id}/permanent", headers=auth_headers)
+        assert deleted.status_code == 204
+        assert db.query(Car).filter(Car.id == car.id).first() is None
+
+    def test_permanent_delete_car_rejects_when_bookings_exist(self, client, auth_headers, sample_car):
+        created = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "לקוח לרכב עם היסטוריה",
+            "customer_has_no_email": True,
+            "start_date": "2033-03-01",
+            "end_date": "2033-03-04",
+        }, headers=auth_headers)
+        assert created.status_code == 201
+
+        deleted = client.delete(f"/api/cars/{sample_car.id}/permanent", headers=auth_headers)
+        assert deleted.status_code == 400
+
 # ── Bookings Tests ─────────────────────────────────────────────────────────────
 class TestBookings:
     def test_create_booking(self, client, auth_headers, sample_car):
         r = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "ישראל ישראלי",
+            "customer_has_no_email": True,
             "start_date": "2030-06-01",
             "end_date":   "2030-06-05",
         }, headers=auth_headers)
@@ -202,6 +238,246 @@ class TestBookings:
         assert r.status_code == 200
         assert isinstance(r.json(), list)
 
+    def test_create_booking_auto_creates_customer(self, client, auth_headers, sample_car, db):
+        r = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "לקוח חדש לא קיים",
+            "customer_phone": "052-1112233",
+            "customer_email": "new-customer@test.com",
+            "start_date": "2030-08-01",
+            "end_date": "2030-08-04",
+        }, headers=auth_headers)
+        assert r.status_code == 201
+        created = r.json()
+        assert created["customer_id"] is not None
+
+        customer = db.query(Customer).filter(Customer.id == created["customer_id"]).first()
+        assert customer is not None
+        assert customer.name == "לקוח חדש לא קיים"
+
+    def test_create_booking_requires_email_or_explicit_no_email(self, client, auth_headers, sample_car):
+        r = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "ללא מייל",
+            "start_date": "2030-09-01",
+            "end_date": "2030-09-03",
+        }, headers=auth_headers)
+        assert r.status_code == 422
+
+    def test_create_booking_rejects_invalid_email(self, client, auth_headers, sample_car):
+        r = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "מייל לא תקין",
+            "customer_email": "not-an-email",
+            "start_date": "2030-09-11",
+            "end_date": "2030-09-13",
+        }, headers=auth_headers)
+        assert r.status_code == 422
+
+    def test_create_booking_with_no_email_sends_alert(self, client, auth_headers, sample_car, monkeypatch):
+        alert_calls = []
+
+        def fake_missing_email_alert(**kwargs):
+            alert_calls.append(kwargs)
+            return True
+
+        monkeypatch.setattr(bookings_router, "send_missing_customer_email_alert", fake_missing_email_alert)
+
+        r = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "ללא מייל במודע",
+            "customer_has_no_email": True,
+            "customer_phone": "0529991111",
+            "start_date": "2030-10-01",
+            "end_date": "2030-10-03",
+        }, headers=auth_headers)
+        assert r.status_code == 201
+        assert len(alert_calls) == 1
+        assert alert_calls[0]["customer_name"] == "ללא מייל במודע"
+
+
+class TestCustomers:
+    def test_search_customers(self, client, auth_headers, db):
+        db.add(Customer(name="משה כהן", normalized_name="משה כהן", phone="0523334444", email="moshe@test.com"))
+        db.add(Customer(name="שרה לוי", normalized_name="שרה לוי", phone="0529990000", email="sara@test.com"))
+        db.commit()
+
+        r = client.get("/api/customers/search", params={"q": "משה", "limit": 5}, headers=auth_headers)
+        assert r.status_code == 200
+        rows = r.json()
+        assert len(rows) >= 1
+        assert rows[0]["name"] == "משה כהן"
+
+    def test_customer_history_includes_linked_and_legacy_matches(self, client, auth_headers, db, sample_car):
+        customer = Customer(
+            name="יוסי כהן",
+            normalized_name="יוסי כהן",
+            phone="0524445566",
+            email="yossi@test.com",
+        )
+        db.add(customer)
+        db.commit()
+        db.refresh(customer)
+
+        linked = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_id": customer.id,
+            "customer_name": customer.name,
+            "customer_phone": customer.phone,
+            "customer_email": customer.email,
+            "start_date": "2032-01-10",
+            "end_date": "2032-01-12",
+        }, headers=auth_headers)
+        assert linked.status_code == 201
+
+        legacy = Booking(
+            car_id=sample_car.id,
+            customer_name="יוסי כהן",
+            customer_phone="0524445566",
+            customer_email="yossi@test.com",
+            start_date=date(2031, 12, 1),
+            end_date=date(2031, 12, 4),
+            total_price=300,
+            status=BookingStatus.completed,
+        )
+        db.add(legacy)
+        db.commit()
+
+        r = client.get(f"/api/customers/{customer.id}/history", headers=auth_headers)
+        assert r.status_code == 200
+        body = r.json()
+        assert body["customer"]["id"] == customer.id
+        assert body["summary"]["total_bookings"] >= 2
+        booking_ids = {b["id"] for b in body["bookings"]}
+        assert linked.json()["id"] in booking_ids
+        assert legacy.id in booking_ids
+
+    def test_import_customers_from_excel_with_flexible_headers(self, client, auth_headers):
+        wb = Workbook()
+        ws = wb.active
+        ws.append(["לקוחות לייבוא"])
+        ws.append(["שם לקוח", "טלפונים", "מייל", "כתובת", "תעודת זהות"])
+        ws.append(["דני כהן", "052-1234567", "danny@test.com", "מודיעין", "123456789"])
+        ws.append(["דני כהן", "052-1234567", "danny@test.com", "מודיעין", "123456789"])
+
+        payload = BytesIO()
+        wb.save(payload)
+        payload.seek(0)
+
+        r = client.post(
+            "/api/customers/import",
+            headers=auth_headers,
+            files={"file": ("customers.xlsx", payload.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["processed"] == 1
+        assert body["inserted"] == 1
+        assert body["skipped"] == 0
+        assert body["issues"] == []
+
+        listed = client.get("/api/customers/search", params={"q": "123456789"}, headers=auth_headers)
+        assert listed.status_code == 200
+        assert listed.json()[0]["name"] == "דני כהן"
+        assert listed.json()[0]["id_number"] == "123456789"
+
+    def test_import_customers_reports_skipped_rows(self, client, auth_headers):
+        csv_payload = "שם לקוח,טלפון,מייל\n,0521111111,a@test.com\nרות לוי,0522222222,invalid-mail\n"
+        r = client.post(
+            "/api/customers/import",
+            headers=auth_headers,
+            files={"file": ("customers.csv", csv_payload.encode("utf-8"), "text/csv")},
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["processed"] == 1
+        assert body["skipped"] == 1
+        assert len(body["issues"]) >= 2
+        assert any(i["field"] == "name" and i["level"] == "error" for i in body["issues"])
+        assert any(i["field"] == "email" and i["level"] == "warning" for i in body["issues"])
+
+    def test_update_delete_and_email_customer(self, client, auth_headers, db, monkeypatch):
+        sent_calls = []
+
+        def fake_send_customer_message(**kwargs):
+            sent_calls.append(kwargs)
+            return True
+
+        monkey_customer = Customer(
+            name="לקוח לעריכה",
+            normalized_name="לקוח לעריכה",
+            phone="0527000000",
+            email="edit@test.com",
+        )
+        db.add(monkey_customer)
+        db.commit()
+        db.refresh(monkey_customer)
+
+        updated = client.patch(
+            f"/api/customers/{monkey_customer.id}",
+            json={"id_number": "301234567", "address": "ירושלים"},
+            headers=auth_headers,
+        )
+        assert updated.status_code == 200
+        assert updated.json()["id_number"] == "301234567"
+
+        monkeypatch.setattr(customers_router, "send_customer_message", fake_send_customer_message)
+        emailed = client.post(
+            f"/api/customers/{monkey_customer.id}/send-email",
+            json={"subject": "שלום", "body": "בדיקת מייל"},
+            headers=auth_headers,
+        )
+        assert emailed.status_code == 200
+        assert sent_calls and sent_calls[0]["to"] == "edit@test.com"
+
+        deleted = client.delete(f"/api/customers/{monkey_customer.id}", headers=auth_headers)
+        assert deleted.status_code == 204
+        assert db.query(Customer).filter(Customer.id == monkey_customer.id).first() is None
+
+    def test_bulk_email_customers(self, client, auth_headers, db, monkeypatch):
+        sent_calls = []
+
+        def fake_send_customer_message(**kwargs):
+            sent_calls.append(kwargs)
+            return True
+
+        monkeypatch.setattr(customers_router, "send_customer_message", fake_send_customer_message)
+
+        def summarize_existing_rows(rows):
+            seen = set()
+            queued = 0
+            skipped = 0
+            for row in rows:
+                email = (row.email or "").strip().lower()
+                if not email or email in seen:
+                    skipped += 1
+                    continue
+                seen.add(email)
+                queued += 1
+            return queued, skipped
+
+        baseline_queued, baseline_skipped = summarize_existing_rows(
+            db.query(Customer).filter(Customer.email.isnot(None)).order_by(Customer.id).all()
+        )
+
+        db.add_all([
+            Customer(name="לקוח א", normalized_name="לקוח א", email="bulk-first@test.com"),
+            Customer(name="לקוח ב", normalized_name="לקוח ב", email="bulk-second@test.com"),
+            Customer(name="לקוח ללא מייל", normalized_name="לקוח ללא מייל", email=None),
+            Customer(name="לקוח כפול", normalized_name="לקוח כפול", email="BULK-FIRST@test.com"),
+        ])
+        db.commit()
+
+        emailed = client.post(
+            "/api/customers/send-bulk-email",
+            json={"subject": "מבצעים מיוחדים", "body": "יש לנו עדכון חשוב"},
+            headers=auth_headers,
+        )
+        assert emailed.status_code == 200
+        assert emailed.json()["queued"] == baseline_queued + 2
+        assert emailed.json()["skipped"] == baseline_skipped + 1
+        assert {call["to"] for call in sent_calls} >= {"bulk-first@test.com", "bulk-second@test.com"}
+
 # ── Reports Tests ──────────────────────────────────────────────────────────────
 class TestReports:
     def test_summary(self, client, auth_headers):
@@ -230,6 +506,18 @@ class TestRBAC:
             "name": "Blocked Car", "type": "sedan", "year": 2023,
             "plate": "BLOCK-001", "price_per_day": 100
         }, headers=agent_headers)
+        assert r.status_code == 403
+
+    def test_agent_cannot_permanently_delete_car(self, client, agent_headers, sample_car):
+        r = client.delete(f"/api/cars/{sample_car.id}/permanent", headers=agent_headers)
+        assert r.status_code == 403
+
+    def test_agent_cannot_send_bulk_customer_email(self, client, agent_headers):
+        r = client.post(
+            "/api/customers/send-bulk-email",
+            json={"subject": "עדכון", "body": "טקסט"},
+            headers=agent_headers,
+        )
         assert r.status_code == 403
 
     def test_agent_booking_scope(self, client, db, agent_headers, auth_headers, sample_car):

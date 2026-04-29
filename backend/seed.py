@@ -8,6 +8,7 @@ from app.db.session import Base, engine, SessionLocal
 from app.models.user import User, UserRole
 from app.models.car import Car, CarType
 from app.models.booking import Booking  # noqa: F401 – needed to register the mapper
+from app.models.customer import Customer  # noqa: F401
 from app.core.security import hash_password
 
 Base.metadata.create_all(bind=engine)
