@@ -5,6 +5,7 @@ import { reportsAPI } from "../api/reports";
 import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const MONTH_NAMES = ["ינו","פבר","מרץ","אפר","מאי","יונ","יול","אוג","ספט","אוק","נוב","דצמ"];
 const DAY_NAMES   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
@@ -47,6 +48,7 @@ function fmtDay(d) {
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile(900);
   const [summary, setSummary]   = useState(null);
   const [monthly, setMonthly]   = useState([]);
   const [topCars, setTopCars]   = useState([]);
