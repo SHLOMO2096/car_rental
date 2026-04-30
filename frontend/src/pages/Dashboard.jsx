@@ -192,7 +192,7 @@ export function Dashboard() {
                    borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
                    fontSize:12, fontWeight:700 }}>{i+1}</span>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:600 }}>{c.name}</div>
+                <div style={{ fontSize:13, fontWeight:600 }}>{c.name} <span style={{ color:"#64748b", fontWeight:700 }}>#{c.car_id}</span></div>
                 <div style={{ fontSize:11, color:"#64748b" }}>{c.bookings} הזמנות</div>
               </div>
               <div style={{ fontSize:13, fontWeight:700, color:"#22c55e" }}>
@@ -419,7 +419,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
                                             transition:"background 0.15s" }}>
                     <div style={{ fontWeight:700, color: isDragTarget ? "#1d4ed8" : tc.text }}>{car.name}</div>
                     <div style={{ color: isDragTarget ? "#2563eb" : tc.border, fontWeight:500, fontSize:9, marginTop:2 }}>
-                      {[car.make, car.group ? `קב׳ ${car.group}` : null, car.plate].filter(Boolean).join(" · ")}
+                      {[`#${car.id}`, car.plate, car.make, car.group ? `קב׳ ${car.group}` : null].filter(Boolean).join(" · ")}
                     </div>
                   </th>
                 );

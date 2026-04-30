@@ -1,10 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getUserFacingErrorMessage, getRetryAfterSeconds } from "../api/errors";
+import { getUserFacingErrorMessage } from "../api/errors";
 import { bookingsAPI } from "../api/bookings";
 import { carsAPI } from "../api/cars";
 import { customersAPI } from "../api/customers";
-import { suggestionsAPI } from "../api/suggestions";
 import { useAuthStore } from "../store/auth";
 import { toast } from "../store/toast";
 import { Permissions } from "../permissions";
@@ -23,6 +22,20 @@ function todayISO() { return new Date().toISOString().split("T")[0]; }
 function tomorrowISO() {
   const d = new Date(); d.setDate(d.getDate() + 1);
   return d.toISOString().split("T")[0];
+}
+function addDays(baseIso, days) {
+  const d = new Date(baseIso);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+function diffDays(startIso, endIso) {
+  const ms = new Date(endIso) - new Date(startIso);
+  return Math.round(ms / 86400000);
+}
+function ensureMinWeek(startIso, endIso) {
+  if (!startIso || !endIso) return { startIso, endIso };
+  const minEnd = addDays(startIso, 6);
+  return { startIso, endIso: endIso < minEnd ? minEnd : endIso };
 }
 
 function isValidEmail(value) {
@@ -60,29 +73,12 @@ export default function Bookings() {
   const [customDate, setCustomDate] = useState("");
   const PER_PAGE = 15;
   const canDeleteBookings    = useAuthStore(s => s.can(Permissions.BOOKINGS_DELETE));
-  const canApplySuggestions  = useAuthStore(s => s.can(Permissions.SUGGESTIONS_APPLY));
-
-  // Smart conflict suggestions state
-  const [conflictSuggestions, setConflictSuggestions] = useState([]);
-  const [suggestionsLoading,  setSuggestionsLoading]  = useState(false);
-  const [applyingToken,       setApplyingToken]       = useState(null);
-  const [cooldownUntil,       setCooldownUntil]       = useState(null);
-  const [cooldownSecs,        setCooldownSecs]        = useState(0);
+  const [conflictModal, setConflictModal] = useState(null);
+  const [resolvingConflict, setResolvingConflict] = useState(false);
+  const [dragItem, setDragItem] = useState(null);
+  const [dragOverCarId, setDragOverCarId] = useState(null);
   const [customerMatches, setCustomerMatches] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(false);
-
-  // Cooldown ticker
-  useEffect(() => {
-    if (!cooldownUntil) { setCooldownSecs(0); return; }
-    const tick = () => {
-      const rem = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
-      setCooldownSecs(rem);
-      if (rem <= 0) setCooldownUntil(null);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [cooldownUntil]);
 
   const load = useCallback(async () => {
     const [bookingsRes, carsRes] = await Promise.allSettled([
@@ -183,7 +179,7 @@ export default function Bookings() {
 
   function openCreate() {
     setForm(makeEmptyForm()); setEdit(null); setFormError(""); setModal("create");
-    setConflictSuggestions([]); setSuggestionsLoading(false);
+    setConflictModal(null);
     setCustomerMatches([]);
   }
   function openEdit(b) {
@@ -197,7 +193,7 @@ export default function Bookings() {
       end_date: b.end_date, notes: b.notes||"",
     });
     setEdit(b); setFormError(""); setModal("edit");
-    setConflictSuggestions([]); setSuggestionsLoading(false);
+    setConflictModal(null);
     setCustomerMatches([]);
   }
 
@@ -218,6 +214,172 @@ export default function Bookings() {
     };
   }
 
+  function overlaps(aStart, aEnd, bStart, bEnd) {
+    return !(aEnd < bStart || aStart > bEnd);
+  }
+
+  async function openConflictResolver() {
+    const requestedCarId = Number(form.car_id);
+    const requestedStart = form.start_date;
+    const requestedEnd = form.end_date;
+    const safeRange = ensureMinWeek(requestedStart, requestedEnd);
+    const viewStart = safeRange.startIso;
+    const viewEnd = safeRange.endIso;
+    try {
+      const calendar = await bookingsAPI.calendar(viewStart, viewEnd);
+      const activeBookings = (calendar || []).filter((b) => b.status !== "cancelled");
+      const blockers = activeBookings.filter(
+        (b) => b.car_id === requestedCarId && overlaps(b.start_date, b.end_date, requestedStart, requestedEnd)
+      );
+      const requestedCar = cars.find((c) => c.id === requestedCarId);
+      setConflictModal({
+        requestedCarId,
+        requestedCarName: requestedCar ? `${requestedCar.name} (#${requestedCar.id}${requestedCar.plate ? ` · ${requestedCar.plate}` : ""})` : `#${requestedCarId}`,
+        requestedStart,
+        requestedEnd,
+        viewStart,
+        viewEnd,
+        modelFilter: "",
+        bookings: activeBookings,
+        blockers,
+      });
+      setFormError("הרכב תפוס. אפשר לפתור בגרירה: להעביר הזמנה קיימת או להעביר את ההזמנה החדשה לרכב אחר.");
+    } catch (e) {
+      setFormError(getUserFacingErrorMessage(e));
+    }
+  }
+
+  async function refreshConflictModal() {
+    if (!conflictModal) return;
+    try {
+      const calendar = await bookingsAPI.calendar(conflictModal.viewStart, conflictModal.viewEnd);
+      const activeBookings = (calendar || []).filter((b) => b.status !== "cancelled");
+      const blockers = activeBookings.filter(
+        (b) => b.car_id === conflictModal.requestedCarId &&
+          overlaps(b.start_date, b.end_date, conflictModal.requestedStart, conflictModal.requestedEnd)
+      );
+      setConflictModal((prev) => prev ? { ...prev, bookings: activeBookings, blockers } : prev);
+    } catch {
+      // Keep current modal data if refresh failed.
+    }
+  }
+
+  function hasTargetOverlap(targetCarId, movingStart, movingEnd, excludeBookingId = null) {
+    if (!conflictModal) return true;
+    return conflictModal.bookings.some((b) => (
+      b.car_id === targetCarId &&
+      b.status !== "cancelled" &&
+      b.id !== excludeBookingId &&
+      overlaps(b.start_date, b.end_date, movingStart, movingEnd)
+    ));
+  }
+
+  async function resolveByMovingExisting(bookingId, toCarId) {
+    const existing = conflictModal?.bookings.find((b) => b.id === bookingId);
+    if (!existing) return;
+    if (hasTargetOverlap(toCarId, existing.start_date, existing.end_date, existing.id)) {
+      alert("לא ניתן להעביר את ההזמנה לרכב הזה בגלל חפיפה עם הזמנה אחרת.");
+      return;
+    }
+    const targetCar = cars.find((c) => c.id === toCarId);
+    const ok = window.confirm(
+      `הרכב תפוס.\n\nהאם להעביר את הזמנה #${existing.id} (${existing.customer_name}) לרכב ${targetCar?.name || toCarId} ולאשר את ההזמנה החדשה על הרכב המקורי?`
+    );
+    if (!ok) return;
+
+    setResolvingConflict(true);
+    try {
+      await bookingsAPI.update(existing.id, { car_id: toCarId });
+      await bookingsAPI.create(buildBookingPayload(form, conflictModal.requestedCarId));
+      await load();
+      setConflictModal(null);
+      setModal(null);
+      toast.success("בוצע: ההזמנה הישנה הועברה וההזמנה החדשה אושרה.");
+    } catch (e) {
+      if (e.status === 409) {
+        await refreshConflictModal();
+        setFormError("עדיין קיימת התנגשות. גרור שוב לרכב פנוי.");
+      } else {
+        setFormError(getUserFacingErrorMessage(e));
+      }
+    } finally {
+      setResolvingConflict(false);
+      setDragItem(null);
+      setDragOverCarId(null);
+    }
+  }
+
+  async function resolveByMovingNew(toCarId) {
+    if (!conflictModal) return;
+    if (hasTargetOverlap(toCarId, form.start_date, form.end_date, null)) {
+      alert("לא ניתן להעביר את ההזמנה החדשה לרכב הזה בגלל חפיפה עם הזמנה אחרת.");
+      return;
+    }
+    const targetCar = cars.find((c) => c.id === toCarId);
+    const ok = window.confirm(
+      `הרכב המבוקש תפוס.\n\nהאם ליצור את ההזמנה החדשה על ${targetCar?.name || toCarId} במקום הרכב המקורי?`
+    );
+    if (!ok) return;
+
+    setResolvingConflict(true);
+    try {
+      await bookingsAPI.create(buildBookingPayload(form, toCarId));
+      await load();
+      setConflictModal(null);
+      setModal(null);
+      toast.success(`ההזמנה החדשה נוצרה על ${targetCar?.name || toCarId}`);
+    } catch (e) {
+      if (e.status === 409) {
+        await refreshConflictModal();
+        setFormError("גם הרכב הזה תפוס כרגע. נסה לגרור לרכב אחר.");
+      } else {
+        setFormError(getUserFacingErrorMessage(e));
+      }
+    } finally {
+      setResolvingConflict(false);
+      setDragItem(null);
+      setDragOverCarId(null);
+    }
+  }
+
+  function onConflictCardDragStart(payload) {
+    setDragItem(payload);
+    setDragOverCarId(null);
+  }
+
+  async function onDropToCar(targetCarId) {
+    if (!dragItem || resolvingConflict) return;
+    setDragOverCarId(null);
+    if (dragItem.type === "existing") {
+      if (dragItem.booking.car_id === targetCarId) return;
+      await resolveByMovingExisting(dragItem.booking.id, targetCarId);
+      return;
+    }
+    if (dragItem.type === "new") {
+      if (targetCarId === conflictModal?.requestedCarId) return;
+      await resolveByMovingNew(targetCarId);
+    }
+  }
+
+  async function updateConflictFilters(nextPatch) {
+    if (!conflictModal) return;
+    const next = { ...conflictModal, ...nextPatch };
+    const safeRange = ensureMinWeek(next.viewStart, next.viewEnd);
+    next.viewStart = safeRange.startIso;
+    next.viewEnd = safeRange.endIso;
+    setConflictModal(next);
+    try {
+      const calendar = await bookingsAPI.calendar(next.viewStart, next.viewEnd);
+      const activeBookings = (calendar || []).filter((b) => b.status !== "cancelled");
+      const blockers = activeBookings.filter(
+        (b) => b.car_id === next.requestedCarId && overlaps(b.start_date, b.end_date, next.requestedStart, next.requestedEnd)
+      );
+      setConflictModal((prev) => prev ? { ...prev, ...next, bookings: activeBookings, blockers } : prev);
+    } catch (e) {
+      setFormError(getUserFacingErrorMessage(e));
+    }
+  }
+
   async function handleSave() {
     if (!form.car_id)           return setFormError("יש לבחור רכב");
     if (!form.customer_name.trim()) return setFormError("יש להזין שם לקוח");
@@ -230,7 +392,7 @@ export default function Bookings() {
     if (!form.start_date)       return setFormError("יש לבחור תאריך התחלה");
     if (!form.end_date)         return setFormError("יש לבחור תאריך סיום");
     if (form.end_date < form.start_date) return setFormError("תאריך סיום לפני תחילה");
-    setSaving(true); setFormError(""); setConflictSuggestions([]);
+    setSaving(true); setFormError("");
     try {
       const data = buildBookingPayload(form, +form.car_id);
       if (modal === "create") await bookingsAPI.create(data);
@@ -239,49 +401,11 @@ export default function Bookings() {
       toast.success(modal === "create" ? "ההזמנה נוצרה בהצלחה" : "ההזמנה עודכנה בהצלחה");
     } catch (e) {
       if (e.status === 409 && modal === "create") {
-        setFormError("🔍 הרכב תפוס — מחפש חלופות חכמות...");
-        fetchConflictSuggestions(form.car_id, form.start_date, form.end_date);
+        await openConflictResolver();
       } else {
         setFormError(getUserFacingErrorMessage(e));
       }
     } finally { setSaving(false); }
-  }
-
-  async function fetchConflictSuggestions(carId, start, end) {
-    setSuggestionsLoading(true);
-    try {
-      const results = await suggestionsAPI.search({ car_id: Number(carId), start_date: start, end_date: end });
-      setConflictSuggestions(results || []);
-      setFormError(results?.length ? "הרכב תפוס בתאריכים אלו. בחר חלופה מוצעת:" : "הרכב תפוס בתאריכים אלו ולא נמצאו חלופות זמינות.");
-    } catch (e) {
-      const retryAfter = getRetryAfterSeconds(e);
-      if (retryAfter > 0) setCooldownUntil(Date.now() + retryAfter * 1000);
-      setFormError(getUserFacingErrorMessage(e));
-    } finally { setSuggestionsLoading(false); }
-  }
-
-  async function handlePickAlternative(item) {
-    if (item.type === "C") {
-      if (!item.apply_token) return;
-      setApplyingToken(item.apply_token);
-      try {
-        const res = await suggestionsAPI.apply({ apply_token: item.apply_token, operator_note: "Applied via smart booking" });
-        await bookingsAPI.create(buildBookingPayload(form, res.freed_car_id));
-        await load(); setModal(null); setConflictSuggestions([]);
-        toast.success("שיבוץ מחדש הוחל וההזמנה נוצרה בהצלחה! 🎉");
-      } catch (e) {
-        setFormError(getUserFacingErrorMessage(e));
-      } finally { setApplyingToken(null); }
-    } else {
-      setSaving(true);
-      try {
-        await bookingsAPI.create(buildBookingPayload(form, item.car_id));
-        await load(); setModal(null); setConflictSuggestions([]);
-        toast.success(`ההזמנה נוצרה בהצלחה עם ${item.car_name}`);
-      } catch (e) {
-        setFormError(getUserFacingErrorMessage(e));
-      } finally { setSaving(false); }
-    }
   }
 
   async function handleCancel(b) {
@@ -323,6 +447,37 @@ export default function Bookings() {
     ? Math.max(1, Math.round((new Date(form.end_date) - new Date(form.start_date)) / 86400000))
     : 0;
   const previewTotal = previewCar && days ? previewCar.price_per_day * days : 0;
+
+  const conflictModelOptions = conflictModal
+    ? [...new Set(cars.filter((c) => c.is_active).map((c) => c.name))]
+      .sort((a, b) => a.localeCompare(b, "he"))
+    : [];
+
+  const conflictVisibleCars = conflictModal
+    ? cars.filter((c) => c.is_active && (!conflictModal.modelFilter || c.name === conflictModal.modelFilter))
+    : [];
+
+  const conflictDates = conflictModal
+    ? Array.from(
+      { length: Math.max(diffDays(conflictModal.viewStart, conflictModal.viewEnd) + 1, 1) },
+      (_, i) => addDays(conflictModal.viewStart, i)
+    )
+    : [];
+
+  const conflictOcc = {};
+  if (conflictModal) {
+    conflictModal.bookings.forEach((b) => {
+      conflictDates.forEach((ds) => {
+        if (ds >= b.start_date && ds <= b.end_date) conflictOcc[`${ds}:${b.car_id}`] = b;
+      });
+    });
+  }
+
+  const draggingRange = dragItem
+    ? (dragItem.type === "existing"
+      ? { start: dragItem.booking.start_date, end: dragItem.booking.end_date }
+      : { start: form.start_date, end: form.end_date })
+    : null;
 
   if (loading) return <div style={{ padding:40, textAlign:"center", color:"#94a3b8" }}>טוען...</div>;
 
@@ -400,8 +555,18 @@ export default function Bookings() {
                     <div style={{ fontWeight:600 }}>{car?.name || "—"}</div>
                     {car && <div style={s.sub}>{car.plate}</div>}
                   </td>
-                  <td style={s.td}>{formatDate(b.start_date)}</td>
-                  <td style={s.td}>{formatDate(b.end_date)}</td>
+                  <td style={s.td}>
+                    <div>{formatDate(b.start_date)}</div>
+                    {b.status === "active" && (
+                      <div style={s.sub}>איסוף: {b.pickup_time || "08:00"}</div>
+                    )}
+                  </td>
+                  <td style={s.td}>
+                    <div>{formatDate(b.end_date)}</div>
+                    {b.status === "active" && (
+                      <div style={s.sub}>החזרה: {b.return_time || "08:00"}</div>
+                    )}
+                  </td>
                   <td style={s.td}>
                     <span style={{ fontWeight:700, color:"#1d4ed8" }}>
                       {b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}
@@ -449,7 +614,7 @@ export default function Bookings() {
       )}
 
       {/* Create / Edit Modal */}
-      <Modal open={!!modal} onClose={() => { setModal(null); setConflictSuggestions([]); setCustomerMatches([]); }}
+      <Modal open={!!modal} onClose={() => { setModal(null); setConflictModal(null); setCustomerMatches([]); }}
         title={modal==="create" ? "הזמנה חדשה" : "עריכת הזמנה"} wide>
         <div style={s.formGrid}>
           <div style={{ gridColumn:"1/-1" }}>
@@ -559,72 +724,210 @@ export default function Bookings() {
 
         {formError && <div style={s.errorBox}>{formError}</div>}
 
-        {/* ── Smart Conflict Suggestions ──────────────────────────── */}
-        {suggestionsLoading && (
-          <div style={s.suggestLoading}>⏳ מחפש חלופות חכמות...</div>
-        )}
-        {conflictSuggestions.length > 0 && (
-          <div style={s.suggestPanel}>
-            <div style={s.suggestTitle}>💡 חלופות זמינות</div>
-            {cooldownSecs > 0 && (
-              <div style={s.cooldownBox}>⏳ הגבלת קצב — נסה שוב בעוד {cooldownSecs} שניות</div>
-            )}
-            {conflictSuggestions.map((item, idx) => {
-              const typeLabel = { A: "התאמה ישירה", B: "חלופה דומה", C: "שיבוץ מחדש" }[item.type] || item.type;
-              const typeColor = { A: "#059669", B: "#1d4ed8", C: "#7c3aed" }[item.type] || "#475569";
-              const canApply  = item.type === "C" && canApplySuggestions && !!item.apply_token;
-              const busy      = applyingToken === item.apply_token;
-              return (
-                <div key={idx} style={s.suggestCard}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
-                    <div>
-                      <span style={{ ...s.typeBadge, background: typeColor + "15", color: typeColor, borderColor: typeColor + "40" }}>
-                        {typeLabel}
-                      </span>
-                      <span style={s.carName}>{item.car_name}</span>
-                      {item.car_group && <span style={s.carMeta}> קבוצה {item.car_group}</span>}
-                      <span style={s.carMeta}> · ₪{item.price_per_day}/יום</span>
-                      {item.price_delta !== 0 && (
-                        <span style={{ color: item.price_delta > 0 ? "#f59e0b" : "#059669", fontSize:11, marginRight:4 }}>
-                          ({item.price_delta > 0 ? "+" : ""}₪{item.price_delta}/יום)
-                        </span>
-                      )}
-                    </div>
-                    <span style={s.riskBadge(item.risk_level)}>{item.risk_level}</span>
-                  </div>
-                  <div style={s.suggestSummary}>{item.operator_summary}</div>
-                  {item.type === "C" && item.affected_customer_name && (
-                    <div style={s.suggestMeta}>
-                      🔄 הזמנת {item.affected_customer_name} תועבר לרכב: <strong>{item.replacement_car_name}</strong>
-                    </div>
-                  )}
-                  <div style={{ marginTop:8, display:"flex", gap:6 }}>
-                    {(item.type === "A" || item.type === "B") && (
-                      <button disabled={saving || cooldownSecs > 0}
-                        onClick={() => handlePickAlternative(item)}
-                        style={{ ...s.btnAlt, background: typeColor }}>
-                        {saving ? "שומר..." : `הזמן עם ${item.car_name}`}
-                      </button>
-                    )}
-                    {canApply && (
-                      <button disabled={busy || cooldownSecs > 0}
-                        onClick={() => handlePickAlternative(item)}
-                        style={{ ...s.btnAlt, background: "#7c3aed" }}>
-                        {busy ? "מחיל שיבוץ..." : cooldownSecs > 0 ? `המתן ${cooldownSecs}s` : "החל שיבוץ והזמן →"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
         <div style={s.modalFooter}>
-          <button onClick={() => { setModal(null); setConflictSuggestions([]); setCustomerMatches([]); }} style={s.btnSecondary}>ביטול</button>
+          <button onClick={() => { setModal(null); setConflictModal(null); setCustomerMatches([]); }} style={s.btnSecondary}>ביטול</button>
           <button onClick={handleSave} disabled={saving} style={s.btnPrimary}>
             {saving ? "שומר..." : modal==="create" ? "אשר הזמנה" : "שמור שינויים"}
           </button>
         </div>
+      </Modal>
+
+      <Modal
+        open={!!conflictModal}
+        onClose={() => {
+          if (resolvingConflict) return;
+          setConflictModal(null);
+          setDragItem(null);
+          setDragOverCarId(null);
+        }}
+        title="הרכב תפוס - פתרון בגרירה"
+        wide
+        maxWidth={960}
+      >
+        {conflictModal && (
+          <div>
+            <div style={s.conflictIntro}>
+              <strong>⚠️ הרכב {conflictModal.requestedCarName} תפוס בין {formatDate(conflictModal.requestedStart)} ל-{formatDate(conflictModal.requestedEnd)}.</strong>
+              <div style={{ marginTop:6 }}>
+                גרור אחד מהכרטיסים לרכב אחר:
+                1) הזמנה קיימת שמפריעה, או
+                2) ההזמנה החדשה שלך.
+              </div>
+            </div>
+
+            <div style={s.conflictFilters}>
+              <label style={s.conflictFilterField}>
+                <span style={s.conflictFilterLabel}>דגם</span>
+                <select
+                  value={conflictModal.modelFilter}
+                  onChange={(e) => updateConflictFilters({ modelFilter: e.target.value })}
+                  style={s.conflictFilterInput}
+                  disabled={resolvingConflict}
+                >
+                  <option value="">כל הדגמים</option>
+                  {conflictModelOptions.map((model) => <option key={model} value={model}>{model}</option>)}
+                </select>
+              </label>
+              <label style={s.conflictFilterField}>
+                <span style={s.conflictFilterLabel}>מתאריך</span>
+                <input
+                  type="date"
+                  value={conflictModal.viewStart}
+                  onChange={(e) => updateConflictFilters({ viewStart: e.target.value })}
+                  style={s.conflictFilterInput}
+                  disabled={resolvingConflict}
+                />
+              </label>
+              <label style={s.conflictFilterField}>
+                <span style={s.conflictFilterLabel}>עד תאריך (מינימום שבוע)</span>
+                <input
+                  type="date"
+                  value={conflictModal.viewEnd}
+                  min={addDays(conflictModal.viewStart, 6)}
+                  onChange={(e) => updateConflictFilters({ viewEnd: e.target.value })}
+                  style={s.conflictFilterInput}
+                  disabled={resolvingConflict}
+                />
+              </label>
+            </div>
+
+            <div style={s.newBookingCardWrap}>
+              <div
+                draggable={!resolvingConflict}
+                onDragStart={() => onConflictCardDragStart({ type: "new" })}
+                onDragEnd={() => { setDragItem(null); setDragOverCarId(null); }}
+                style={{ ...s.conflictCard, ...s.newBookingCard }}
+              >
+                ✨ הזמנה חדשה (נגררת בשלמות): {form.customer_name || "לקוח חדש"} · {formatDate(form.start_date)} עד {formatDate(form.end_date)}
+              </div>
+              <div style={s.conflictLegend}>
+                <span><b style={{ color:"#991b1b" }}>אדום:</b> הזמנה חוסמת שאפשר לגרור בשלמות</span>
+                <span><b style={{ color:"#166534" }}>ירוק:</b> תא פנוי לשחרור</span>
+                <span><b style={{ color:"#1d4ed8" }}>כחול:</b> יעד פעיל לגרירה</span>
+              </div>
+            </div>
+
+            <div style={s.conflictTableWrap}>
+              <table style={s.conflictTable}>
+                <thead>
+                  <tr>
+                    <th style={{ ...s.conflictTh, ...s.conflictStickyCorner }}>תאריך</th>
+                    {conflictVisibleCars.map((car) => (
+                      <th key={car.id} style={s.conflictTh}>
+                        <div>{car.name} {car.id === conflictModal.requestedCarId ? "(מבוקש)" : ""}</div>
+                        <div style={s.conflictCarMeta}>#{car.id}{car.plate ? ` · ${car.plate}` : ""}</div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {conflictDates.map((ds) => (
+                    <tr key={ds}>
+                      <td style={{ ...s.conflictTd, ...s.conflictStickyDate }}>{formatDayWithWeekday(ds)}</td>
+                      {conflictVisibleCars.map((car) => {
+                        const b = conflictOcc[`${ds}:${car.id}`];
+                        const canDrop = dragItem && (
+                          (dragItem.type === "new" && car.id !== conflictModal.requestedCarId) ||
+                          (dragItem.type === "existing" && car.id !== dragItem.booking.car_id)
+                        );
+                        const isHoveredTarget = !!draggingRange && dragOverCarId === car.id;
+                        const inPreviewRange = !!draggingRange && ds >= draggingRange.start && ds <= draggingRange.end;
+                        const isRangePreviewCell = isHoveredTarget && inPreviewRange;
+                        if (!b) {
+                          return (
+                            <td
+                              key={car.id}
+                              onDragOver={(e) => {
+                                if (canDrop) {
+                                  e.preventDefault();
+                                  if (dragOverCarId !== car.id) setDragOverCarId(car.id);
+                                }
+                              }}
+                              onDragLeave={() => { if (dragOverCarId === car.id) setDragOverCarId(null); }}
+                              onDrop={() => onDropToCar(car.id)}
+                              style={{
+                                ...s.conflictTd,
+                                background: isRangePreviewCell ? "#bfdbfe" : (canDrop ? "#dbeafe" : "#dcfce7"),
+                                color: canDrop ? "#1d4ed8" : "#166534",
+                                cursor: canDrop ? "copy" : "default",
+                                outline: isRangePreviewCell ? "1px dashed #2563eb" : "none",
+                                outlineOffset: "-1px",
+                              }}
+                            >
+                              {canDrop ? "שחרר כאן" : "פנוי"}
+                            </td>
+                          );
+                        }
+
+                        const isBlocker =
+                          b.car_id === conflictModal.requestedCarId &&
+                          overlaps(b.start_date, b.end_date, conflictModal.requestedStart, conflictModal.requestedEnd);
+                        const dragAnchorDay = b.start_date > conflictModal.viewStart ? b.start_date : conflictModal.viewStart;
+                        const isDragHandleCell = ds === dragAnchorDay;
+                        const oneDayBooking = b.start_date === b.end_date;
+                        const pickup = b.pickup_time || "08:00";
+                        const ret = b.return_time || "08:00";
+
+                        return (
+                          <td
+                            key={car.id}
+                            onDragOver={(e) => {
+                              if (canDrop) {
+                                e.preventDefault();
+                                if (dragOverCarId !== car.id) setDragOverCarId(car.id);
+                              }
+                            }}
+                            onDragLeave={() => { if (dragOverCarId === car.id) setDragOverCarId(null); }}
+                            onDrop={() => onDropToCar(car.id)}
+                            style={{
+                              ...s.conflictTd,
+                              background: isRangePreviewCell ? "#bfdbfe" : (isBlocker ? "#fee2e2" : "#f1f5f9"),
+                              color: isBlocker ? "#991b1b" : "#334155",
+                              padding: 4,
+                              outline: isRangePreviewCell ? "1px dashed #2563eb" : "none",
+                              outlineOffset: "-1px",
+                            }}
+                          >
+                            <div
+                              draggable={isBlocker && isDragHandleCell && !resolvingConflict}
+                              onDragStart={() => isBlocker && isDragHandleCell && onConflictCardDragStart({ type: "existing", booking: b })}
+                              onDragEnd={() => { setDragItem(null); setDragOverCarId(null); }}
+                              style={{
+                                ...s.conflictCellCard,
+                                opacity: dragItem?.type === "existing" && dragItem.booking.id === b.id ? 0.6 : 1,
+                                cursor: isBlocker && isDragHandleCell ? "grab" : "default",
+                              }}
+                              title={isBlocker && isDragHandleCell ? "גרור להעברה לרכב אחר (הזמנה מלאה)" : "תפוס"}
+                            >
+                              #{b.id} {b.customer_name}
+                              {isBlocker && isDragHandleCell && <div style={s.fullDragHint}>גרירה מלאה של ההזמנה</div>}
+                              {oneDayBooking ? (
+                                <div style={s.conflictMetaText}>יציאה היום {pickup} · חזרה מחר {ret}</div>
+                              ) : (
+                                <div style={s.conflictMetaText}>מ-{formatDate(b.start_date)} {pickup} עד {formatDate(b.end_date)} {ret}</div>
+                              )}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={s.conflictFooter}>
+              <button
+                onClick={() => { setConflictModal(null); setDragItem(null); setDragOverCarId(null); }}
+                disabled={resolvingConflict}
+                style={s.btnSecondary}
+              >
+                סגור
+              </button>
+              {resolvingConflict && <span style={s.conflictWorking}>מבצע עדכון...</span>}
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Confirm dialogs */}
@@ -647,6 +950,10 @@ export default function Bookings() {
 function formatDate(d) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("he-IL");
+}
+function formatDayWithWeekday(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("he-IL", { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
 const s = {
@@ -687,6 +994,116 @@ const s = {
   pagination: { display:"flex", gap:6, justifyContent:"center", marginTop:16 },
   pageBtn:    { width:36, height:36, borderRadius:8, border:"1px solid #e2e8f0",
                 cursor:"pointer", fontWeight:600, fontSize:13 },
+
+  conflictIntro: {
+    background: "#fff7ed",
+    border: "1px solid #fed7aa",
+    borderRadius: 10,
+    padding: "10px 12px",
+    fontSize: 13,
+    color: "#9a3412",
+    marginBottom: 10,
+  },
+  conflictFilters: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: 10,
+    marginBottom: 10,
+  },
+  conflictFilterField: { display: "flex", flexDirection: "column", gap: 4 },
+  conflictFilterLabel: { fontSize: 12, color: "#475569", fontWeight: 600 },
+  conflictFilterInput: {
+    border: "1px solid #cbd5e1",
+    borderRadius: 8,
+    padding: "8px 10px",
+    fontSize: 13,
+    background: "#fff",
+  },
+  newBookingCardWrap: { marginBottom: 10 },
+  conflictLegend: {
+    marginTop: 6,
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
+    fontSize: 11,
+    color: "#475569",
+  },
+  conflictTableWrap: {
+    maxHeight: 450,
+    overflow: "auto",
+    border: "1px solid #e2e8f0",
+    borderRadius: 10,
+  },
+  conflictTable: { borderCollapse: "collapse", width: "100%", minWidth: 780, tableLayout: "fixed" },
+  conflictTh: {
+    background: "#f8fafc",
+    borderBottom: "1px solid #e2e8f0",
+    padding: "8px 6px",
+    fontSize: 11,
+    color: "#334155",
+    whiteSpace: "nowrap",
+    position: "sticky",
+    top: 0,
+    zIndex: 2,
+  },
+  conflictCarMeta: { marginTop: 2, fontSize: 10, color: "#64748b", fontWeight: 600 },
+  conflictStickyCorner: { right: 0, zIndex: 3 },
+  conflictTd: {
+    borderBottom: "1px solid #f1f5f9",
+    padding: "6px 4px",
+    fontSize: 11,
+    textAlign: "center",
+    verticalAlign: "middle",
+  },
+  conflictStickyDate: {
+    position: "sticky",
+    right: 0,
+    background: "#f8fafc",
+    color: "#334155",
+    fontWeight: 700,
+    zIndex: 1,
+  },
+  conflictCard: {
+    borderRadius: 8,
+    padding: "8px 10px",
+    border: "1px solid",
+    fontSize: 12,
+    fontWeight: 600,
+    marginBottom: 6,
+    userSelect: "none",
+  },
+  newBookingCard: {
+    background: "#dbeafe",
+    borderColor: "#93c5fd",
+    color: "#1d4ed8",
+    cursor: "grab",
+  },
+  conflictCellCard: {
+    border: "1px solid #cbd5e1",
+    borderRadius: 6,
+    padding: "4px 6px",
+    fontSize: 11,
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    userSelect: "none",
+    background: "#fff",
+  },
+  fullDragHint: {
+    marginTop: 3,
+    fontSize: 10,
+    fontWeight: 700,
+    color: "#7c2d12",
+  },
+  conflictMetaText: {
+    marginTop: 3,
+    fontSize: 10,
+    color: "#475569",
+    fontWeight: 500,
+  },
+  conflictFooter: { marginTop: 10, display: "flex", alignItems: "center", gap: 10 },
+  conflictWorking: { color: "#475569", fontSize: 12, fontWeight: 600 },
 
   // Smart suggestions panel
   suggestLoading: { marginTop:10, padding:"10px 14px", background:"#fefce8",
