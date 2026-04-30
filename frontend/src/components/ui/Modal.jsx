@@ -1,7 +1,9 @@
 // ══════════════════════════════════════════════════════════════════════════════
 import { useEffect } from "react";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
-export default function Modal({ open, onClose, title, children, wide = false }) {
+export default function Modal({ open, onClose, title, children, wide = false, maxWidth = null }) {
+  const isMobile = useIsMobile(640);
   useEffect(() => {
     if (!open) return;
     const handler = e => { if (e.key === "Escape") onClose(); };
@@ -15,12 +17,12 @@ export default function Modal({ open, onClose, title, children, wide = false }) 
     <div dir="rtl" onClick={onClose} style={{
       position:"fixed", inset:0, background:"rgba(0,0,0,0.45)",
       display:"flex", alignItems:"center", justifyContent:"center",
-      zIndex:1000, padding:16,
+      zIndex:1000, padding:isMobile ? 8 : 16,
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        background:"#fff", borderRadius:16, padding:28,
-        width:"100%", maxWidth: wide ? 640 : 480,
-        maxHeight:"90vh", overflowY:"auto",
+        background:"#fff", borderRadius:isMobile ? 12 : 16, padding:isMobile ? 16 : 28,
+        width:"100%", maxWidth: isMobile ? "100%" : (maxWidth || (wide ? 640 : 480)),
+        maxHeight:isMobile ? "95vh" : "90vh", overflowY:"auto",
         boxShadow:"0 20px 60px rgba(0,0,0,0.25)",
       }}>
         <div style={{ display:"flex", justifyContent:"space-between",

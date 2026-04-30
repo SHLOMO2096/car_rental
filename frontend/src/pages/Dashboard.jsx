@@ -105,11 +105,11 @@ export function Dashboard() {
 
   return (
     <div dir="rtl">
-      <h1 style={{ fontSize:24, fontWeight:800, marginBottom:24 }}>לוח בקרה</h1>
+      <h1 style={{ fontSize:isMobile ? 20 : 24, fontWeight:800, marginBottom:isMobile ? 14 : 24 }}>לוח בקרה</h1>
 
-      <div style={{ ...cardStyle, padding:16, marginBottom:20 }}>
+      <div style={{ ...cardStyle, padding:isMobile ? 12 : 16, marginBottom:20 }}>
         <div style={{ display:"flex", gap:12, alignItems:"end", flexWrap:"wrap" }}>
-          <label style={fieldWrap}>
+          <label style={{ ...fieldWrap, minWidth:isMobile ? "100%" : 160 }}>
             <span style={fieldLabel}>דגם</span>
             <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} style={inputStyle}>
               <option value="">כל הדגמים</option>
@@ -117,17 +117,17 @@ export function Dashboard() {
             </select>
           </label>
 
-          <label style={fieldWrap}>
+          <label style={{ ...fieldWrap, minWidth:isMobile ? "100%" : 160 }}>
             <span style={fieldLabel}>מתאריך</span>
             <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} style={inputStyle} />
           </label>
 
-          <label style={fieldWrap}>
+          <label style={{ ...fieldWrap, minWidth:isMobile ? "100%" : 160 }}>
             <span style={fieldLabel}>עד תאריך</span>
             <input type="date" value={rangeEnd} onChange={(e) => setEndWithGuard(e.target.value)} style={inputStyle} />
           </label>
 
-          <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+          <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", width:isMobile ? "100%" : "auto" }}>
             <span style={fieldLabel}>טווח מהיר</span>
             {[7,14,30].map(days => (
               <button key={days} onClick={() => applyPreset(days)} style={days === visibleDays ? activeChip : chipStyle}>
@@ -145,7 +145,7 @@ export function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:16, marginBottom:32 }}>
+      <div style={{ display:"grid", gridTemplateColumns:isMobile ? "1fr" : "repeat(auto-fit,minmax(180px,1fr))", gap:16, marginBottom:32 }}>
         {[
           { label:"סה״כ הזמנות",  value: summary?.total   ?? "—", color:"#3b82f6", icon:"📋" },
           { label:"הזמנות פעילות",value: summary?.active  ?? "—", color:"#22c55e", icon:"✅" },
@@ -165,11 +165,11 @@ export function Dashboard() {
       </div>
 
       {/* Availability Grid */}
-      <AvailabilityGrid cars={filteredCars} startDate={rangeStart} endDate={rangeEnd} navigate={navigate} />
+      <AvailabilityGrid cars={filteredCars} startDate={rangeStart} endDate={rangeEnd} navigate={navigate} isMobile={isMobile} />
 
       {/* Charts row */}
-      <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:20, marginTop:20 }}>
-        <div style={cardStyle}>
+      <div style={{ display:"grid", gridTemplateColumns:isMobile ? "1fr" : "2fr 1fr", gap:20, marginTop:20 }}>
+        <div style={{ ...cardStyle, padding:isMobile ? 12 : 20 }}>
           <h3 style={cardTitle}>הכנסות חודשיות {year}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={monthly}>
@@ -182,7 +182,7 @@ export function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-         <div style={cardStyle}>
+         <div style={{ ...cardStyle, padding:isMobile ? 12 : 20 }}>
            <h3 style={cardTitle}>רכבים מובילים</h3>
           {topCars.length === 0 && <div style={{ color:"#94a3b8", fontSize:13 }}>אין נתונים להצגה</div>}
           {topCars.map((c, i) => (
@@ -250,7 +250,7 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel }
 }
 
 // ── Availability Grid ──────────────────────────────────────────────────────────
-function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
+function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
   const [bookings, setBookings]     = useState([]);
   const [loadingGrid, setLoadingGrid] = useState(false);
 
@@ -402,7 +402,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
       </div>
 
       {/* Grid table */}
-      <div style={{ overflowX:"auto", overflowY:"auto", maxHeight:480 }}>
+      <div style={{ overflowX:"auto", overflowY:"auto", maxHeight:isMobile ? 380 : 480 }}>
         <table style={{ borderCollapse:"collapse", fontSize:11 }}>
           <thead>
             <tr>
@@ -413,7 +413,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
                 const tc = getModelTheme(car.name);
                 const isDragTarget = dragBooking && dragOverCarId === car.id && car.id !== dragBooking.car_id;
                 return (
-                  <th key={car.id} style={{ ...gth, minWidth:62, position:"sticky", top:0, zIndex:2,
+                  <th key={car.id} style={{ ...gth, minWidth:isMobile ? 78 : 62, position:"sticky", top:0, zIndex:2,
                                             background: isDragTarget ? "#bfdbfe" : tc.bg,
                                             borderBottom:`3px solid ${isDragTarget ? "#2563eb" : tc.border}`,
                                             transition:"background 0.15s" }}>

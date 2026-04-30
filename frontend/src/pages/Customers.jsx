@@ -8,6 +8,7 @@ import { getUserFacingErrorMessage } from "../api/errors";
 import { Permissions } from "../permissions";
 import { useAuthStore } from "../store/auth";
 import { toast } from "../store/toast";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const EMPTY_FORM = { name: "", address: "", phone: "", email: "", id_number: "" };
 const EMPTY_EMAIL_FORM = { subject: "", body: "" };
@@ -88,6 +89,7 @@ export default function Customers() {
   const [bulkEmailAudience, setBulkEmailAudience] = useState("all");
   const [bulkEditorKey, setBulkEditorKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const isMobile = useIsMobile(900);
   const canSendBulkEmail = useAuthStore((s) => s.can(Permissions.CUSTOMERS_BULK_EMAIL));
 
   const load = useCallback(async (q = "") => {
@@ -293,18 +295,18 @@ export default function Customers() {
 
       <div style={s.header}>
         <h1 style={s.h1}>ניהול לקוחות</h1>
-        <div style={s.topActions}>
+        <div style={{ ...s.topActions, width: isMobile ? "100%" : "auto" }}>
           <input
             placeholder="🔍 חיפוש לפי שם / טלפון / מייל / תעודת זהות"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={s.searchInput}
+            style={{ ...s.searchInput, minWidth: isMobile ? "100%" : 320 }}
           />
-          <button onClick={() => fileInputRef.current?.click()} disabled={importing} style={s.btnImport}>
+          <button onClick={() => fileInputRef.current?.click()} disabled={importing} style={{ ...s.btnImport, width: isMobile ? "100%" : "auto" }}>
             {importing ? "מייבא..." : "⬆️ ייבוא לקוחות"}
           </button>
           {canSendBulkEmail && (
-            <button onClick={openBulkEmail} style={s.btnEmailPrimary}>📣 הודעה לכל הלקוחות</button>
+            <button onClick={openBulkEmail} style={{ ...s.btnEmailPrimary, width: isMobile ? "100%" : "auto" }}>📣 הודעה לכל הלקוחות</button>
           )}
         </div>
       </div>
@@ -319,49 +321,75 @@ export default function Customers() {
           <input value={form.address} placeholder="כתובת" onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} style={{ ...s.input, gridColumn: "1/-1" }} />
         </div>
         <div style={{ marginTop: 10 }}>
-          <button onClick={handleCreate} disabled={saving} style={s.btnPrimary}>{saving ? "שומר..." : "שמור לקוח"}</button>
+          <button onClick={handleCreate} disabled={saving} style={{ ...s.btnPrimary, width: isMobile ? "100%" : "auto" }}>{saving ? "שומר..." : "שמור לקוח"}</button>
         </div>
       </div>
 
       <div style={s.counter}>{customers.length} לקוחות מוצגים</div>
 
-      <div style={s.tableWrap}>
-        <table style={s.table}>
-          <thead>
-            <tr style={{ background: "#f8fafc" }}>
-              {["#", "שם", "ת.ז / ח.פ", "כתובת", "טלפון", "מייל", "פעולות"].map((h) => <th key={h} style={s.th}>{h}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} style={s.empty}>טוען...</td></tr>
-            ) : customers.length === 0 ? (
-              <tr><td colSpan={7} style={s.empty}>לא נמצאו לקוחות</td></tr>
-            ) : customers.map((c) => (
-              <tr key={c.id} style={s.tr}>
-                <td style={s.td}>#{c.id}</td>
-                <td style={s.td}><strong>{c.name}</strong></td>
-                <td style={s.td}>{c.id_number || "—"}</td>
-                <td style={s.td}>{c.address || "—"}</td>
-                <td style={s.td}>{c.phone || "—"}</td>
-                <td style={s.td}>{c.email || "—"}</td>
-                <td style={s.td}>
-                  <div style={s.actionsWrap}>
-                    <button onClick={() => bookForCustomer(c)} style={s.btnBook}>📅 הזמן רכב</button>
-                    <button onClick={() => openHistory(c)} style={s.btnHistory}>🕘 היסטוריה</button>
-                    <button onClick={() => openEdit(c)} style={s.btnEdit}>✏️ ערוך</button>
-                    <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}>🗑 מחק</button>
-                    {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}>✉️ שלח מייל</button>}
-                    {toWhatsAppUrl(c.phone) && (
-                      <a href={toWhatsAppUrl(c.phone)} target="_blank" rel="noreferrer" style={s.btnWhatsApp}>💬 WhatsApp</a>
-                    )}
-                  </div>
-                </td>
+      {!isMobile ? (
+        <div style={s.tableWrap}>
+          <table style={s.table}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                {["#", "שם", "ת.ז / ח.פ", "כתובת", "טלפון", "מייל", "פעולות"].map((h) => <th key={h} style={s.th}>{h}</th>)}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} style={s.empty}>טוען...</td></tr>
+              ) : customers.length === 0 ? (
+                <tr><td colSpan={7} style={s.empty}>לא נמצאו לקוחות</td></tr>
+              ) : customers.map((c) => (
+                <tr key={c.id} style={s.tr}>
+                  <td style={s.td}>#{c.id}</td>
+                  <td style={s.td}><strong>{c.name}</strong></td>
+                  <td style={s.td}>{c.id_number || "—"}</td>
+                  <td style={s.td}>{c.address || "—"}</td>
+                  <td style={s.td}>{c.phone || "—"}</td>
+                  <td style={s.td}>{c.email || "—"}</td>
+                  <td style={s.td}>
+                    <div style={s.actionsWrap}>
+                      <button onClick={() => bookForCustomer(c)} style={s.btnBook}>📅 הזמן רכב</button>
+                      <button onClick={() => openHistory(c)} style={s.btnHistory}>🕘 היסטוריה</button>
+                      <button onClick={() => openEdit(c)} style={s.btnEdit}>✏️ ערוך</button>
+                      <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}>🗑 מחק</button>
+                      {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}>✉️ שלח מייל</button>}
+                      {toWhatsAppUrl(c.phone) && (
+                        <a href={toWhatsAppUrl(c.phone)} target="_blank" rel="noreferrer" style={s.btnWhatsApp}>💬 WhatsApp</a>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div style={s.mobileCardsWrap}>
+          {loading && <div style={s.mobileEmpty}>טוען...</div>}
+          {!loading && customers.length === 0 && <div style={s.mobileEmpty}>לא נמצאו לקוחות</div>}
+          {!loading && customers.map((c) => (
+            <div key={c.id} style={s.mobileCard}>
+              <div style={s.mobileCardTitle}>#{c.id} · {c.name}</div>
+              <div style={s.mobileMeta}>{c.id_number ? `🪪 ${c.id_number}` : "🪪 —"}</div>
+              <div style={s.mobileMeta}>{c.phone ? `📞 ${c.phone}` : "📞 —"}</div>
+              <div style={s.mobileMeta}>{c.email ? `📧 ${c.email}` : "📧 —"}</div>
+              <div style={s.mobileMeta}>{c.address ? `📍 ${c.address}` : "📍 —"}</div>
+              <div style={s.actionsWrap}>
+                <button onClick={() => bookForCustomer(c)} style={s.btnBook}>📅 הזמן</button>
+                <button onClick={() => openHistory(c)} style={s.btnHistory}>🕘 היסטוריה</button>
+                <button onClick={() => openEdit(c)} style={s.btnEdit}>✏️ ערוך</button>
+                <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}>🗑 מחק</button>
+                {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}>✉️ מייל</button>}
+                {toWhatsAppUrl(c.phone) && (
+                  <a href={toWhatsAppUrl(c.phone)} target="_blank" rel="noreferrer" style={s.btnWhatsApp}>💬 WhatsApp</a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Modal open={!!historyCustomer} onClose={() => { setHistoryCustomer(null); setHistoryData(null); }} title={historyCustomer ? `היסטוריית לקוח — ${historyCustomer.name}` : "היסטוריית לקוח"} wide>
         {historyLoading && <div style={s.empty}>טוען היסטוריה...</div>}
@@ -447,7 +475,7 @@ export default function Customers() {
       </Modal>
 
       <Modal open={!!editCustomer} onClose={() => { setEditCustomer(null); setForm(EMPTY_FORM); }} title={editCustomer ? `עריכת לקוח — ${editCustomer.name}` : "עריכת לקוח"}>
-        <div style={s.formGrid}>
+        <div style={{ ...s.formGrid, gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit,minmax(180px,1fr))" }}>
           <input value={form.name} placeholder="שם לקוח *" onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} style={s.input} />
           <input value={form.id_number} placeholder="תעודת זהות / ח.פ" onChange={(e) => setForm((f) => ({ ...f, id_number: e.target.value }))} style={s.input} />
           <input value={form.phone} placeholder="טלפון" onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} style={s.input} />
@@ -455,8 +483,8 @@ export default function Customers() {
           <input value={form.address} placeholder="כתובת" onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} style={{ ...s.input, gridColumn: "1/-1" }} />
         </div>
         <div style={s.modalFooterActions}>
-          <button onClick={() => { setEditCustomer(null); setForm(EMPTY_FORM); }} style={s.btnSecondary}>ביטול</button>
-          <button onClick={handleUpdate} disabled={saving} style={s.btnPrimary}>{saving ? "שומר..." : "שמור שינויים"}</button>
+          <button onClick={() => { setEditCustomer(null); setForm(EMPTY_FORM); }} style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}>ביטול</button>
+          <button onClick={handleUpdate} disabled={saving} style={{ ...s.btnPrimary, width: isMobile ? "100%" : "auto" }}>{saving ? "שומר..." : "שמור שינויים"}</button>
         </div>
       </Modal>
 
@@ -466,8 +494,8 @@ export default function Customers() {
           <textarea value={emailForm.body} rows={7} placeholder="תוכן ההודעה" onChange={(e) => setEmailForm((f) => ({ ...f, body: e.target.value }))} style={{ ...s.input, resize: "vertical" }} />
         </div>
         <div style={s.modalFooterActions}>
-          <button onClick={() => { setEmailCustomer(null); setEmailForm(EMPTY_EMAIL_FORM); }} style={s.btnSecondary}>ביטול</button>
-          <button onClick={handleSendEmail} disabled={sendingEmail} style={s.btnEmailPrimary}>{sendingEmail ? "שולח..." : "שלח מייל"}</button>
+          <button onClick={() => { setEmailCustomer(null); setEmailForm(EMPTY_EMAIL_FORM); }} style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}>ביטול</button>
+          <button onClick={handleSendEmail} disabled={sendingEmail} style={{ ...s.btnEmailPrimary, width: isMobile ? "100%" : "auto" }}>{sendingEmail ? "שולח..." : "שלח מייל"}</button>
         </div>
       </Modal>
 
@@ -538,8 +566,8 @@ export default function Customers() {
           </div>
         </div>
         <div style={s.modalFooterActions}>
-          <button onClick={() => { setBulkEmailOpen(false); setEmailForm(EMPTY_EMAIL_FORM); }} style={s.btnSecondary}>ביטול</button>
-          <button onClick={handleSendBulkEmail} disabled={sendingEmail} style={s.btnEmailPrimary}>{sendingEmail ? "שולח..." : "שלח לכל הלקוחות"}</button>
+          <button onClick={() => { setBulkEmailOpen(false); setEmailForm(EMPTY_EMAIL_FORM); }} style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}>ביטול</button>
+          <button onClick={handleSendBulkEmail} disabled={sendingEmail} style={{ ...s.btnEmailPrimary, width: isMobile ? "100%" : "auto" }}>{sendingEmail ? "שולח..." : "שלח לכל הלקוחות"}</button>
         </div>
       </Modal>
 
@@ -591,7 +619,7 @@ const s = {
   historyMeta: { display: "flex", gap: 12, flexWrap: "wrap", color: "#475569", fontSize: 12, marginBottom: 12 },
   historyTableWrap: { background: "#fff", borderRadius: 12, overflow: "auto", border: "1px solid #e2e8f0" },
   modalFooter: { display: "flex", justifyContent: "flex-end", marginTop: 14 },
-  modalFooterActions: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 },
+  modalFooterActions: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16, flexWrap: "wrap" },
   audienceRow: { display: "flex", gap: 8, flexWrap: "wrap" },
   audienceOption: {
     display: "flex", alignItems: "center", gap: 4,
@@ -601,6 +629,17 @@ const s = {
   },
   audienceOptionActive: {
     border: "1px solid #0d9488", background: "#f0fdfa", color: "#0f766e", fontWeight: 700,
+  },
+  mobileCardsWrap: { display: "grid", gap: 10 },
+  mobileCard: {
+    background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
+    padding: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+  },
+  mobileCardTitle: { fontSize: 15, fontWeight: 800, color: "#0f172a", marginBottom: 6 },
+  mobileMeta: { fontSize: 12, color: "#475569", marginBottom: 4 },
+  mobileEmpty: {
+    textAlign: "center", background: "#fff", border: "1px solid #e2e8f0",
+    borderRadius: 12, padding: 24, color: "#94a3b8",
   },
 };
 

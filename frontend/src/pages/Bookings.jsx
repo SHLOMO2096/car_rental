@@ -10,6 +10,7 @@ import { Permissions } from "../permissions";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const STATUS_OPTIONS = [
   { value: "active",    label: "פעיל",    color: "green" },
@@ -79,6 +80,7 @@ export default function Bookings() {
   const [dragOverCarId, setDragOverCarId] = useState(null);
   const [customerMatches, setCustomerMatches] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(false);
+  const isMobile = useIsMobile(900);
 
   const load = useCallback(async () => {
     const [bookingsRes, carsRes] = await Promise.allSettled([
@@ -486,20 +488,20 @@ export default function Bookings() {
       {/* Header */}
       <div style={s.header}>
         <h1 style={s.h1}>ניהול הזמנות</h1>
-        <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+        <div style={{ display:"flex", gap:10, flexWrap:"wrap", width:isMobile ? "100%" : "auto" }}>
           <input placeholder="🔍 לקוח, טלפון, רכב..." value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }} style={s.searchInput} />
+            onChange={e => { setSearch(e.target.value); setPage(1); }} style={{ ...s.searchInput, minWidth:isMobile ? "100%" : 220 }} />
           <select value={statusFilter}
-            onChange={e => { setStatus(e.target.value); setPage(1); }} style={s.select}>
+            onChange={e => { setStatus(e.target.value); setPage(1); }} style={{ ...s.select, width:isMobile ? "100%" : "auto" }}>
             <option value="all">כל הסטטוסים</option>
             {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          <button onClick={openCreate} style={s.btnPrimary}>+ הזמנה חדשה</button>
+          <button onClick={openCreate} style={{ ...s.btnPrimary, width:isMobile ? "100%" : "auto" }}>+ הזמנה חדשה</button>
         </div>
       </div>
 
       {/* Date filter bar */}
-      <div style={s.dateFilterBar}>
+      <div style={{ ...s.dateFilterBar, overflowX:isMobile ? "auto" : "visible", flexWrap:isMobile ? "nowrap" : "wrap" }}>
         {[
           { key:"all",      label:"כל התאריכים" },
           { key:"today",    label:"היום" },
@@ -529,77 +531,119 @@ export default function Bookings() {
         {filtered.length} הזמנות נמצאו
       </div>
 
-      {/* Table */}
-      <div style={s.tableWrap}>
-        <table style={s.table}>
-          <thead>
-            <tr style={{ background:"#f8fafc" }}>
-              {["#","לקוח","רכב","מתאריך","עד תאריך","סכום","סטטוס","פעולות"].map(h => (
-                <th key={h} style={s.th}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.map(b => {
-              const car = carsMap[b.car_id];
-              const st  = statusMap[b.status] || statusMap.cancelled;
-              return (
-                <tr key={b.id} style={s.tr}>
-                  <td style={s.td}><span style={s.idBadge}>#{b.id}</span></td>
-                  <td style={s.td}>
-                    <div style={{ fontWeight:600 }}>{b.customer_name}</div>
-                    {b.customer_phone && <div style={s.sub}>{b.customer_phone}</div>}
-                    {b.customer_email && <div style={s.sub}>{b.customer_email}</div>}
-                  </td>
-                  <td style={s.td}>
-                    <div style={{ fontWeight:600 }}>{car?.name || "—"}</div>
-                    {car && <div style={s.sub}>{car.plate}</div>}
-                  </td>
-                  <td style={s.td}>
-                    <div>{formatDate(b.start_date)}</div>
-                    {b.status === "active" && (
-                      <div style={s.sub}>איסוף: {b.pickup_time || "08:00"}</div>
-                    )}
-                  </td>
-                  <td style={s.td}>
-                    <div>{formatDate(b.end_date)}</div>
-                    {b.status === "active" && (
-                      <div style={s.sub}>החזרה: {b.return_time || "08:00"}</div>
-                    )}
-                  </td>
-                  <td style={s.td}>
-                    <span style={{ fontWeight:700, color:"#1d4ed8" }}>
-                      {b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}
-                    </span>
-                  </td>
-                  <td style={s.td}>
-                    <Badge label={st.label} color={st.color} />
-                    {b.email_sent && <span title="אימייל נשלח" style={{ marginRight:4 }}>📧</span>}
-                  </td>
-                  <td style={s.td}>
-                    <div style={{ display:"flex", gap:5 }}>
-                      <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
+      {/* Table / Cards */}
+      {!isMobile ? (
+        <div style={s.tableWrap}>
+          <table style={s.table}>
+            <thead>
+              <tr style={{ background:"#f8fafc" }}>
+                {["#","לקוח","רכב","מתאריך","עד תאריך","סכום","סטטוס","פעולות"].map(h => (
+                  <th key={h} style={s.th}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {paginated.map(b => {
+                const car = carsMap[b.car_id];
+                const st  = statusMap[b.status] || statusMap.cancelled;
+                return (
+                  <tr key={b.id} style={s.tr}>
+                    <td style={s.td}><span style={s.idBadge}>#{b.id}</span></td>
+                    <td style={s.td}>
+                      <div style={{ fontWeight:600 }}>{b.customer_name}</div>
+                      {b.customer_phone && <div style={s.sub}>{b.customer_phone}</div>}
+                      {b.customer_email && <div style={s.sub}>{b.customer_email}</div>}
+                    </td>
+                    <td style={s.td}>
+                      <div style={{ fontWeight:600 }}>{car?.name || "—"}</div>
+                      {car && <div style={s.sub}>{car.plate}</div>}
+                    </td>
+                    <td style={s.td}>
+                      <div>{formatDate(b.start_date)}</div>
                       {b.status === "active" && (
-                        <button onClick={() => setConfirm({ action:"cancel", item:b })}
-                          style={s.btnIcon} title="בטל הזמנה">🚫</button>
+                        <div style={s.sub}>איסוף: {b.pickup_time || "08:00"}</div>
                       )}
-                      {canDeleteBookings && (
-                        <button onClick={() => setConfirm({ action:"delete", item:b })}
-                          style={s.btnIcon} title="מחק">🗑️</button>
+                    </td>
+                    <td style={s.td}>
+                      <div>{formatDate(b.end_date)}</div>
+                      {b.status === "active" && (
+                        <div style={s.sub}>החזרה: {b.return_time || "08:00"}</div>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {paginated.length === 0 && (
-              <tr><td colSpan={8} style={{ textAlign:"center", padding:40, color:"#94a3b8" }}>
-                לא נמצאו הזמנות
-              </td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                    </td>
+                    <td style={s.td}>
+                      <span style={{ fontWeight:700, color:"#1d4ed8" }}>
+                        {b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}
+                      </span>
+                    </td>
+                    <td style={s.td}>
+                      <Badge label={st.label} color={st.color} />
+                      {b.email_sent && <span title="אימייל נשלח" style={{ marginRight:4 }}>📧</span>}
+                    </td>
+                    <td style={s.td}>
+                      <div style={{ display:"flex", gap:5 }}>
+                        <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
+                        {b.status === "active" && (
+                          <button onClick={() => setConfirm({ action:"cancel", item:b })}
+                            style={s.btnIcon} title="בטל הזמנה">🚫</button>
+                        )}
+                        {canDeleteBookings && (
+                          <button onClick={() => setConfirm({ action:"delete", item:b })}
+                            style={s.btnIcon} title="מחק">🗑️</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {paginated.length === 0 && (
+                <tr><td colSpan={8} style={{ textAlign:"center", padding:40, color:"#94a3b8" }}>
+                  לא נמצאו הזמנות
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div style={s.mobileCardsWrap}>
+          {paginated.map((b) => {
+            const car = carsMap[b.car_id];
+            const st = statusMap[b.status] || statusMap.cancelled;
+            return (
+              <div key={b.id} style={s.mobileCard}>
+                <div style={s.mobileCardHead}>
+                  <span style={s.idBadge}>#{b.id}</span>
+                  <Badge label={st.label} color={st.color} />
+                </div>
+                <div style={s.mobileTitle}>{b.customer_name}</div>
+                <div style={s.sub}>{car?.name || "—"}{car?.plate ? ` · ${car.plate}` : ""}</div>
+                <div style={s.mobileDates}>
+                  <div>
+                    <b>מתאריך:</b> {formatDate(b.start_date)}
+                    {b.status === "active" && <div style={s.sub}>איסוף: {b.pickup_time || "08:00"}</div>}
+                  </div>
+                  <div>
+                    <b>עד תאריך:</b> {formatDate(b.end_date)}
+                    {b.status === "active" && <div style={s.sub}>החזרה: {b.return_time || "08:00"}</div>}
+                  </div>
+                </div>
+                <div style={s.mobileFooter}>
+                  <span style={{ fontWeight:700, color:"#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
+                    {b.status === "active" && (
+                      <button onClick={() => setConfirm({ action:"cancel", item:b })} style={s.btnIcon} title="בטל הזמנה">🚫</button>
+                    )}
+                    {canDeleteBookings && (
+                      <button onClick={() => setConfirm({ action:"delete", item:b })} style={s.btnIcon} title="מחק">🗑️</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {paginated.length === 0 && <div style={s.mobileEmpty}>לא נמצאו הזמנות</div>}
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -616,7 +660,7 @@ export default function Bookings() {
       {/* Create / Edit Modal */}
       <Modal open={!!modal} onClose={() => { setModal(null); setConflictModal(null); setCustomerMatches([]); }}
         title={modal==="create" ? "הזמנה חדשה" : "עריכת הזמנה"} wide>
-        <div style={s.formGrid}>
+        <div style={{ ...s.formGrid, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
           <div style={{ gridColumn:"1/-1" }}>
             <label style={s.label}>רכב *</label>
             <select value={form.car_id} onChange={e => setForm(f=>({...f,car_id:e.target.value}))}
@@ -725,8 +769,8 @@ export default function Bookings() {
         {formError && <div style={s.errorBox}>{formError}</div>}
 
         <div style={s.modalFooter}>
-          <button onClick={() => { setModal(null); setConflictModal(null); setCustomerMatches([]); }} style={s.btnSecondary}>ביטול</button>
-          <button onClick={handleSave} disabled={saving} style={s.btnPrimary}>
+          <button onClick={() => { setModal(null); setConflictModal(null); setCustomerMatches([]); }} style={{ ...s.btnSecondary, width:isMobile ? "100%" : "auto" }}>ביטול</button>
+          <button onClick={handleSave} disabled={saving} style={{ ...s.btnPrimary, width:isMobile ? "100%" : "auto" }}>
             {saving ? "שומר..." : modal==="create" ? "אשר הזמנה" : "שמור שינויים"}
           </button>
         </div>
@@ -808,7 +852,7 @@ export default function Bookings() {
             </div>
 
             <div style={s.conflictTableWrap}>
-              <table style={s.conflictTable}>
+              <table style={{ ...s.conflictTable, minWidth: isMobile ? 620 : 780 }}>
                 <thead>
                   <tr>
                     <th style={{ ...s.conflictTh, ...s.conflictStickyCorner }}>תאריך</th>
@@ -916,11 +960,11 @@ export default function Bookings() {
               </table>
             </div>
 
-            <div style={s.conflictFooter}>
+            <div style={{ ...s.conflictFooter, flexDirection: isMobile ? "column-reverse" : "row", alignItems: isMobile ? "stretch" : "center" }}>
               <button
                 onClick={() => { setConflictModal(null); setDragItem(null); setDragOverCarId(null); }}
                 disabled={resolvingConflict}
-                style={s.btnSecondary}
+                style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}
               >
                 סגור
               </button>
@@ -986,7 +1030,7 @@ const s = {
   checkboxRow:{ display:"flex", alignItems:"center", gap:8, marginTop:8, fontSize:12, color:"#475569" },
   timeHint:   { fontSize:10, color:"#94a3b8", fontWeight:400, marginRight:4 },
   formGrid:   { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 },
-  modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 },
+  modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20, flexWrap:"wrap" },
   errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:8,
                 padding:"10px 14px", fontSize:13, marginTop:8 },
   pricePreview:{ background:"#eff6ff", color:"#1d4ed8", borderRadius:8,
@@ -1153,4 +1197,17 @@ const s = {
   datePickerInline: { padding:"5px 10px", borderRadius:8, border:"1px solid #cbd5e1",
                       fontSize:13, outline:"none", background:"#fff" },
   dateFilterHint: { fontSize:12, color:"#1d4ed8", fontWeight:600, marginRight:4 },
+  mobileCardsWrap: { display:"grid", gap:10 },
+  mobileCard: {
+    background:"#fff", border:"1px solid #e2e8f0", borderRadius:12,
+    padding:10, boxShadow:"0 1px 3px rgba(0,0,0,0.05)",
+  },
+  mobileCardHead: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 },
+  mobileTitle: { fontSize:15, fontWeight:700, color:"#0f172a" },
+  mobileDates: { display:"grid", gridTemplateColumns:"1fr", gap:6, marginTop:8, fontSize:12, color:"#334155" },
+  mobileFooter: { marginTop:8, display:"flex", justifyContent:"space-between", alignItems:"center" },
+  mobileEmpty: {
+    textAlign:"center", background:"#fff", border:"1px solid #e2e8f0",
+    borderRadius:12, padding:24, color:"#94a3b8",
+  },
 };

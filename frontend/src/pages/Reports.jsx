@@ -4,6 +4,7 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const MONTHS_HE = ["ינו","פבר","מרץ","אפר","מאי","יונ","יול","אוג","ספט","אוק","נוב","דצמ"];
 const PIE_COLORS = ["#3b82f6","#22c55e","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#f97316"];
@@ -15,6 +16,7 @@ export default function Reports() {
   const [monthly, setMonthly] = useState([]);
   const [topCars, setTopCars] = useState([]);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile(900);
 
   useEffect(() => {
     setLoading(true);
@@ -44,10 +46,10 @@ export default function Reports() {
   return (
     <div dir="rtl">
       <div style={s.header}>
-        <h1 style={s.h1}>דוחות וסטטיסטיקות</h1>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <h1 style={{ ...s.h1, fontSize: isMobile ? 20 : 24 }}>דוחות וסטטיסטיקות</h1>
+        <div style={{ display:"flex", alignItems:"center", gap:10, width:isMobile ? "100%" : "auto" }}>
           <label style={{ fontSize:13, fontWeight:600, color:"#475569" }}>שנה:</label>
-          <select value={year} onChange={e => setYear(+e.target.value)} style={s.select}>
+          <select value={year} onChange={e => setYear(+e.target.value)} style={{ ...s.select, width:isMobile ? "100%" : "auto" }}>
             {[currentYear-1, currentYear, currentYear+1].map(y => (
               <option key={y} value={y}>{y}</option>
             ))}
@@ -56,7 +58,7 @@ export default function Reports() {
       </div>
 
       {/* KPI Cards */}
-      <div style={s.kpiGrid}>
+      <div style={{ ...s.kpiGrid, gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit,minmax(180px,1fr))" }}>
         {[
           { label:"סה״כ הכנסות בשנה", value:`₪${Math.round(totalRevenue).toLocaleString()}`, icon:"💰", color:"#1d4ed8" },
           { label:"סה״כ הזמנות בשנה", value:totalBookings,                                   icon:"📋", color:"#7c3aed" },
@@ -76,9 +78,9 @@ export default function Reports() {
       </div>
 
       {/* Charts row 1 */}
-      <div style={s.chartsRow}>
+      <div style={{ ...s.chartsRow, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
         {/* Monthly Revenue Bar */}
-        <div style={s.chartCard}>
+        <div style={{ ...s.chartCard, padding: isMobile ? 12 : 20 }}>
           <h3 style={s.chartTitle}>הכנסות חודשיות {year}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={monthly} barSize={28}>
@@ -93,7 +95,7 @@ export default function Reports() {
         </div>
 
         {/* Monthly Bookings Line */}
-        <div style={s.chartCard}>
+        <div style={{ ...s.chartCard, padding: isMobile ? 12 : 20 }}>
           <h3 style={s.chartTitle}>מספר הזמנות לפי חודש {year}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={monthly}>
@@ -109,9 +111,9 @@ export default function Reports() {
       </div>
 
       {/* Charts row 2 */}
-      <div style={s.chartsRow}>
+      <div style={{ ...s.chartsRow, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
         {/* Top Cars Bar */}
-        <div style={s.chartCard}>
+        <div style={{ ...s.chartCard, padding: isMobile ? 12 : 20 }}>
           <h3 style={s.chartTitle}>רכבים מובילים — הכנסות</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={topCars} layout="vertical" barSize={18}>
@@ -128,7 +130,7 @@ export default function Reports() {
         </div>
 
         {/* Top Cars Pie */}
-        <div style={s.chartCard}>
+        <div style={{ ...s.chartCard, padding: isMobile ? 12 : 20 }}>
           <h3 style={s.chartTitle}>חלוקת הזמנות לפי רכב</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -145,33 +147,46 @@ export default function Reports() {
       </div>
 
       {/* Top Cars Table */}
-      <div style={s.tableCard}>
+      <div style={{ ...s.tableCard, padding: isMobile ? 12 : 20 }}>
         <h3 style={s.chartTitle}>טבלת רכבים — ביצועים מלאים</h3>
-        <table style={{ width:"100%", borderCollapse:"collapse" }}>
-          <thead>
-            <tr style={{ background:"#f8fafc" }}>
-              {["דירוג","שם רכב","מספר הזמנות","סה״כ הכנסות","ממוצע להזמנה"].map(h => (
-                <th key={h} style={s.th}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {topCars.map((c, i) => (
-              <tr key={c.car_id} style={{ borderBottom:"1px solid #f1f5f9" }}>
-                <td style={s.td}>
-                  <span style={{ ...s.rankBadge, background: i<3 ? ["#fef3c7","#f1f5f9","#fef3c7"][i]:"#f8fafc",
-                    color: i<3 ? ["#b45309","#475569","#92400e"][i]:"#64748b" }}>
-                    {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
-                  </span>
-                </td>
-                <td style={s.td}><strong>{c.name}</strong></td>
-                <td style={s.td}>{c.bookings}</td>
-                <td style={s.td}><strong style={{ color:"#1d4ed8" }}>₪{Math.round(c.revenue).toLocaleString()}</strong></td>
-                <td style={s.td}>₪{c.bookings ? Math.round(c.revenue/c.bookings).toLocaleString() : "—"}</td>
+        {!isMobile ? (
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead>
+              <tr style={{ background:"#f8fafc" }}>
+                {["דירוג","שם רכב","מספר הזמנות","סה״כ הכנסות","ממוצע להזמנה"].map(h => (
+                  <th key={h} style={s.th}>{h}</th>
+                ))}
               </tr>
+            </thead>
+            <tbody>
+              {topCars.map((c, i) => (
+                <tr key={c.car_id} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                  <td style={s.td}>
+                    <span style={{ ...s.rankBadge, background: i<3 ? ["#fef3c7","#f1f5f9","#fef3c7"][i]:"#f8fafc",
+                      color: i<3 ? ["#b45309","#475569","#92400e"][i]:"#64748b" }}>
+                      {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
+                    </span>
+                  </td>
+                  <td style={s.td}><strong>{c.name}</strong></td>
+                  <td style={s.td}>{c.bookings}</td>
+                  <td style={s.td}><strong style={{ color:"#1d4ed8" }}>₪{Math.round(c.revenue).toLocaleString()}</strong></td>
+                  <td style={s.td}>₪{c.bookings ? Math.round(c.revenue/c.bookings).toLocaleString() : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div style={s.mobileCardsWrap}>
+            {topCars.map((c, i) => (
+              <div key={c.car_id} style={s.mobileCard}>
+                <div style={s.mobileTitle}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`} · {c.name}</div>
+                <div style={s.mobileMeta}>הזמנות: {c.bookings}</div>
+                <div style={s.mobileMeta}>הכנסות: ₪{Math.round(c.revenue).toLocaleString()}</div>
+                <div style={s.mobileMeta}>ממוצע להזמנה: ₪{c.bookings ? Math.round(c.revenue/c.bookings).toLocaleString() : "—"}</div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -199,4 +214,11 @@ const s = {
   td:        { padding:"12px 14px", fontSize:13 },
   rankBadge: { display:"inline-block", borderRadius:6, padding:"2px 8px",
                fontSize:12, fontWeight:700 },
+  mobileCardsWrap: { display:"grid", gap:10 },
+  mobileCard: {
+    border:"1px solid #e2e8f0", borderRadius:10, padding:12,
+    background:"#f8fafc",
+  },
+  mobileTitle: { fontSize:14, fontWeight:800, color:"#1e293b", marginBottom:6 },
+  mobileMeta: { fontSize:12, color:"#475569", marginBottom:3 },
 };

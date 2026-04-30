@@ -1,8 +1,9 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "./store/auth";
 import ToastHost        from "./components/ui/ToastHost";
 import { Permissions } from "./permissions";
+import { useIsMobile } from "./hooks/useIsMobile";
 
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
@@ -31,6 +32,12 @@ function AdminRoute({ children }) {
 function Layout({ children }) {
   const { user, logout, isAdmin, can } = useAuthStore();
   const nav = useNavigate();
+  const isMobile = useIsMobile(900);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isMobile) setMenuOpen(false);
+  }, [isMobile]);
 
   const links = [
     { to:"/",          label:"לוח בקרה",   icon:"📊" },
@@ -45,11 +52,24 @@ function Layout({ children }) {
   return (
     <div dir="rtl" style={{ display:"flex", minHeight:"100vh",
                              fontFamily:"'Segoe UI','Arial Hebrew',Arial,sans-serif" }}>
+      {isMobile && menuOpen && (
+        <div
+          onClick={() => setMenuOpen(false)}
+          style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.45)", zIndex:999 }}
+        />
+      )}
       {/* Sidebar */}
       <aside style={{
         width:220, background:"#1e293b", display:"flex",
-        flexDirection:"column", position:"sticky", top:0, height:"100vh",
+        flexDirection:"column",
+        position:isMobile ? "fixed" : "sticky",
+        top:0,
+        left:isMobile ? (menuOpen ? 0 : -240) : undefined,
+        right:isMobile ? "auto" : undefined,
+        height:"100vh",
         flexShrink:0,
+        zIndex:1000,
+        transition:"left 0.2s ease",
       }}>
         <div style={{ padding:"22px 18px 18px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -63,7 +83,7 @@ function Layout({ children }) {
 
         <nav style={{ flex:1, padding:"12px 0", overflowY:"auto" }}>
           {links.map(({ to, label, icon }) => (
-            <NavLink key={to} to={to} end={to==="/"} style={({ isActive }) => ({
+            <NavLink key={to} to={to} end={to==="/"} onClick={() => isMobile && setMenuOpen(false)} style={({ isActive }) => ({
               display:"flex", alignItems:"center", gap:10,
               padding:"10px 18px", color: isActive ? "#60a5fa" : "#94a3b8",
               background: isActive ? "rgba(96,165,250,0.1)" : "transparent",
@@ -72,7 +92,7 @@ function Layout({ children }) {
               transition:"all 0.15s",
             })}>
               <span style={{ fontSize:16 }}>{icon}</span>
-              {label}
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>
@@ -109,8 +129,26 @@ function Layout({ children }) {
       </aside>
 
       {/* Main content */}
-      <main style={{ flex:1, background:"#f8fafc", padding:"28px 24px",
+      <main style={{ flex:1, background:"#f8fafc", padding:isMobile ? "14px 10px" : "28px 24px",
                      overflowY:"auto", minWidth:0 }}>
+        {isMobile && (
+          <div style={{
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+            marginBottom:10, background:"#fff", border:"1px solid #e2e8f0",
+            borderRadius:10, padding:"8px 10px",
+          }}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              style={{
+                border:"1px solid #cbd5e1", borderRadius:8, background:"#fff",
+                padding:"6px 10px", cursor:"pointer", fontSize:13, fontWeight:700,
+              }}
+            >
+              ☰ תפריט
+            </button>
+            <div style={{ fontSize:12, color:"#64748b", fontWeight:700 }}>{user?.full_name || "משתמש"}</div>
+          </div>
+        )}
         {children}
       </main>
     </div>
@@ -148,6 +186,8 @@ export default function App() {
 }
 
 function BuildInfoBadge() {
+  const isMobile = useIsMobile(900);
+  if (isMobile) return null;
   return (
     <div style={{
       position: "fixed",
