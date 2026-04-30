@@ -206,10 +206,59 @@ export function Dashboard() {
   );
 }
 
+// ── Reassign Confirm Modal ─────────────────────────────────────────────────────
+function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel }) {
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1000,
+                  display:"flex", alignItems:"center", justifyContent:"center" }}
+         onClick={onCancel}>
+      <div dir="rtl" style={{ background:"#fff", borderRadius:16, padding:28, maxWidth:400,
+                               width:"90%", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}
+           onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize:22, marginBottom:8 }}>🔄 העברת הזמנה</div>
+        <p style={{ fontSize:14, color:"#374151", marginBottom:4 }}>
+          <strong>{booking.customer_name}</strong>
+        </p>
+        <p style={{ fontSize:13, color:"#64748b", marginBottom:4 }}>
+          📅 {booking.start_date} – {booking.end_date}
+        </p>
+        <div style={{ display:"flex", alignItems:"center", gap:10, margin:"16px 0",
+                      padding:"12px 16px", background:"#f1f5f9", borderRadius:10, fontSize:13 }}>
+          <span style={{ color:"#dc2626", fontWeight:700 }}>🚗 {fromCar.name}</span>
+          <span style={{ color:"#64748b", fontSize:18 }}>←</span>
+          <span style={{ color:"#16a34a", fontWeight:700 }}>🚗 {toCar.name}</span>
+        </div>
+        <p style={{ fontSize:12, color:"#94a3b8", marginBottom:20 }}>
+          לאחר האישור ההזמנה תועבר לרכב החדש ולא ניתן לבטל פעולה זו.
+        </p>
+        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+          <button onClick={onCancel} disabled={loading}
+                  style={{ padding:"9px 20px", borderRadius:8, border:"1px solid #cbd5e1",
+                           background:"#fff", color:"#374151", fontSize:13, cursor:"pointer" }}>
+            ביטול
+          </button>
+          <button onClick={onConfirm} disabled={loading}
+                  style={{ padding:"9px 20px", borderRadius:8, border:"none",
+                           background: loading ? "#93c5fd" : "#2563eb", color:"#fff",
+                           fontSize:13, fontWeight:700, cursor: loading ? "not-allowed" : "pointer" }}>
+            {loading ? "מעדכן..." : "✔ אשר העברה"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Availability Grid ──────────────────────────────────────────────────────────
 function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
-  const [bookings, setBookings]   = useState([]);
+  const [bookings, setBookings]     = useState([]);
   const [loadingGrid, setLoadingGrid] = useState(false);
+
+  // ── Drag state ──────────────────────────────────────────────────────────────
+  const [dragBooking, setDragBooking]   = useState(null);   // booking being dragged
+  const [dragOverCarId, setDragOverCarId] = useState(null); // column being hovered
+  const [confirmDrop, setConfirmDrop]   = useState(null);   // { booking, fromCar, toCar }
+  const [dropLoading, setDropLoading]   = useState(false);
 
   const todayBase = new Date(); todayBase.setHours(0,0,0,0);
   const todayStr  = toISO(todayBase);
@@ -238,6 +287,77 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
     });
   });
 
+  // ── Drag helpers ────────────────────────────────────────────────────────────
+  function handleDragStart(e, b) {
+    setDragBooking(b);
+    e.dataTransfer.effectAllowed = "move";
+  }
+
+  function handleDragEnd() {
+    setDragBooking(null);
+    setDragOverCarId(null);
+  }
+
+  function handleDragOverCell(e, carId) {
+    if (!dragBooking) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverCarId(carId);
+  }
+
+  function handleDrop(e, targetCar) {
+    e.preventDefault();
+    setDragOverCarId(null);
+    if (!dragBooking || targetCar.id === dragBooking.car_id) {
+      setDragBooking(null);
+      return;
+    }
+
+    // Collect all dates in the dragged booking's range
+    const bookingStart = fromISO(dragBooking.start_date);
+    const bookingEnd   = fromISO(dragBooking.end_date);
+    const bookingDates = [];
+    let cursor = new Date(bookingStart);
+    while (cursor <= bookingEnd) {
+      bookingDates.push(toISO(cursor));
+      cursor = addDays(cursor, 1);
+    }
+
+    // Check for conflicts in target car
+    const conflicts = bookingDates.filter(d => {
+      const cell = occ[`${d}:${targetCar.id}`];
+      return cell && cell.id !== dragBooking.id;
+    });
+
+    if (conflicts.length > 0) {
+      alert(
+        `לא ניתן להעביר ל-${targetCar.name}:\n` +
+        `ישנה הזמנה קיימת בתאריכים ${conflicts[0]} – ${conflicts[conflicts.length - 1]}`
+      );
+      setDragBooking(null);
+      return;
+    }
+
+    const fromCar = activeCars.find(c => c.id === dragBooking.car_id) || { name: `רכב #${dragBooking.car_id}` };
+    setConfirmDrop({ booking: dragBooking, fromCar, toCar: targetCar });
+  }
+
+  async function executeReassign() {
+    if (!confirmDrop) return;
+    setDropLoading(true);
+    try {
+      await bookingsAPI.update(confirmDrop.booking.id, { car_id: confirmDrop.toCar.id });
+      const data = await bookingsAPI.calendar(startDate, endDate);
+      setBookings(data);
+    } catch (err) {
+      alert("שגיאה בעדכון ההזמנה: " + (err?.response?.data?.detail || err.message || "שגיאה לא ידועה"));
+    } finally {
+      setDropLoading(false);
+      setConfirmDrop(null);
+      setDragBooking(null);
+    }
+  }
+
   if (activeCars.length === 0) {
     return (
       <div style={{ ...cardStyle, padding:20, marginBottom:20, color:"#64748b" }}>
@@ -247,6 +367,18 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
   }
 
   return (
+    <>
+      {confirmDrop && (
+        <ReassignModal
+          booking={confirmDrop.booking}
+          fromCar={confirmDrop.fromCar}
+          toCar={confirmDrop.toCar}
+          loading={dropLoading}
+          onConfirm={executeReassign}
+          onCancel={() => { setConfirmDrop(null); setDragBooking(null); }}
+        />
+      )}
+
     <div style={{ ...cardStyle, padding:0, overflow:"hidden" }}>
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
@@ -265,6 +397,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
         <span><span style={dot("#dbeafe","#1d4ed8")} />יציאה היום</span>
         <span><span style={dot("#fef9c3","#854d0e")} />חזרה היום</span>
         <span><span style={dot("#e9d5ff","#7c3aed")} />חד-יומי</span>
+        <span><span style={dot("#bfdbfe","#2563eb")} />✥ גרור להעברה</span>
         {loadingGrid && <span style={{ marginRight:"auto", color:"#94a3b8" }}>מרענן...</span>}
       </div>
 
@@ -278,11 +411,14 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
                            background:"#f1f5f9", minWidth:74, borderLeft:"2px solid #cbd5e1" }}>תאריך</th>
               {activeCars.map(car => {
                 const tc = getModelTheme(car.name);
+                const isDragTarget = dragBooking && dragOverCarId === car.id && car.id !== dragBooking.car_id;
                 return (
                   <th key={car.id} style={{ ...gth, minWidth:62, position:"sticky", top:0, zIndex:2,
-                                            background: tc.bg, borderBottom:`3px solid ${tc.border}` }}>
-                    <div style={{ fontWeight:700, color: tc.text }}>{car.name}</div>
-                    <div style={{ color: tc.border, fontWeight:500, fontSize:9, marginTop:2 }}>
+                                            background: isDragTarget ? "#bfdbfe" : tc.bg,
+                                            borderBottom:`3px solid ${isDragTarget ? "#2563eb" : tc.border}`,
+                                            transition:"background 0.15s" }}>
+                    <div style={{ fontWeight:700, color: isDragTarget ? "#1d4ed8" : tc.text }}>{car.name}</div>
+                    <div style={{ color: isDragTarget ? "#2563eb" : tc.border, fontWeight:500, fontSize:9, marginTop:2 }}>
                       {[car.make, car.group ? `קב׳ ${car.group}` : null, car.plate].filter(Boolean).join(" · ")}
                     </div>
                   </th>
@@ -309,24 +445,37 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
                   </td>
                   {activeCars.map(car => {
                     const b  = occ[`${ds}:${car.id}`];
+                    const isDropColumn = dragBooking && dragOverCarId === car.id && car.id !== dragBooking?.car_id;
+
                     if (!b) {
                       return (
                         <td key={car.id}
-                            title={`לחץ להזמנת ${car.name} ב-${ds}`}
-                            onClick={() => navigate("/bookings", {
+                            title={dragBooking ? `שחרר להעברה ל-${car.name}` : `לחץ להזמנת ${car.name} ב-${ds}`}
+                            onClick={() => !dragBooking && navigate("/bookings", {
                               state: { bookingPrefill: { car_id: car.id, start_date: ds } }
                             })}
-                            style={{ ...gtd, textAlign:"center", background:"#dcfce7",
-                                     color:"#15803d", cursor:"pointer" }}
-                            onMouseEnter={e => { e.currentTarget.style.background="#bbf7d0"; e.currentTarget.style.fontWeight="700"; }}
-                            onMouseLeave={e => { e.currentTarget.style.background="#dcfce7"; e.currentTarget.style.fontWeight="normal"; }}>
-                          ✓
+                            onDragOver={e => handleDragOverCell(e, car.id)}
+                            onDrop={e => handleDrop(e, car)}
+                            onDragLeave={() => setDragOverCarId(null)}
+                            style={{ ...gtd, textAlign:"center",
+                                     background: isDropColumn ? "#bfdbfe" : "#dcfce7",
+                                     color: isDropColumn ? "#1d4ed8" : "#15803d",
+                                     cursor: dragBooking ? "copy" : "pointer",
+                                     transition:"background 0.15s",
+                                     outline: isDropColumn ? "2px dashed #2563eb" : "none",
+                                     outlineOffset:"-2px" }}
+                            onMouseEnter={e => { if (!dragBooking) { e.currentTarget.style.background="#bbf7d0"; e.currentTarget.style.fontWeight="700"; }}}
+                            onMouseLeave={e => { if (!dragBooking) { e.currentTarget.style.background="#dcfce7"; e.currentTarget.style.fontWeight="normal"; }}}>
+                          {isDropColumn ? "⬇" : "✓"}
                         </td>
                       );
                     }
+
                     const isFirst   = b.start_date === ds;
                     const isLast    = b.end_date   === ds;
                     const isSameDay = isFirst && isLast;
+                    const isDragging = dragBooking?.id === b.id;
+
                     let bg, fg, label;
                     if (isSameDay) {
                       bg = "#e9d5ff"; fg = "#7c3aed";
@@ -341,11 +490,32 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
                       bg = "#fee2e2"; fg = "#b91c1c";
                       label = b.customer_name?.split(" ")[0] ?? "תפוס";
                     }
+
+                    // Check if this cell conflicts with the booking being dragged
+                    const isConflict = dragBooking && dragBooking.id !== b.id &&
+                      dragOverCarId === car.id;
+
                     return (
                       <td key={car.id}
-                          title={`${b.customer_name} | ${b.start_date} ${b.pickup_time||""} – ${b.end_date} ${b.return_time||""}`}
-                          style={{ ...gtd, textAlign:"center", background:bg, color:fg,
-                                   lineHeight:1.3, cursor:"default" }}>
+                          title={`${b.customer_name} | ${b.start_date} ${b.pickup_time||""} – ${b.end_date} ${b.return_time||""}\n${isDragging ? "גרור לרכב אחר להעברה" : ""}`}
+                          draggable={!!b}
+                          onDragStart={e => handleDragStart(e, b)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={e => handleDragOverCell(e, car.id)}
+                          onDrop={e => handleDrop(e, car)}
+                          onDragLeave={() => setDragOverCarId(null)}
+                          style={{ ...gtd, textAlign:"center",
+                                   background: isDragging ? "#e0f2fe" :
+                                               isConflict ? "#fecaca" :
+                                               isDropColumn ? "#bfdbfe" : bg,
+                                   color: isDragging ? "#0369a1" :
+                                          isConflict ? "#991b1b" : fg,
+                                   lineHeight:1.3,
+                                   cursor: isDragging ? "grabbing" : "grab",
+                                   opacity: isDragging ? 0.7 : 1,
+                                   outline: isConflict ? "2px solid #ef4444" : "none",
+                                   outlineOffset:"-2px",
+                                   transition:"background 0.15s, opacity 0.15s" }}>
                         {label}
                       </td>
                     );
@@ -357,6 +527,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate }) {
         </table>
       </div>
     </div>
+    </>
   );
 }
 

@@ -145,11 +145,23 @@ def update_booking(
     if current_user.role == UserRole.agent and b.created_by != current_user.id:
         raise HTTPException(403, "אין הרשאה לערוך הזמנה זו")
 
-    new_start = data.start_date or b.start_date
-    new_end = data.end_date or b.end_date
+    new_start  = data.start_date or b.start_date
+    new_end    = data.end_date   or b.end_date
+    new_car_id = data.car_id     or b.car_id
+
+    # ── ולידציה: שינוי רכב ────────────────────────────────────────────────────
+    if data.car_id and data.car_id != b.car_id:
+        new_car = db.query(Car).filter(Car.id == data.car_id, Car.is_active == True).first()
+        if not new_car:
+            raise HTTPException(404, "רכב יעד לא נמצא או אינו פעיל")
+        if crud_booking.has_overlap(db, data.car_id, b.start_date, b.end_date, exclude_id=b.id):
+            raise HTTPException(409, "הרכב היעד כבר מושכר בתאריכים אלו")
+
+    # ── ולידציה: שינוי תאריכים ────────────────────────────────────────────────
     if data.start_date or data.end_date:
-        if crud_booking.has_overlap(db, b.car_id, new_start, new_end, exclude_id=b.id):
+        if crud_booking.has_overlap(db, new_car_id, new_start, new_end, exclude_id=b.id):
             raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
+
     if data.customer_id is not None:
         exists = db.query(Customer).filter(Customer.id == data.customer_id).first()
         if not exists:

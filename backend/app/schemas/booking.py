@@ -30,6 +30,7 @@ class BookingCreate(BaseModel):
         return self
 
 class BookingUpdate(BaseModel):
+    car_id:          Optional[int]           = None
     customer_id:     Optional[int]           = None
     customer_name:   Optional[str]           = None
     customer_email:  Optional[EmailStr]      = None
