@@ -18,14 +18,9 @@ const APP_VERSION = __APP_VERSION__;
 const BUILD_TIME = new Date(__BUILD_TIME__).toLocaleString("he-IL");
 
 function PrivateRoute({ children }) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
-
-  if (!isHydrated) {
-    return <RouteLoader />;
-  }
 
   return (isAuthenticated && token && user) ? children : <Navigate to="/login" replace />;
 }
@@ -164,13 +159,11 @@ function Layout({ children }) {
 }
 
 export default function App() {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
   const initializeAuth = useAuthStore((s) => s.initializeAuth);
 
   useEffect(() => {
-    if (!isHydrated) return;
     initializeAuth();
-  }, [isHydrated, initializeAuth]);
+  }, [initializeAuth]);
 
   useEffect(() => {
     const onAuthExpired = () => {

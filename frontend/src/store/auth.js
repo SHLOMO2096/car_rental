@@ -9,7 +9,6 @@ export const useAuthStore = create(
       token: null,
       user:  null,
       isAuthenticated: false,
-      isHydrated: false,
 
       initializeAuth: async () => {
         const state = get();
@@ -43,12 +42,6 @@ export const useAuthStore = create(
       isAdmin: () => get().user?.role === "admin",
       can: (permission) => roleCan(get().user?.role, permission),
     }),
-    {
-      name: "auth-store",
-      partialize: (s) => ({ token: s.token, user: s.user, isAuthenticated: s.isAuthenticated }),
-      onRehydrateStorage: () => () => {
-        useAuthStore.setState({ isHydrated: true });
-      },
-    }
+    { name: "auth-store", partialize: (s) => ({ token: s.token, user: s.user, isAuthenticated: s.isAuthenticated }) }
   )
 );
