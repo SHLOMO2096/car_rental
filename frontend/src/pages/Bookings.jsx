@@ -78,10 +78,12 @@ export default function Bookings() {
   const [confirm, setConfirm]     = useState(null);
   const [actionConfirm, setActionConfirm] = useState(null);
   const actionConfirmResolveRef = useRef(null);
-  const [page, setPage]           = useState(1);
-  const [dateFilter, setDateFilter] = useState("all"); // "all" | "today" | "tomorrow" | "custom"
-  const [customDate, setCustomDate] = useState("");
-  const PER_PAGE = 15;
+   const [page, setPage]           = useState(1);
+   const [dateFilter, setDateFilter] = useState("all"); // "all" | "today" | "tomorrow" | "custom"
+   const [customDate, setCustomDate] = useState("");
+   const [photoUploadId, setPhotoUploadId] = useState(null); // Track which booking is uploading
+   const [photoUploading, setPhotoUploading] = useState(false);
+   const PER_PAGE = 15;
   const canDeleteBookings    = useAuthStore(s => s.can(Permissions.BOOKINGS_DELETE));
   const [conflictModal, setConflictModal] = useState(null);
   const [resolvingConflict, setResolvingConflict] = useState(false);
@@ -497,15 +499,33 @@ export default function Bookings() {
     finally { setConfirm(null); }
   }
 
-  async function handleDelete(b) {
-    try {
-      await bookingsAPI.delete(b.id);
-      await load();
-      toast.success("ההזמנה נמחקה בהצלחה");
-    }
-    catch (e) { toast.error(getUserFacingErrorMessage(e)); }
-    finally { setConfirm(null); }
-  }
+   async function handleDelete(b) {
+     try {
+       await bookingsAPI.delete(b.id);
+       await load();
+       toast.success("ההזמנה נמחקה בהצלחה");
+     }
+     catch (e) { toast.error(getUserFacingErrorMessage(e)); }
+     finally { setConfirm(null); }
+   }
+
+   async function handlePhotoUpload(bookingId, file) {
+     if (!file) return;
+     setPhotoUploading(true);
+     try {
+       const result = await bookingsAPI.uploadPhoto(bookingId, file);
+       toast.success(`✓ צילום הועלה בהצלחה ל-Google Drive`);
+       if (result.link) {
+         // Open the link if available
+         window.open(result.link, "_blank");
+       }
+     } catch (e) {
+       toast.error(getUserFacingErrorMessage(e));
+     } finally {
+       setPhotoUploading(false);
+       setPhotoUploadId(null);
+     }
+   }
 
   function pickCustomer(customer) {
     setForm((f) => ({
@@ -685,8 +705,33 @@ export default function Bookings() {
                       <div style={{ display:"flex", gap:5 }}>
                         <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
                         {b.status === "active" && (
-                          <button onClick={() => setConfirm({ action:"cancel", item:b })}
-                            style={s.btnIcon} title="בטל הזמנה">🚫</button>
+                          <>
+                            <button
+                              onClick={() => {
+                                const input = document.getElementById(`file-upload-${b.id}`);
+                                input?.click();
+                              }}
+                              style={s.btnIcon}
+                              title="העלה צילום רכב"
+                              disabled={photoUploading && photoUploadId === b.id}
+                            >
+                              {photoUploading && photoUploadId === b.id ? "⏳" : "📸"}
+                            </button>
+                            <input
+                              id={`file-upload-${b.id}`}
+                              type="file"
+                              accept="image/*"
+                              style={{ display:"none" }}
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  setPhotoUploadId(b.id);
+                                  handlePhotoUpload(b.id, e.target.files[0]);
+                                }
+                              }}
+                            />
+                            <button onClick={() => setConfirm({ action:"cancel", item:b })}
+                              style={s.btnIcon} title="בטל הזמנה">🚫</button>
+                          </>
                         )}
                         {canDeleteBookings && (
                           <button onClick={() => setConfirm({ action:"delete", item:b })}
@@ -741,17 +786,42 @@ export default function Bookings() {
                   </div>
                 </div>
                 <div style={s.mobileFooter}>
-                  <span style={{ fontWeight:700, color:"#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
-                  <div style={{ display:"flex", gap:8 }}>
-                    <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
-                    {b.status === "active" && (
-                      <button onClick={() => setConfirm({ action:"cancel", item:b })} style={s.btnIcon} title="בטל הזמנה">🚫</button>
-                    )}
-                    {canDeleteBookings && (
-                      <button onClick={() => setConfirm({ action:"delete", item:b })} style={s.btnIcon} title="מחק">🗑️</button>
-                    )}
-                  </div>
-                </div>
+                   <span style={{ fontWeight:700, color:"#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
+                   <div style={{ display:"flex", gap:8 }}>
+                     <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
+                     {b.status === "active" && (
+                       <>
+                         <button
+                           onClick={() => {
+                             const input = document.getElementById(`file-upload-mobile-${b.id}`);
+                             input?.click();
+                           }}
+                           style={s.btnIcon}
+                           title="העלה צילום רכב"
+                           disabled={photoUploading && photoUploadId === b.id}
+                         >
+                           {photoUploading && photoUploadId === b.id ? "⏳" : "📸"}
+                         </button>
+                         <input
+                           id={`file-upload-mobile-${b.id}`}
+                           type="file"
+                           accept="image/*"
+                           style={{ display:"none" }}
+                           onChange={(e) => {
+                             if (e.target.files?.[0]) {
+                               setPhotoUploadId(b.id);
+                               handlePhotoUpload(b.id, e.target.files[0]);
+                             }
+                           }}
+                         />
+                         <button onClick={() => setConfirm({ action:"cancel", item:b })} style={s.btnIcon} title="בטל הזמנה">🚫</button>
+                       </>
+                     )}
+                     {canDeleteBookings && (
+                       <button onClick={() => setConfirm({ action:"delete", item:b })} style={s.btnIcon} title="מחק">🗑️</button>
+                     )}
+                   </div>
+                 </div>
               </div>
             );
           })}

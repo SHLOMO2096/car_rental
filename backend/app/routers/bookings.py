@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════════
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, UploadFile, File
 from sqlalchemy.orm import Session
 from datetime import date as Date
 from app.db.session import get_db
@@ -23,6 +23,7 @@ from app.core.email import (
 )
 from app.crud.audit_log import log_audit_event
 from app.models.audit_log import AuditSeverity
+from app.services.google_drive import get_drive_service
 
 router = APIRouter()
 
@@ -255,3 +256,73 @@ def delete_booking(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/{booking_id}/upload-photo")
+async def upload_booking_photo(
+    booking_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permissions.BOOKINGS_VIEW)),
+):
+    """Upload booking car photo to Google Drive"""
+    booking = crud_booking.get(db, booking_id)
+    if not booking:
+        raise HTTPException(404, "הזמנה לא נמצאה")
+
+    drive_service = get_drive_service()
+    if not drive_service.is_available():
+        raise HTTPException(
+            503,
+            "שירות Google Drive אינו זמין. יש ליצור קשר עם מנהל המערכת.",
+        )
+
+    # Validate file type
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(400, "קובץ חייב להיות תמונה")
+
+    # Read file
+    file_contents = await file.read()
+    if not file_contents:
+        raise HTTPException(400, "הקובץ ריק")
+
+    if len(file_contents) > 10 * 1024 * 1024:  # 10 MB limit
+        raise HTTPException(400, "הקובץ גדול מדי (מקסימום 10 MB)")
+
+    # Upload to Google Drive
+    car = booking.car
+    result = drive_service.upload_booking_photo(
+        file_bytes=file_contents,
+        booking_id=booking_id,
+        car_name=car.name if car else "Unknown",
+        customer_name=booking.customer_name,
+    )
+
+    if not result:
+        raise HTTPException(500, "נכשל העלאת הקובץ ל-Google Drive")
+
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="booking.upload_photo",
+        entity_type="booking",
+        entity_id=str(booking_id),
+        after_obj={
+            "file_name": result.get("name"),
+            "drive_link": result.get("link"),
+        },
+        ip_address=None,
+    )
+
+    return {
+        "success": True,
+        "message": "הקובץ הועלה בהצלחה",
+        "file_id": result.get("id"),
+        "file_name": result.get("name"),
+        "link": result.get("link"),
+        "created_at": result.get("created_at"),
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+

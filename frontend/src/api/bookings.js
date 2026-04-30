@@ -7,5 +7,12 @@ export const bookingsAPI = {
   create:   (data)      => api.post("/bookings/", data).then(r => r.data),
   update:   (id, data)  => api.patch(`/bookings/${id}`, data).then(r => r.data),
   delete:   (id)        => api.delete(`/bookings/${id}`),
+  uploadPhoto: (id, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post(`/bookings/${id}/upload-photo`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then(r => r.data);
+  },
 };
 

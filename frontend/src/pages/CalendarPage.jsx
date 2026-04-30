@@ -90,9 +90,9 @@ export function CalendarPage() {
     return map;
   }, [bookings, month]);
 
-  const MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
-                     "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
-  const DAYS_HE   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
+   const MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
+                      "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+   const DAYS_HE   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
 
   function prevMonth() { if (month === 0) { setMonth(11); setYear(y => y-1); } else setMonth(m => m-1); }
   function nextMonth() { if (month === 11) { setMonth(0); setYear(y => y+1); } else setMonth(m => m+1); }

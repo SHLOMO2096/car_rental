@@ -12,6 +12,9 @@ python-multipart==0.0.9
 alembic==1.13.1
 redis==5.0.8
 openpyxl==3.1.5
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.108.0
 
 # Tests
 pytest==8.2.0

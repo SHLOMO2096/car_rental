@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     EMAILS_ENABLED: bool = False             # False = לא שולח אימיילים
     SECURITY_ALERT_RECIPIENTS: str = ""     # comma-separated recipient list
 
+    # ── Google Drive (for car photos) ──────────────────────────────────────────
+    GOOGLE_DRIVE_FOLDER_ID: Optional[str] = None  # Folder ID in Google Drive
+    GOOGLE_DRIVE_CREDENTIALS_JSON: Optional[str] = None  # Service account JSON (base64 or path)
+    GOOGLE_DRIVE_ENABLED: bool = False
+
     class Config:
         env_file = ".env"
         case_sensitive = True
