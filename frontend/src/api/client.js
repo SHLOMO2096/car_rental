@@ -37,10 +37,12 @@ api.interceptors.response.use(
     }
     const headers = err.response?.headers || {};
 
-    // Logout only for expired/invalid AUTH JWT, not for suggestion apply-token failures.
-    if (status === 401 && detail === "אסימון לא תקין או פג תוקף") {
+    const requestUrl = String(err.config?.url || "");
+
+    // Force logout on unauthorized API access (except login itself).
+    if (status === 401 && !requestUrl.includes("/auth/login")) {
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      window.dispatchEvent(new CustomEvent("auth:expired"));
     }
 
     return Promise.reject({

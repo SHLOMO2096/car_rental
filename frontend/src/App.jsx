@@ -18,8 +18,16 @@ const APP_VERSION = __APP_VERSION__;
 const BUILD_TIME = new Date(__BUILD_TIME__).toLocaleString("he-IL");
 
 function PrivateRoute({ children }) {
-  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
+
+  if (!isHydrated) {
+    return <RouteLoader />;
+  }
+
+  return (isAuthenticated && token && user) ? children : <Navigate to="/login" replace />;
 }
 
 function AdminRoute({ children }) {
@@ -156,6 +164,23 @@ function Layout({ children }) {
 }
 
 export default function App() {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const initializeAuth = useAuthStore((s) => s.initializeAuth);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    initializeAuth();
+  }, [isHydrated, initializeAuth]);
+
+  useEffect(() => {
+    const onAuthExpired = () => {
+      useAuthStore.getState().logout();
+      window.location.href = "/login";
+    };
+    window.addEventListener("auth:expired", onAuthExpired);
+    return () => window.removeEventListener("auth:expired", onAuthExpired);
+  }, []);
+
   return (
     <BrowserRouter>
       <ToastHost />
