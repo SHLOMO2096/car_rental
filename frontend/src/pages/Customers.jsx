@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import Confirm from "../components/ui/Confirm";
 import Modal from "../components/ui/Modal";
@@ -70,10 +70,13 @@ function toWhatsAppUrl(phone) {
 
 export default function Customers() {
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef(null);
+  const rowRefs = useRef({});
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [highlightId, setHighlightId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -107,6 +110,30 @@ export default function Customers() {
     const t = setTimeout(() => load(search.trim()), 180);
     return () => clearTimeout(t);
   }, [search, load]);
+
+  // Handle navigation from Dashboard → highlight specific customer
+  useEffect(() => {
+    const hid = location.state?.highlightCustomerId;
+    const prefill = String(location.state?.customerSearchPrefill || "").trim();
+    if (!hid && !prefill) return;
+
+    if (prefill) setSearch(prefill);
+    if (!hid) {
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
+
+    setHighlightId(hid);
+    navigate(location.pathname, { replace: true, state: {} });
+    // Scroll to the row after customers load
+    const timer = setTimeout(() => {
+      const el = rowRefs.current[hid];
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Clear highlight after 3 seconds
+      setTimeout(() => setHighlightId(null), 3000);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [location.state, location.pathname, navigate]);
 
   async function handleCreate() {
     if (!form.name.trim()) return toast.error("יש להזין שם לקוח");
@@ -341,7 +368,11 @@ export default function Customers() {
               ) : customers.length === 0 ? (
                 <tr><td colSpan={7} style={s.empty}>לא נמצאו לקוחות</td></tr>
               ) : customers.map((c) => (
-                <tr key={c.id} style={s.tr}>
+                <tr key={c.id} ref={el => rowRefs.current[c.id] = el} style={{
+                  ...s.tr,
+                  ...(highlightId === c.id ? { background:"#fef9c3", outline:"2px solid #f59e0b" } : {}),
+                  transition:"background 0.5s",
+                }}>
                   <td style={s.td}>#{c.id}</td>
                   <td style={s.td}><strong>{c.name}</strong></td>
                   <td style={s.td}>{c.id_number || "—"}</td>
@@ -370,7 +401,11 @@ export default function Customers() {
           {loading && <div style={s.mobileEmpty}>טוען...</div>}
           {!loading && customers.length === 0 && <div style={s.mobileEmpty}>לא נמצאו לקוחות</div>}
           {!loading && customers.map((c) => (
-            <div key={c.id} style={s.mobileCard}>
+            <div key={c.id} ref={el => rowRefs.current[c.id] = el} style={{
+              ...s.mobileCard,
+              ...(highlightId === c.id ? { background:"#fef9c3", outline:"2px solid #f59e0b" } : {}),
+              transition:"background 0.5s",
+            }}>
               <div style={s.mobileCardTitle}>#{c.id} · {c.name}</div>
               <div style={s.mobileMeta}>{c.id_number ? `🪪 ${c.id_number}` : "🪪 —"}</div>
               <div style={s.mobileMeta}>{c.phone ? `📞 ${c.phone}` : "📞 —"}</div>

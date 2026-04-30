@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getUserFacingErrorMessage } from "../api/errors";
 import { bookingsAPI } from "../api/bookings";
@@ -11,6 +11,7 @@ import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { getJewishDayMeta, isAfterClosureTime } from "../utils/jewishCalendar";
 
 const STATUS_OPTIONS = [
   { value: "active",    label: "פעיל",    color: "green" },
@@ -19,16 +20,22 @@ const STATUS_OPTIONS = [
 ];
 const statusMap = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s]));
 
-function todayISO() { return new Date().toISOString().split("T")[0]; }
 function tomorrowISO() {
   const d = new Date(); d.setDate(d.getDate() + 1);
-  return d.toISOString().split("T")[0];
+  return toLocalISODate(d);
+}
+function toLocalISODate(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 function addDays(baseIso, days) {
   const d = new Date(baseIso);
   d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  return toLocalISODate(d);
 }
+function todayISO() { return toLocalISODate(new Date()); }
 function diffDays(startIso, endIso) {
   const ms = new Date(endIso) - new Date(startIso);
   return Math.round(ms / 86400000);
@@ -69,6 +76,8 @@ export default function Bookings() {
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState("");
   const [confirm, setConfirm]     = useState(null);
+  const [actionConfirm, setActionConfirm] = useState(null);
+  const actionConfirmResolveRef = useRef(null);
   const [page, setPage]           = useState(1);
   const [dateFilter, setDateFilter] = useState("all"); // "all" | "today" | "tomorrow" | "custom"
   const [customDate, setCustomDate] = useState("");
@@ -81,6 +90,21 @@ export default function Bookings() {
   const [customerMatches, setCustomerMatches] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(false);
   const isMobile = useIsMobile(900);
+
+  function askActionConfirm({ message, messageList = null, confirmLabel = "אישור", confirmColor = "#1d4ed8" }) {
+    return new Promise((resolve) => {
+      actionConfirmResolveRef.current = resolve;
+      setActionConfirm({ message, messageList, confirmLabel, confirmColor });
+    });
+  }
+
+  function closeActionConfirm(result) {
+    if (actionConfirmResolveRef.current) {
+      actionConfirmResolveRef.current(result);
+      actionConfirmResolveRef.current = null;
+    }
+    setActionConfirm(null);
+  }
 
   const load = useCallback(async () => {
     const [bookingsRes, carsRes] = await Promise.allSettled([
@@ -128,6 +152,15 @@ export default function Bookings() {
     setModal("create");
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    const editId = location.state?.bookingEditId;
+    if (!editId) return;
+    const target = bookings.find((b) => b.id === Number(editId));
+    if (!target) return;
+    openEdit(target);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [bookings, location.pathname, location.state, navigate]);
 
   useEffect(() => {
     if (modal !== "create") return;
@@ -241,7 +274,7 @@ export default function Bookings() {
         requestedEnd,
         viewStart,
         viewEnd,
-        modelFilter: "",
+        modelFilter: [],
         bookings: activeBookings,
         blockers,
       });
@@ -280,23 +313,41 @@ export default function Bookings() {
     const existing = conflictModal?.bookings.find((b) => b.id === bookingId);
     if (!existing) return;
     if (hasTargetOverlap(toCarId, existing.start_date, existing.end_date, existing.id)) {
-      alert("לא ניתן להעביר את ההזמנה לרכב הזה בגלל חפיפה עם הזמנה אחרת.");
+      setFormError("לא ניתן להעביר את ההזמנה לרכב הזה בגלל חפיפה עם הזמנה אחרת.");
       return;
     }
     const targetCar = cars.find((c) => c.id === toCarId);
-    const ok = window.confirm(
-      `הרכב תפוס.\n\nהאם להעביר את הזמנה #${existing.id} (${existing.customer_name}) לרכב ${targetCar?.name || toCarId} ולאשר את ההזמנה החדשה על הרכב המקורי?`
-    );
+    const sourceCar = cars.find((c) => c.id === existing.car_id);
+    const sourceLabel = `${sourceCar?.name || `#${existing.car_id}`} (#${existing.car_id}${sourceCar?.plate ? ` · ${sourceCar.plate}` : ""})`;
+    const targetLabel = `${targetCar?.name || `#${toCarId}`} (#${toCarId}${targetCar?.plate ? ` · ${targetCar.plate}` : ""})`;
+    const ok = await askActionConfirm({
+      message: `להעביר את הזמנה #${existing.id} (${existing.customer_name})?\nלאחר ההעברה תתבצע בדיקה אם אפשר לאשר את ההזמנה החדשה.`,
+      messageList: [`${sourceLabel} ← ${targetLabel}`],
+      confirmLabel: "העבר הזמנה",
+      confirmColor: "#2563eb",
+    });
     if (!ok) return;
 
     setResolvingConflict(true);
     try {
       await bookingsAPI.update(existing.id, { car_id: toCarId });
-      await bookingsAPI.create(buildBookingPayload(form, conflictModal.requestedCarId));
-      await load();
-      setConflictModal(null);
-      setModal(null);
-      toast.success("בוצע: ההזמנה הישנה הועברה וההזמנה החדשה אושרה.");
+      const calendar = await bookingsAPI.calendar(conflictModal.viewStart, conflictModal.viewEnd);
+      const activeBookings = (calendar || []).filter((b) => b.status !== "cancelled");
+      const blockers = activeBookings.filter(
+        (b) => b.car_id === conflictModal.requestedCarId &&
+          overlaps(b.start_date, b.end_date, conflictModal.requestedStart, conflictModal.requestedEnd)
+      );
+
+      if (blockers.length === 0) {
+        await bookingsAPI.create(buildBookingPayload(form, conflictModal.requestedCarId));
+        await load();
+        setConflictModal(null);
+        setModal(null);
+        toast.success("בוצע: ההזמנה הועברה וההזמנה החדשה אושרה.");
+      } else {
+        setConflictModal((prev) => prev ? { ...prev, bookings: activeBookings, blockers } : prev);
+        toast.success(`הזמנה #${existing.id} הועברה. עדיין יש ${blockers.length} התנגשות/ות לפתרון.`);
+      }
     } catch (e) {
       if (e.status === 409) {
         await refreshConflictModal();
@@ -314,13 +365,15 @@ export default function Bookings() {
   async function resolveByMovingNew(toCarId) {
     if (!conflictModal) return;
     if (hasTargetOverlap(toCarId, form.start_date, form.end_date, null)) {
-      alert("לא ניתן להעביר את ההזמנה החדשה לרכב הזה בגלל חפיפה עם הזמנה אחרת.");
+      setFormError("לא ניתן להעביר את ההזמנה החדשה לרכב הזה בגלל חפיפה עם הזמנה אחרת.");
       return;
     }
     const targetCar = cars.find((c) => c.id === toCarId);
-    const ok = window.confirm(
-      `הרכב המבוקש תפוס.\n\nהאם ליצור את ההזמנה החדשה על ${targetCar?.name || toCarId} במקום הרכב המקורי?`
-    );
+    const ok = await askActionConfirm({
+      message: `הרכב המבוקש תפוס. ליצור את ההזמנה החדשה על ${targetCar?.name || toCarId} במקום הרכב המקורי?`,
+      confirmLabel: "צור על רכב חלופי",
+      confirmColor: "#2563eb",
+    });
     if (!ok) return;
 
     setResolvingConflict(true);
@@ -394,6 +447,30 @@ export default function Bookings() {
     if (!form.start_date)       return setFormError("יש לבחור תאריך התחלה");
     if (!form.end_date)         return setFormError("יש לבחור תאריך סיום");
     if (form.end_date < form.start_date) return setFormError("תאריך סיום לפני תחילה");
+
+    if (modal === "create") {
+      const startMeta = getJewishDayMeta(form.start_date);
+      const endMeta = getJewishDayMeta(form.end_date);
+      const warnings = [];
+
+      if (startMeta.closureAtNoon && isAfterClosureTime(form.start_time || "08:00")) {
+        warnings.push(`איסוף אחרי 12:00 בתאריך ${formatDate(form.start_date)} (${startMeta.isShabbat ? "שבת" : "ערב חג"})`);
+      }
+      if (endMeta.closureAtNoon && isAfterClosureTime(form.end_time || "08:00")) {
+        warnings.push(`החזרה אחרי 12:00 בתאריך ${formatDate(form.end_date)} (${endMeta.isShabbat ? "שבת" : "ערב חג"})`);
+      }
+
+      if (warnings.length > 0) {
+        const ok = await askActionConfirm({
+          message: "בשבת ובערב חג העסק נסגר ב-12:00.\nנמצאו החריגות הבאות:",
+          messageList: warnings,
+          confirmLabel: "המשך שמירה",
+          confirmColor: "#d97706",
+        });
+        if (!ok) return;
+      }
+    }
+
     setSaving(true); setFormError("");
     try {
       const data = buildBookingPayload(form, +form.car_id);
@@ -443,6 +520,16 @@ export default function Bookings() {
     setCustomerMatches([]);
   }
 
+  function openCustomerFromBooking(booking) {
+    if (booking?.status !== "active" || !booking?.customer_id) return;
+    navigate("/customers", {
+      state: {
+        highlightCustomerId: booking.customer_id,
+        customerSearchPrefill: booking.customer_name || "",
+      },
+    });
+  }
+
   // price preview
   const previewCar  = form.car_id ? carsMap[+form.car_id] : null;
   const days        = form.start_date && form.end_date
@@ -456,7 +543,10 @@ export default function Bookings() {
     : [];
 
   const conflictVisibleCars = conflictModal
-    ? cars.filter((c) => c.is_active && (!conflictModal.modelFilter || c.name === conflictModal.modelFilter))
+    ? cars.filter((c) => c.is_active && (
+        !conflictModal.modelFilter || conflictModal.modelFilter.length === 0 ||
+        conflictModal.modelFilter.includes(c.name)
+      ))
     : [];
 
   const conflictDates = conflictModal
@@ -550,7 +640,19 @@ export default function Bookings() {
                   <tr key={b.id} style={s.tr}>
                     <td style={s.td}><span style={s.idBadge}>#{b.id}</span></td>
                     <td style={s.td}>
-                      <div style={{ fontWeight:600 }}>{b.customer_name}</div>
+                      {b.status === "active" && b.customer_id ? (
+                        <button
+                          type="button"
+                          onClick={() => openCustomerFromBooking(b)}
+                          style={s.customerLinkBtn}
+                          title="פתח כרטיס לקוח"
+                          aria-label={`פתח כרטיס לקוח: ${b.customer_name}`}
+                        >
+                          👤 {b.customer_name}
+                        </button>
+                      ) : (
+                        <div style={{ fontWeight:600 }}>{b.customer_name}</div>
+                      )}
                       {b.customer_phone && <div style={s.sub}>{b.customer_phone}</div>}
                       {b.customer_email && <div style={s.sub}>{b.customer_email}</div>}
                     </td>
@@ -614,7 +716,19 @@ export default function Bookings() {
                   <span style={s.idBadge}>#{b.id}</span>
                   <Badge label={st.label} color={st.color} />
                 </div>
-                <div style={s.mobileTitle}>{b.customer_name}</div>
+                {b.status === "active" && b.customer_id ? (
+                  <button
+                    type="button"
+                    onClick={() => openCustomerFromBooking(b)}
+                    style={s.mobileCustomerLinkBtn}
+                    title="פתח כרטיס לקוח"
+                    aria-label={`פתח כרטיס לקוח: ${b.customer_name}`}
+                  >
+                    👤 {b.customer_name}
+                  </button>
+                ) : (
+                  <div style={s.mobileTitle}>{b.customer_name}</div>
+                )}
                 <div style={s.sub}>{car?.name || "—"}{car?.plate ? ` · ${car.plate}` : ""}</div>
                 <div style={s.mobileDates}>
                   <div>
@@ -749,6 +863,26 @@ export default function Bookings() {
                 onChange={e => setForm(f=>({...f,end_time:e.target.value}))}
                 style={{...s.input, flex:1}} />
             </div>
+            {/* Quick duration buttons */}
+            <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
+              {[
+                { label:"שבוע",   days:7  },
+                { label:"שבועיים",days:14 },
+                { label:"חודש",   days:30 },
+              ].map(({ label, days }) => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => {
+                    if (!form.start_date) return;
+                    setForm(f => ({ ...f, end_date: addDays(f.start_date, days) }));
+                  }}
+                  style={s.durationBtn}
+                >
+                  {label} ({days} יום)
+                </button>
+              ))}
+            </div>
           </div>
           <div style={{ gridColumn:"1/-1" }}>
             <label style={s.label}>הערות</label>
@@ -793,24 +927,62 @@ export default function Bookings() {
             <div style={s.conflictIntro}>
               <strong>⚠️ הרכב {conflictModal.requestedCarName} תפוס בין {formatDate(conflictModal.requestedStart)} ל-{formatDate(conflictModal.requestedEnd)}.</strong>
               <div style={{ marginTop:6 }}>
-                גרור אחד מהכרטיסים לרכב אחר:
-                1) הזמנה קיימת שמפריעה, או
-                2) ההזמנה החדשה שלך.
+                גרור כרטיסים בין רכבים כדי לפנות מקום:
+                1) אפשר לגרור כל הזמנה קיימת בלוח.
+                2) אפשר גם לגרור את ההזמנה החדשה לרכב חלופי.
               </div>
             </div>
 
             <div style={s.conflictFilters}>
               <label style={s.conflictFilterField}>
-                <span style={s.conflictFilterLabel}>דגם</span>
-                <select
-                  value={conflictModal.modelFilter}
-                  onChange={(e) => updateConflictFilters({ modelFilter: e.target.value })}
-                  style={s.conflictFilterInput}
-                  disabled={resolvingConflict}
-                >
-                  <option value="">כל הדגמים</option>
-                  {conflictModelOptions.map((model) => <option key={model} value={model}>{model}</option>)}
-                </select>
+                <span style={s.conflictFilterLabel}>
+                  דגם
+                  {conflictModal.modelFilter.length > 0 && (
+                    <button
+                      onClick={() => updateConflictFilters({ modelFilter: [] })}
+                      disabled={resolvingConflict}
+                      style={{ marginRight:6, fontSize:10, padding:"1px 6px", borderRadius:4, border:"1px solid #cbd5e1", background:"#f1f5f9", cursor:"pointer", color:"#64748b" }}
+                    >נקה</button>
+                  )}
+                </span>
+                <div style={{
+                  border:"1px solid #cbd5e1", borderRadius:8, background:"#fff",
+                  maxHeight:130, overflowY:"auto", padding:"4px 0",
+                  opacity: resolvingConflict ? 0.5 : 1,
+                  pointerEvents: resolvingConflict ? "none" : "auto",
+                }}>
+                  {conflictModelOptions.map((model) => {
+                    const checked = conflictModal.modelFilter.includes(model);
+                    return (
+                      <label key={model} style={{
+                        display:"flex", alignItems:"center", gap:6, padding:"3px 10px",
+                        cursor:"pointer", fontSize:12, color:"#374151",
+                        background: checked ? "#eff6ff" : "transparent",
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            const current = conflictModal.modelFilter;
+                            const next = checked
+                              ? current.filter((m) => m !== model)
+                              : [...current, model];
+                            updateConflictFilters({ modelFilter: next });
+                          }}
+                        />
+                        {model}
+                      </label>
+                    );
+                  })}
+                  {conflictModelOptions.length === 0 && (
+                    <div style={{ padding:"4px 10px", fontSize:12, color:"#94a3b8" }}>אין דגמים</div>
+                  )}
+                </div>
+                <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>
+                  {conflictModal.modelFilter.length === 0
+                    ? "מוצגים כל הדגמים"
+                    : `${conflictModal.modelFilter.length} דגמים נבחרו`}
+                </div>
               </label>
               <label style={s.conflictFilterField}>
                 <span style={s.conflictFilterLabel}>מתאריך</span>
@@ -842,12 +1014,17 @@ export default function Bookings() {
                 onDragEnd={() => { setDragItem(null); setDragOverCarId(null); }}
                 style={{ ...s.conflictCard, ...s.newBookingCard }}
               >
-                ✨ הזמנה חדשה (נגררת בשלמות): {form.customer_name || "לקוח חדש"} · {formatDate(form.start_date)} עד {formatDate(form.end_date)}
+                <div style={s.newBookingBadge}>חדש · מוכן לגרירה</div>
+                <div style={s.newBookingTitle}>✨ גרור אותי ללוח כדי לבחור רכב חלופי</div>
+                <div style={s.newBookingMeta}>
+                  {form.customer_name || "לקוח חדש"} · {formatDate(form.start_date)} עד {formatDate(form.end_date)}
+                </div>
               </div>
               <div style={s.conflictLegend}>
-                <span><b style={{ color:"#991b1b" }}>אדום:</b> הזמנה חוסמת שאפשר לגרור בשלמות</span>
+                <span><b style={{ color:"#0f172a" }}>אפור:</b> הזמנה קיימת (ניתן לגרירה מהתאריך הראשון שלה)</span>
+                <span><b style={{ color:"#991b1b" }}>אדום:</b> הזמנה שחוסמת כרגע את הרכב המבוקש</span>
                 <span><b style={{ color:"#166534" }}>ירוק:</b> תא פנוי לשחרור</span>
-                <span><b style={{ color:"#1d4ed8" }}>כחול:</b> יעד פעיל לגרירה</span>
+                <span><b style={{ color:"#1d4ed8" }}>כחול:</b> טווח יעד פעיל לגרירה</span>
               </div>
             </div>
 
@@ -908,6 +1085,7 @@ export default function Bookings() {
                           overlaps(b.start_date, b.end_date, conflictModal.requestedStart, conflictModal.requestedEnd);
                         const dragAnchorDay = b.start_date > conflictModal.viewStart ? b.start_date : conflictModal.viewStart;
                         const isDragHandleCell = ds === dragAnchorDay;
+                        const isExistingDragged = dragItem?.type === "existing" && dragItem.booking.id === b.id;
                         const oneDayBooking = b.start_date === b.end_date;
                         const pickup = b.pickup_time || "08:00";
                         const ret = b.return_time || "08:00";
@@ -925,7 +1103,7 @@ export default function Bookings() {
                             onDrop={() => onDropToCar(car.id)}
                             style={{
                               ...s.conflictTd,
-                              background: isRangePreviewCell ? "#bfdbfe" : (isBlocker ? "#fee2e2" : "#f1f5f9"),
+                              background: isRangePreviewCell ? "#bfdbfe" : (isBlocker ? "#fee2e2" : (isExistingDragged ? "#dbeafe" : "#f8fafc")),
                               color: isBlocker ? "#991b1b" : "#334155",
                               padding: 4,
                               outline: isRangePreviewCell ? "1px dashed #2563eb" : "none",
@@ -933,18 +1111,21 @@ export default function Bookings() {
                             }}
                           >
                             <div
-                              draggable={isBlocker && isDragHandleCell && !resolvingConflict}
-                              onDragStart={() => isBlocker && isDragHandleCell && onConflictCardDragStart({ type: "existing", booking: b })}
+                              draggable={isDragHandleCell && !resolvingConflict}
+                              onDragStart={() => isDragHandleCell && onConflictCardDragStart({ type: "existing", booking: b })}
                               onDragEnd={() => { setDragItem(null); setDragOverCarId(null); }}
                               style={{
                                 ...s.conflictCellCard,
-                                opacity: dragItem?.type === "existing" && dragItem.booking.id === b.id ? 0.6 : 1,
-                                cursor: isBlocker && isDragHandleCell ? "grab" : "default",
+                                opacity: isExistingDragged ? 0.62 : 1,
+                                cursor: isDragHandleCell ? "grab" : "default",
+                                borderColor: isBlocker ? "#fca5a5" : (isExistingDragged ? "#93c5fd" : "#cbd5e1"),
+                                background: isBlocker ? "#fff1f2" : "#ffffff",
                               }}
-                              title={isBlocker && isDragHandleCell ? "גרור להעברה לרכב אחר (הזמנה מלאה)" : "תפוס"}
+                              title={isDragHandleCell ? "גרור להעברה לרכב אחר (הזמנה מלאה)" : "תפוס"}
                             >
                               #{b.id} {b.customer_name}
-                              {isBlocker && isDragHandleCell && <div style={s.fullDragHint}>גרירה מלאה של ההזמנה</div>}
+                              {isDragHandleCell && <div style={s.fullDragHint}>גרירה מלאה של ההזמנה</div>}
+                              {isBlocker && <div style={s.blockerHint}>חוסם כרגע את הרכב המבוקש</div>}
                               {oneDayBooking ? (
                                 <div style={s.conflictMetaText}>יציאה היום {pickup} · חזרה מחר {ret}</div>
                               ) : (
@@ -987,6 +1168,15 @@ export default function Bookings() {
         confirmLabel="מחק" confirmColor="#dc2626"
         onConfirm={() => handleDelete(confirm.item)}
         onCancel={() => setConfirm(null)} />
+
+      <Confirm
+        open={!!actionConfirm}
+        message={actionConfirm?.message || ""}
+        messageList={actionConfirm?.messageList || null}
+        confirmLabel={actionConfirm?.confirmLabel || "אישור"}
+        confirmColor={actionConfirm?.confirmColor || "#1d4ed8"}
+        onConfirm={() => closeActionConfirm(true)}
+        onCancel={() => closeActionConfirm(false)} />
     </div>
   );
 }
@@ -1024,6 +1214,18 @@ const s = {
                 padding:"8px 18px", fontWeight:700, cursor:"pointer", fontSize:14 },
   btnSecondary:{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0",
                  borderRadius:8, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
+  customerLinkBtn: {
+    background: "transparent",
+    border: "none",
+    padding: 0,
+    margin: 0,
+    color: "#1d4ed8",
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 700,
+    textDecoration: "underline",
+    textUnderlineOffset: 2,
+  },
   input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e2e8f0",
                 fontSize:14, outline:"none", boxSizing:"border-box" },
   label:      { display:"block", fontSize:12, fontWeight:600, color:"#475569", marginBottom:5 },
@@ -1040,13 +1242,13 @@ const s = {
                 cursor:"pointer", fontWeight:600, fontSize:13 },
 
   conflictIntro: {
-    background: "#fff7ed",
+    background: "linear-gradient(90deg, #fff7ed 0%, #fffbeb 100%)",
     border: "1px solid #fed7aa",
-    borderRadius: 10,
-    padding: "10px 12px",
+    borderRadius: 12,
+    padding: "12px 14px",
     fontSize: 13,
     color: "#9a3412",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   conflictFilters: {
     display: "grid",
@@ -1063,9 +1265,15 @@ const s = {
     fontSize: 13,
     background: "#fff",
   },
-  newBookingCardWrap: { marginBottom: 10 },
+  newBookingCardWrap: {
+    marginBottom: 12,
+    border: "1px solid #bfdbfe",
+    borderRadius: 12,
+    background: "linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%)",
+    padding: 10,
+  },
   conflictLegend: {
-    marginTop: 6,
+    marginTop: 8,
     display: "flex",
     gap: 12,
     flexWrap: "wrap",
@@ -1117,11 +1325,29 @@ const s = {
     userSelect: "none",
   },
   newBookingCard: {
-    background: "#dbeafe",
-    borderColor: "#93c5fd",
+    background: "#eff6ff",
+    borderColor: "#60a5fa",
+    borderStyle: "dashed",
+    borderWidth: 2,
     color: "#1d4ed8",
     cursor: "grab",
+    marginBottom: 0,
+    padding: "12px 14px",
+    boxShadow: "0 8px 22px rgba(37,99,235,0.18)",
   },
+  newBookingBadge: {
+    display: "inline-block",
+    background: "#2563eb",
+    color: "#fff",
+    borderRadius: 999,
+    padding: "2px 10px",
+    fontSize: 10,
+    fontWeight: 800,
+    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
+  newBookingTitle: { fontSize: 14, fontWeight: 800, marginBottom: 3 },
+  newBookingMeta: { fontSize: 12, fontWeight: 600, color: "#1e3a8a" },
   conflictCellCard: {
     border: "1px solid #cbd5e1",
     borderRadius: 6,
@@ -1138,7 +1364,13 @@ const s = {
     marginTop: 3,
     fontSize: 10,
     fontWeight: 700,
-    color: "#7c2d12",
+    color: "#1d4ed8",
+  },
+  blockerHint: {
+    marginTop: 2,
+    fontSize: 10,
+    fontWeight: 700,
+    color: "#991b1b",
   },
   conflictMetaText: {
     marginTop: 3,
@@ -1197,6 +1429,11 @@ const s = {
   datePickerInline: { padding:"5px 10px", borderRadius:8, border:"1px solid #cbd5e1",
                       fontSize:13, outline:"none", background:"#fff" },
   dateFilterHint: { fontSize:12, color:"#1d4ed8", fontWeight:600, marginRight:4 },
+  durationBtn: {
+    padding:"3px 10px", borderRadius:999, border:"1px solid #cbd5e1",
+    background:"#f1f5f9", color:"#334155", fontSize:12, cursor:"pointer",
+    fontWeight:600, whiteSpace:"nowrap",
+  },
   mobileCardsWrap: { display:"grid", gap:10 },
   mobileCard: {
     background:"#fff", border:"1px solid #e2e8f0", borderRadius:12,
@@ -1204,6 +1441,20 @@ const s = {
   },
   mobileCardHead: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 },
   mobileTitle: { fontSize:15, fontWeight:700, color:"#0f172a" },
+  mobileCustomerLinkBtn: {
+    background: "transparent",
+    border: "none",
+    padding: 0,
+    margin: 0,
+    fontSize: 15,
+    fontWeight: 800,
+    color: "#1d4ed8",
+    textDecoration: "underline",
+    textUnderlineOffset: 2,
+    cursor: "pointer",
+    textAlign: "right",
+    alignSelf: "flex-start",
+  },
   mobileDates: { display:"grid", gridTemplateColumns:"1fr", gap:6, marginTop:8, fontSize:12, color:"#334155" },
   mobileFooter: { marginTop:8, display:"flex", justifyContent:"space-between", alignItems:"center" },
   mobileEmpty: {

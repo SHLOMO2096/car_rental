@@ -1,7 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import App from "../App";
+import { carsAPI } from "../api/cars";
 import { useAuthStore } from "../store/auth";
 
 vi.mock("../api/auth", () => ({
@@ -20,6 +22,24 @@ vi.mock("../api/cars", () => ({
     delete: vi.fn(),
     deletePermanent: vi.fn(),
     availability: vi.fn(),
+  },
+}));
+
+vi.mock("../api/reports", () => ({
+  reportsAPI: {
+    summary: vi.fn(async () => ({ total: 0, active: 0, revenue: 0 })),
+    monthly: vi.fn(async () => []),
+    topCars: vi.fn(async () => []),
+  },
+}));
+
+vi.mock("../api/bookings", () => ({
+  bookingsAPI: {
+    calendar: vi.fn(async () => []),
+    list: vi.fn(async () => []),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
   },
 }));
 
@@ -76,6 +96,59 @@ describe("App auth + mobile smoke", () => {
     render(<App />);
 
     expect(await screen.findByText("ניהול רכבים")).toBeInTheDocument();
+  });
+
+  it("renders dashboard on desktop when authenticated", async () => {
+    setViewport(1366);
+    carsAPI.list.mockResolvedValueOnce([{ id: 1, name: "Toyota Test", is_active: true, plate: "11-111-11" }]);
+    localStorage.setItem("token", "good-token");
+    useAuthStore.setState({
+      token: "good-token",
+      user: { id: 1, full_name: "Admin", role: "admin" },
+      isAuthenticated: true,
+    });
+    setRoute("/");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "לוח בקרה" }, { timeout: 3000 })).toBeInTheDocument();
+  });
+
+  it("renders dashboard on mobile without white screen", async () => {
+    setViewport(390);
+    carsAPI.list.mockResolvedValueOnce([{ id: 1, name: "Toyota Test", is_active: true, plate: "11-111-11" }]);
+    localStorage.setItem("token", "good-token");
+    useAuthStore.setState({
+      token: "good-token",
+      user: { id: 1, full_name: "Admin", role: "admin" },
+      isAuthenticated: true,
+    });
+    setRoute("/");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "לוח בקרה" })).toBeInTheDocument();
+  });
+
+  it("shows past dashboard cells as non-bookable and blocks navigation from them", async () => {
+    const user = userEvent.setup();
+    setViewport(1366);
+    carsAPI.list.mockResolvedValueOnce([{ id: 1, name: "Toyota Test", is_active: true, plate: "11-111-11" }]);
+    localStorage.setItem("token", "good-token");
+    useAuthStore.setState({
+      token: "good-token",
+      user: { id: 1, full_name: "Admin", role: "admin" },
+      isAuthenticated: true,
+    });
+    setRoute("/");
+
+    render(<App />);
+
+    expect(await screen.findByText("עבר · לא ניתן להזמין")).toBeInTheDocument();
+    const pastCells = await screen.findAllByTitle(/לא ניתן להזמין.*לתאריך עבר/);
+    const pastCell = pastCells[0];
+    await user.click(pastCell);
+    expect(window.location.pathname).toBe("/");
   });
 
   it("blocks stale auth state without token on /cars", async () => {

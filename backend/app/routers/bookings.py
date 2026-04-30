@@ -159,6 +159,12 @@ def update_booking(
 
     # ── ולידציה: שינוי תאריכים ────────────────────────────────────────────────
     if data.start_date or data.end_date:
+        if data.start_date and data.start_date < Date.today():
+            raise HTTPException(422, "לא ניתן לעדכן הזמנה לתאריך התחלה בעבר")
+        if data.end_date and data.end_date < Date.today():
+            raise HTTPException(422, "לא ניתן לעדכן הזמנה לתאריך סיום בעבר")
+        if new_end < new_start:
+            raise HTTPException(422, "תאריך סיום חייב להיות אחרי תאריך התחלה")
         if crud_booking.has_overlap(db, new_car_id, new_start, new_end, exclude_id=b.id):
             raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
 

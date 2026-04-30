@@ -6,6 +6,7 @@ import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { getJewishDayMeta } from "../utils/jewishCalendar";
 
 const MONTH_NAMES = ["ינו","פבר","מרץ","אפר","מאי","יונ","יול","אוג","ספט","אוק","נוב","דצמ"];
 const DAY_NAMES   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
@@ -56,6 +57,7 @@ export function Dashboard() {
   const year = new Date().getFullYear();
   const todayBase = new Date();
   todayBase.setHours(0,0,0,0);
+  const todayISO = toISO(todayBase);
 
   const [selectedModel, setSelectedModel] = useState("");
   const [rangeStart, setRangeStart] = useState(toISO(addDays(todayBase, -2)));
@@ -126,7 +128,7 @@ export function Dashboard() {
 
           <label style={{ ...fieldWrap, minWidth:isMobile ? "100%" : 160 }}>
             <span style={fieldLabel}>עד תאריך</span>
-            <input type="date" value={rangeEnd} onChange={(e) => setEndWithGuard(e.target.value)} style={inputStyle} />
+            <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setEndWithGuard(e.target.value)} style={inputStyle} />
           </label>
 
           <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", width:isMobile ? "100%" : "auto" }}>
@@ -226,9 +228,15 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel }
         </p>
         <div style={{ display:"flex", alignItems:"center", gap:10, margin:"16px 0",
                       padding:"12px 16px", background:"#f1f5f9", borderRadius:10, fontSize:13 }}>
-          <span style={{ color:"#dc2626", fontWeight:700 }}>🚗 {fromCar.name}</span>
-          <span style={{ color:"#64748b", fontSize:18 }}>←</span>
-          <span style={{ color:"#16a34a", fontWeight:700 }}>🚗 {toCar.name}</span>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2 }}>
+            <span style={{ color:"#dc2626", fontWeight:700 }}>🚗 {fromCar.name}</span>
+            {fromCar.plate && <span style={{ fontSize:11, color:"#94a3b8", fontWeight:600 }}>🔢 {fromCar.plate}</span>}
+          </div>
+          <span style={{ color:"#64748b", fontSize:18, flex:1, textAlign:"center" }}>←</span>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2 }}>
+            <span style={{ color:"#16a34a", fontWeight:700 }}>🚗 {toCar.name}</span>
+            {toCar.plate && <span style={{ fontSize:11, color:"#94a3b8", fontWeight:600 }}>🔢 {toCar.plate}</span>}
+          </div>
         </div>
         <p style={{ fontSize:12, color:"#94a3b8", marginBottom:20 }}>
           לאחר האישור ההזמנה תועבר לרכב החדש ולא ניתן לבטל פעולה זו.
@@ -251,6 +259,33 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel }
   );
 }
 
+function BookingActionModal({ booking, carName, onEdit, onCustomer, onClose }) {
+  return (
+    <div
+      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}
+      onClick={onClose}
+    >
+      <div
+        dir="rtl"
+        style={{ background:"#fff", borderRadius:16, padding:24, maxWidth:420, width:"92%", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ margin:"0 0 8px", fontSize:18, color:"#1e293b" }}>פעולות על הזמנה קיימת</h3>
+        <div style={{ fontSize:13, color:"#475569", marginBottom:4 }}><strong>לקוח:</strong> {booking.customer_name}</div>
+        <div style={{ fontSize:13, color:"#475569", marginBottom:4 }}><strong>רכב:</strong> {carName}</div>
+        <div style={{ fontSize:13, color:"#475569", marginBottom:16 }}><strong>תאריכים:</strong> {booking.start_date} - {booking.end_date}</div>
+        <div style={{ display:"flex", gap:10, justifyContent:"flex-end", flexWrap:"wrap" }}>
+          <button onClick={onClose} style={{ padding:"9px 16px", borderRadius:8, border:"1px solid #cbd5e1", background:"#fff", color:"#374151", cursor:"pointer" }}>סגור</button>
+          {booking.customer_id && onCustomer && (
+            <button onClick={onCustomer} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#0f766e", color:"#fff", fontWeight:700, cursor:"pointer" }}>👤 פרטי לקוח</button>
+          )}
+          <button onClick={onEdit} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#2563eb", color:"#fff", fontWeight:700, cursor:"pointer" }}>עריכת הזמנה</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Availability Grid ──────────────────────────────────────────────────────────
 function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
   const [bookings, setBookings]     = useState([]);
@@ -261,6 +296,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
   const [dragOverCarId, setDragOverCarId] = useState(null); // column being hovered
   const [confirmDrop, setConfirmDrop]   = useState(null);   // { booking, fromCar, toCar }
   const [dropLoading, setDropLoading]   = useState(false);
+  const [bookingAction, setBookingAction] = useState(null); // { booking, carName }
 
   const todayBase = new Date(); todayBase.setHours(0,0,0,0);
   const todayStr  = toISO(todayBase);
@@ -370,6 +406,21 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
 
   return (
     <>
+      {bookingAction && (
+        <BookingActionModal
+          booking={bookingAction.booking}
+          carName={bookingAction.carName}
+          onClose={() => setBookingAction(null)}
+          onEdit={() => {
+            navigate("/bookings", { state: { bookingEditId: bookingAction.booking.id } });
+            setBookingAction(null);
+          }}
+          onCustomer={() => {
+            navigate("/customers", { state: { highlightCustomerId: bookingAction.booking.customer_id } });
+            setBookingAction(null);
+          }}
+        />
+      )}
       {confirmDrop && (
         <ReassignModal
           booking={confirmDrop.booking}
@@ -399,7 +450,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
         <span><span style={dot("#dbeafe","#1d4ed8")} />יציאה היום</span>
         <span><span style={dot("#fef9c3","#854d0e")} />חזרה היום</span>
         <span><span style={dot("#e9d5ff","#7c3aed")} />חד-יומי</span>
+        <span><span style={dot("#f3e8ff","#7c3aed")} />שבת</span>
+        <span><span style={dot("#fee2e2","#dc2626")} />חג</span>
         <span><span style={dot("#bfdbfe","#2563eb")} />✥ גרור להעברה</span>
+        <span><span style={dot("#e5e7eb","#64748b")} />עבר · לא ניתן להזמין</span>
         {loadingGrid && <span style={{ marginRight:"auto", color:"#94a3b8" }}>מרענן...</span>}
       </div>
 
@@ -431,16 +485,29 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
           <tbody>
             {dates.map(date => {
               const ds = toISO(date);
+              const dayMeta = getJewishDayMeta(ds);
               const isToday = ds === todayStr;
+              const isPastDay = ds < todayStr;
               return (
                 <tr key={ds}>
                   {/* Date cell — sticky right (RTL) */}
                   <td style={{ ...gtd, fontWeight:600, whiteSpace:"nowrap",
                                position:"sticky", right:0, zIndex:1,
-                               background: isToday ? "#fff7ed" : "#f8fafc",
+                               background: isPastDay ? "#f1f5f9" : (isToday ? "#fff7ed" : (dayMeta.isShabbat ? "#f3e8ff" : "#f8fafc")),
                                borderLeft:"2px solid #cbd5e1",
-                               color: isToday ? "#d97706" : "#374151" }}>
-                    {fmtDay(date)}
+                               color: isPastDay ? "#94a3b8" : (isToday ? "#d97706" : "#374151") }}>
+                    <div>{fmtDay(date)}</div>
+                    <div style={{ fontSize:9, color:"#64748b", marginTop:2 }}>{dayMeta.hebrewDate}</div>
+                    {(dayMeta.isShabbat || dayMeta.isHoliday || dayMeta.isErevChag) && (
+                      <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginTop:3 }}>
+                        {dayMeta.isShabbat && <span style={{ ...miniTag, background:"#7c3aed" }}>שבת</span>}
+                        {dayMeta.isHoliday && <span style={{ ...miniTag, background:"#dc2626" }}>{dayMeta.holidayNames[0] || "חג"}</span>}
+                        {dayMeta.isErevChag && <span style={{ ...miniTag, background:"#d97706" }}>ערב חג</span>}
+                      </div>
+                    )}
+                     {isPastDay && <span style={{ fontSize:9, color:"#64748b", marginRight:4,
+                                                background:"#e2e8f0", borderRadius:4,
+                                                padding:"1px 4px" }}>עבר</span>}
                     {isToday && <span style={{ fontSize:9, color:"#f59e0b", marginRight:4,
                                                background:"#fef3c7", borderRadius:4,
                                                padding:"1px 4px" }}>היום</span>}
@@ -452,23 +519,24 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
                     if (!b) {
                       return (
                         <td key={car.id}
-                            title={dragBooking ? `שחרר להעברה ל-${car.name}` : `לחץ להזמנת ${car.name} ב-${ds}`}
-                            onClick={() => !dragBooking && navigate("/bookings", {
+                            title={isPastDay ? `לא ניתן להזמין את ${car.name} לתאריך עבר` : (dragBooking ? `שחרר להעברה ל-${car.name}` : `לחץ להזמנת ${car.name} ב-${ds}`)}
+                            onClick={() => !dragBooking && !isPastDay && navigate("/bookings", {
                               state: { bookingPrefill: { car_id: car.id, start_date: ds } }
                             })}
                             onDragOver={e => handleDragOverCell(e, car.id)}
                             onDrop={e => handleDrop(e, car)}
                             onDragLeave={() => setDragOverCarId(null)}
                             style={{ ...gtd, textAlign:"center",
-                                     background: isDropColumn ? "#bfdbfe" : "#dcfce7",
-                                     color: isDropColumn ? "#1d4ed8" : "#15803d",
-                                     cursor: dragBooking ? "copy" : "pointer",
+                                     background: isPastDay ? "#e5e7eb" : (isDropColumn ? "#bfdbfe" : "#dcfce7"),
+                                     color: isPastDay ? "#64748b" : (isDropColumn ? "#1d4ed8" : "#15803d"),
+                                     cursor: isPastDay ? "not-allowed" : (dragBooking ? "copy" : "pointer"),
                                      transition:"background 0.15s",
-                                     outline: isDropColumn ? "2px dashed #2563eb" : "none",
-                                     outlineOffset:"-2px" }}
-                            onMouseEnter={e => { if (!dragBooking) { e.currentTarget.style.background="#bbf7d0"; e.currentTarget.style.fontWeight="700"; }}}
-                            onMouseLeave={e => { if (!dragBooking) { e.currentTarget.style.background="#dcfce7"; e.currentTarget.style.fontWeight="normal"; }}}>
-                          {isDropColumn ? "⬇" : "✓"}
+                                     outline: isPastDay ? "1px dashed #94a3b8" : (isDropColumn ? "2px dashed #2563eb" : "none"),
+                                     outlineOffset:"-2px",
+                                     boxShadow: dayMeta.isShabbat ? "inset 0 -2px 0 #7c3aed55" : (dayMeta.isHoliday ? "inset 0 -2px 0 #dc262655" : "none") }}
+                            onMouseEnter={e => { if (!dragBooking && !isPastDay) { e.currentTarget.style.background="#bbf7d0"; e.currentTarget.style.fontWeight="700"; }}}
+                            onMouseLeave={e => { if (!dragBooking && !isPastDay) { e.currentTarget.style.background="#dcfce7"; e.currentTarget.style.fontWeight="normal"; }}}>
+                          {isPastDay ? "עבר" : (isDropColumn ? "⬇" : "✓")}
                         </td>
                       );
                     }
@@ -500,6 +568,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
                     return (
                       <td key={car.id}
                           title={`${b.customer_name} | ${b.start_date} ${b.pickup_time||""} – ${b.end_date} ${b.return_time||""}\n${isDragging ? "גרור לרכב אחר להעברה" : ""}`}
+                          onClick={() => {
+                            if (dragBooking) return;
+                            setBookingAction({ booking: b, carName: car.name || `רכב #${car.id}` });
+                          }}
                           draggable={!!b}
                           onDragStart={e => handleDragStart(e, b)}
                           onDragEnd={handleDragEnd}
@@ -517,6 +589,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
                                    opacity: isDragging ? 0.7 : 1,
                                    outline: isConflict ? "2px solid #ef4444" : "none",
                                    outlineOffset:"-2px",
+                                   boxShadow: dayMeta.isShabbat ? "inset 0 -2px 0 #7c3aed55" : (dayMeta.isHoliday ? "inset 0 -2px 0 #dc262655" : "none"),
                                    transition:"background 0.15s, opacity 0.15s" }}>
                         {label}
                       </td>
@@ -552,6 +625,7 @@ const activeChip = { ...chipStyle, background:"#1d4ed8", color:"#fff", borderCol
 const gth = { padding:"8px 10px", fontWeight:700, borderBottom:"2px solid #e2e8f0",
               textAlign:"center", fontSize:11, color:"#475569", whiteSpace:"nowrap" };
 const gtd = { padding:"7px 8px", borderBottom:"1px solid #f1f5f9", fontSize:12 };
+const miniTag = { fontSize:8, fontWeight:700, color:"#fff", borderRadius:999, padding:"1px 5px" };
 const cardStyle = { background:"#fff", borderRadius:12, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" };
 const cardTitle = { margin:"0 0 16px", fontSize:15, fontWeight:700, color:"#1e293b" };
 

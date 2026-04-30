@@ -1,5 +1,5 @@
 import os
-from datetime import date
+from datetime import date, timedelta
 from io import BytesIO
 
 import pytest
@@ -204,6 +204,18 @@ class TestCars:
 
 # ── Bookings Tests ─────────────────────────────────────────────────────────────
 class TestBookings:
+    def test_create_booking_rejects_past_start_date(self, client, auth_headers, sample_car):
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        tomorrow = (date.today() + timedelta(days=1)).isoformat()
+        r = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "בדיקת עבר",
+            "customer_has_no_email": True,
+            "start_date": yesterday,
+            "end_date": tomorrow,
+        }, headers=auth_headers)
+        assert r.status_code == 422
+
     def test_create_booking(self, client, auth_headers, sample_car):
         r = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
