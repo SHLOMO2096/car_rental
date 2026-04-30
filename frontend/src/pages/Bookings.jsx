@@ -84,12 +84,27 @@ export default function Bookings() {
     return () => clearInterval(id);
   }, [cooldownUntil]);
 
-  const load = useCallback(() => {
-    return Promise.all([
+  const load = useCallback(async () => {
+    const [bookingsRes, carsRes] = await Promise.allSettled([
       bookingsAPI.list(),
       carsAPI.list({ active_only: false }),
-    ]).then(([b, c]) => { setBookings(b); setCars(c); })
-      .finally(() => setLoading(false));
+    ]);
+
+    if (bookingsRes.status === "fulfilled") {
+      setBookings(bookingsRes.value || []);
+    } else {
+      setBookings([]);
+      toast.error(getUserFacingErrorMessage(bookingsRes.reason), { title: "טעינת הזמנות" });
+    }
+
+    if (carsRes.status === "fulfilled") {
+      setCars(carsRes.value || []);
+    } else {
+      setCars([]);
+      toast.error(getUserFacingErrorMessage(carsRes.reason), { title: "טעינת רכבים" });
+    }
+
+    setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
