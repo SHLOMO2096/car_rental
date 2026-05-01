@@ -301,6 +301,9 @@ async def upload_booking_photo(
     if not result:
         raise HTTPException(500, "נכשל העלאת הקובץ ל-Google Drive")
 
+    booking.drive_link = result.get("link")
+    db.commit()
+
     log_audit_event(
         db,
         actor_user_id=current_user.id,

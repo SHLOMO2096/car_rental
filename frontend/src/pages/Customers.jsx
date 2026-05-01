@@ -448,7 +448,7 @@ export default function Customers() {
               <table style={s.table}>
                 <thead>
                   <tr style={{ background: "#f8fafc" }}>
-                    {["#", "רכב", "מתאריך", "עד תאריך", "סטטוס", "סכום"].map((h) => <th key={h} style={s.th}>{h}</th>)}
+                    {["#", "רכב", "מתאריך", "עד תאריך", "סטטוס", "סכום", "צילום"].map((h) => <th key={h} style={s.th}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -462,6 +462,11 @@ export default function Customers() {
                       <td style={s.td}>{formatDate(b.end_date)}</td>
                       <td style={s.td}>{STATUS_LABELS[b.status] || b.status}</td>
                       <td style={s.td}>{b.total_price ? `₪${Math.round(b.total_price).toLocaleString()}` : "—"}</td>
+                      <td style={s.td}>
+                        {b.drive_link ? (
+                          <a href={b.drive_link} target="_blank" rel="noreferrer" style={s.btnPhoto}>📸 צפה</a>
+                        ) : "—"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -643,6 +648,7 @@ const s = {
   empty: { textAlign: "center", padding: 28, color: "#94a3b8" },
   actionsWrap: { display: "flex", gap: 6, flexWrap: "wrap" },
   btnBook: { background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
+  btnPhoto: { background: "#fdf4ff", color: "#a21caf", border: "1px solid #f0abfc", borderRadius: 7, padding: "4px 8px", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "inline-block" },
   btnHistory: { background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
   btnEdit: { background: "#fff7ed", color: "#c2410c", border: "1px solid #fdba74", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
   btnDelete: { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },

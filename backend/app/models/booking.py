@@ -27,6 +27,7 @@ class Booking(Base):
     total_price     = Column(Float)
     status          = Column(Enum(BookingStatus), default=BookingStatus.active, nullable=False, index=True)
     notes           = Column(Text)
+    drive_link      = Column(String(2048), nullable=True)
     email_sent      = Column(Boolean, default=False)   # האם נשלח אימייל אישור
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
     updated_at      = Column(DateTime(timezone=True), onupdate=func.now())

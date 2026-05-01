@@ -329,6 +329,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
   function handleDragStart(e, b) {
     setDragBooking(b);
     e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", b.id.toString());
   }
 
   function handleDragEnd() {

@@ -399,7 +399,11 @@ export default function Bookings() {
     }
   }
 
-  function onConflictCardDragStart(payload) {
+  function onConflictCardDragStart(e, payload) {
+    if (e && e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", "drag");
+    }
     setDragItem(payload);
     setDragOverCarId(null);
   }
@@ -704,6 +708,9 @@ export default function Bookings() {
                     <td style={s.td}>
                       <div style={{ display:"flex", gap:5 }}>
                         <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
+                        {b.drive_link && (
+                          <a href={b.drive_link} target="_blank" rel="noreferrer" style={{ ...s.btnIcon, textDecoration: "none" }} title="צפה בצילום">🖼️</a>
+                        )}
                         {b.status === "active" && (
                           <>
                             <button
@@ -789,6 +796,9 @@ export default function Bookings() {
                    <span style={{ fontWeight:700, color:"#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
                    <div style={{ display:"flex", gap:8 }}>
                      <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
+                     {b.drive_link && (
+                       <a href={b.drive_link} target="_blank" rel="noreferrer" style={{ ...s.btnIcon, textDecoration: "none" }} title="צפה בצילום">🖼️</a>
+                     )}
                      {b.status === "active" && (
                        <>
                          <button
@@ -1080,7 +1090,7 @@ export default function Bookings() {
             <div style={s.newBookingCardWrap}>
               <div
                 draggable={!resolvingConflict}
-                onDragStart={() => onConflictCardDragStart({ type: "new" })}
+                onDragStart={(e) => onConflictCardDragStart(e, { type: "new" })}
                 onDragEnd={() => { setDragItem(null); setDragOverCarId(null); }}
                 style={{ ...s.conflictCard, ...s.newBookingCard }}
               >
@@ -1135,7 +1145,7 @@ export default function Bookings() {
                                 }
                               }}
                               onDragLeave={() => { if (dragOverCarId === car.id) setDragOverCarId(null); }}
-                              onDrop={() => onDropToCar(car.id)}
+                              onDrop={(e) => { e.preventDefault(); onDropToCar(car.id); }}
                               style={{
                                 ...s.conflictTd,
                                 background: isRangePreviewCell ? "#bfdbfe" : (canDrop ? "#dbeafe" : "#dcfce7"),
@@ -1170,7 +1180,7 @@ export default function Bookings() {
                               }
                             }}
                             onDragLeave={() => { if (dragOverCarId === car.id) setDragOverCarId(null); }}
-                            onDrop={() => onDropToCar(car.id)}
+                            onDrop={(e) => { e.preventDefault(); onDropToCar(car.id); }}
                             style={{
                               ...s.conflictTd,
                               background: isRangePreviewCell ? "#bfdbfe" : (isBlocker ? "#fee2e2" : (isExistingDragged ? "#dbeafe" : "#f8fafc")),
@@ -1182,7 +1192,7 @@ export default function Bookings() {
                           >
                             <div
                               draggable={isDragHandleCell && !resolvingConflict}
-                              onDragStart={() => isDragHandleCell && onConflictCardDragStart({ type: "existing", booking: b })}
+                              onDragStart={(e) => isDragHandleCell && onConflictCardDragStart(e, { type: "existing", booking: b })}
                               onDragEnd={() => { setDragItem(null); setDragOverCarId(null); }}
                               style={{
                                 ...s.conflictCellCard,

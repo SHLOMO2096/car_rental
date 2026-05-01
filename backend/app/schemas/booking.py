@@ -58,6 +58,7 @@ class BookingOut(BaseModel):
     total_price:     Optional[float] = None
     status:          BookingStatus
     notes:           Optional[str] = None
+    drive_link:      Optional[str] = None
     email_sent:      bool
     created_at:      datetime
     car:             Optional[CarOut] = None
