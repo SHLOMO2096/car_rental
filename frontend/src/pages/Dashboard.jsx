@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { reportsAPI } from "../api/reports";
 import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
+import Confirm from "../components/ui/Confirm";
+import { toast } from "../store/toast";
+import { getUserFacingErrorMessage } from "../api/errors";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { getJewishDayMeta } from "../utils/jewishCalendar";
@@ -259,7 +262,7 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel }
   );
 }
 
-function BookingActionModal({ booking, carName, onEdit, onCustomer, onClose }) {
+function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, onClose }) {
   return (
     <div
       style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}
@@ -276,6 +279,9 @@ function BookingActionModal({ booking, carName, onEdit, onCustomer, onClose }) {
         <div style={{ fontSize:13, color:"#475569", marginBottom:16 }}><strong>תאריכים:</strong> {booking.start_date} - {booking.end_date}</div>
         <div style={{ display:"flex", gap:10, justifyContent:"flex-end", flexWrap:"wrap" }}>
           <button onClick={onClose} style={{ padding:"9px 16px", borderRadius:8, border:"1px solid #cbd5e1", background:"#fff", color:"#374151", cursor:"pointer" }}>סגור</button>
+          {onDelete && (
+            <button onClick={onDelete} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#fee2e2", color:"#dc2626", fontWeight:700, cursor:"pointer" }}>🗑 מחק הזמנה</button>
+          )}
           {booking.customer_id && onCustomer && (
             <button onClick={onCustomer} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#0f766e", color:"#fff", fontWeight:700, cursor:"pointer" }}>👤 פרטי לקוח</button>
           )}
@@ -297,6 +303,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
   const [confirmDrop, setConfirmDrop]   = useState(null);   // { booking, fromCar, toCar }
   const [dropLoading, setDropLoading]   = useState(false);
   const [bookingAction, setBookingAction] = useState(null); // { booking, carName }
+  const [confirmDeleteBooking, setConfirmDeleteBooking] = useState(null);
 
   const todayBase = new Date(); todayBase.setHours(0,0,0,0);
   const todayStr  = toISO(todayBase);
@@ -397,6 +404,22 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
     }
   }
 
+  async function executeDelete() {
+    if (!confirmDeleteBooking) return;
+    setLoadingGrid(true);
+    try {
+      await bookingsAPI.delete(confirmDeleteBooking.id);
+      const data = await bookingsAPI.calendar(startDate, endDate);
+      setBookings(data);
+      toast.success("ההזמנה נמחקה בהצלחה");
+    } catch (err) {
+      toast.error(getUserFacingErrorMessage(err));
+    } finally {
+      setLoadingGrid(false);
+      setConfirmDeleteBooking(null);
+    }
+  }
+
   if (activeCars.length === 0) {
     return (
       <div style={{ ...cardStyle, padding:20, marginBottom:20, color:"#64748b" }}>
@@ -412,6 +435,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
           booking={bookingAction.booking}
           carName={bookingAction.carName}
           onClose={() => setBookingAction(null)}
+          onDelete={() => {
+            setConfirmDeleteBooking(bookingAction.booking);
+            setBookingAction(null);
+          }}
           onEdit={() => {
             navigate("/bookings", { state: { bookingEditId: bookingAction.booking.id } });
             setBookingAction(null);
@@ -432,6 +459,14 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
           onCancel={() => { setConfirmDrop(null); setDragBooking(null); }}
         />
       )}
+      <Confirm
+        open={!!confirmDeleteBooking}
+        message={`למחוק את ההזמנה של ${confirmDeleteBooking?.customer_name}? לא ניתן לבטל פעולה זו.`}
+        confirmLabel="מחק הזמנה"
+        confirmColor="#dc2626"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDeleteBooking(null)}
+      />
 
     <div style={{ ...cardStyle, padding:0, overflow:"hidden" }}>
       {/* Header */}

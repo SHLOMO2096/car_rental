@@ -457,7 +457,10 @@ export default function Customers() {
                   ) : historyData.bookings.map((b) => (
                     <tr key={b.id} style={s.tr}>
                       <td style={s.td}>#{b.id}</td>
-                      <td style={s.td}>{b.car?.name || `רכב #${b.car_id}`}</td>
+                      <td style={s.td}>
+                        {b.car?.name || `רכב #${b.car_id}`}
+                        {b.car?.plate && <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>🪪 {b.car.plate}</div>}
+                      </td>
                       <td style={s.td}>{formatDate(b.start_date)}</td>
                       <td style={s.td}>{formatDate(b.end_date)}</td>
                       <td style={s.td}>{STATUS_LABELS[b.status] || b.status}</td>
