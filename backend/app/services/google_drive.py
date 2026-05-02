@@ -7,8 +7,8 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 from google.auth.transport.requests import Request
-from google.oauth2.service_account import Credentials
-from google.oauth2 import service_account
+from google.oauth2.service_account import Credentials as SACredentials
+from google.oauth2.credentials import Credentials as OAuthCredentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 from app.core.config import settings
@@ -43,11 +43,17 @@ class GoogleDriveService:
             # Parse JSON
             creds_dict = json.loads(creds_content)
             
-            # Create credentials
-            self.credentials = service_account.Credentials.from_service_account_info(
-                creds_dict,
-                scopes=GOOGLE_DRIVE_SCOPES
-            )
+            # Create credentials based on type
+            if "refresh_token" in creds_dict:
+                self.credentials = OAuthCredentials.from_authorized_user_info(
+                    creds_dict,
+                    scopes=GOOGLE_DRIVE_SCOPES
+                )
+            else:
+                self.credentials = SACredentials.from_service_account_info(
+                    creds_dict,
+                    scopes=GOOGLE_DRIVE_SCOPES
+                )
             
             # Build service
             self.service = build("drive", "v3", credentials=self.credentials)
