@@ -36,6 +36,9 @@ class GoogleDriveService:
             # Try to decode if base64
             if creds_content.startswith("{") is False:
                 try:
+                    # Strip any newlines or spaces from the env string
+                    creds_content = creds_content.strip()
+                    
                     # Fix base64 padding if missing
                     padding_needed = len(creds_content) % 4
                     if padding_needed:
