@@ -36,9 +36,14 @@ class GoogleDriveService:
             # Try to decode if base64
             if creds_content.startswith("{") is False:
                 try:
+                    # Fix base64 padding if missing
+                    padding_needed = len(creds_content) % 4
+                    if padding_needed:
+                        creds_content += "=" * (4 - padding_needed)
+                        
                     creds_content = base64.b64decode(creds_content).decode("utf-8")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Base64 decode failed: {e}")
             
             # Parse JSON
             creds_dict = json.loads(creds_content)
