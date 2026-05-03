@@ -6,15 +6,15 @@ import Modal from "../ui/Modal";
  */
 /**
  * Converts a Google Drive sharing link to a direct image link.
+ * Uses the thumbnail endpoint which is more mobile-friendly and handles CORS better.
  */
 function getDirectDriveLink(url) {
   if (!url || !url.includes("drive.google.com")) return url;
   
-  // Extract file ID using regex
   const match = url.match(/\/d\/(.+?)\/(view|edit|preview)/) || url.match(/id=(.+?)(&|$)/);
   if (match && match[1]) {
-    // New reliable Google Drive direct link format
-    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    // sz=w1600 provides a high-quality version that is reliable on mobile
+    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1600`;
   }
   return url;
 }
@@ -22,10 +22,12 @@ function getDirectDriveLink(url) {
 export function ImageGallery({ photos, initialIndex = 0, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const urls = photos ? photos.split(",").map(u => u.trim()).filter(Boolean) : [];
 
   useEffect(() => {
     setLoading(true);
+    setError(false);
   }, [currentIndex]);
 
   if (urls.length === 0) return null;
@@ -74,13 +76,29 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
           src={getDirectDriveLink(urls[currentIndex])} 
           alt={`Photo ${currentIndex + 1}`} 
           onLoad={() => setLoading(false)}
+          onError={() => {
+            setLoading(false);
+            setError(true);
+          }}
           style={{ 
             maxWidth: "100%", maxHeight: "100%", objectFit: "contain",
             borderRadius: 8, boxShadow: "0 10px 40px rgba(0,0,0,0.5)", 
-            display: loading ? "none" : "block"
+            display: (loading || error) ? "none" : "block"
           }}
           onClick={(e) => e.stopPropagation()}
         />
+
+        {error && (
+          <div style={{ color: "#fff", textAlign: "center", padding: 20 }}>
+            <p>שגיאה בטעינת התמונה במכשיר זה.</p>
+            <button 
+              onClick={() => window.open(urls[currentIndex], "_blank")}
+              style={{ background: "#fff", color: "#000", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, marginTop: 10 }}
+            >
+              פתח בטאב חדש
+            </button>
+          </div>
+        )}
 
         {urls.length > 1 && (
           <button 
