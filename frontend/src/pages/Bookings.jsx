@@ -567,6 +567,35 @@ export default function Bookings() {
      }
    }
 
+  async function handleQuickComplete(b) {
+    try {
+      await bookingsAPI.update(b.id, { ...b, status: "completed" });
+      toast.success("הזמנה סומנה כהושלמה");
+      load(search.trim());
+    } catch (e) {
+      toast.error(getUserFacingErrorMessage(e));
+    }
+  }
+
+  async function handleQuickExtend(b) {
+    try {
+      const newEnd = addDays(b.end_date, 1);
+      await bookingsAPI.update(b.id, { ...b, end_date: newEnd });
+      toast.success("הזמנה הוארכה ביום אחד");
+      load(search.trim());
+    } catch (e) {
+      toast.error(getUserFacingErrorMessage(e));
+    }
+  }
+
+  function isBookingOverdue(b) {
+    if (b.status !== "active") return false;
+    const endDateStr = b.end_date;
+    const endTimeStr = b.return_time || "08:00";
+    const endDateTime = new Date(`${endDateStr}T${endTimeStr}`);
+    return endDateTime < new Date();
+  }
+
   function pickCustomer(customer) {
     setForm((f) => ({
       ...f,
@@ -696,6 +725,7 @@ export default function Bookings() {
               {paginated.map(b => {
                 const car = carsMap[b.car_id];
                 const st  = statusMap[b.status] || statusMap.cancelled;
+                const overdue = isBookingOverdue(b);
                 return (
                   <tr key={b.id} style={s.tr}>
                     <td style={s.td}><span style={s.idBadge}>#{b.id}</span></td>
@@ -727,9 +757,16 @@ export default function Bookings() {
                       )}
                     </td>
                     <td style={s.td}>
-                      <div>{formatDate(b.end_date)}</div>
+                      <div style={{ color: overdue ? "#dc2626" : "inherit", fontWeight: overdue ? "bold" : "normal" }}>
+                        {formatDate(b.end_date)}
+                      </div>
                       {b.status === "active" && (
-                        <div style={s.sub}>החזרה: {b.return_time || "08:00"}</div>
+                        <div style={{ ...s.sub, color: overdue ? "#ef4444" : s.sub.color }}>החזרה: {b.return_time || "08:00"}</div>
+                      )}
+                      {overdue && (
+                        <div style={{ fontSize: 10, color: "#dc2626", fontWeight: "bold", marginTop: 4 }}>
+                          ⚠️ חלף זמן החזרה
+                        </div>
                       )}
                     </td>
                     <td style={s.td}>
@@ -742,7 +779,13 @@ export default function Bookings() {
                       {b.email_sent && <span title="אימייל נשלח" style={{ marginRight:4 }}>📧</span>}
                     </td>
                     <td style={s.td}>
-                      <div style={{ display:"flex", gap:5 }}>
+                      <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                        {overdue && (
+                          <>
+                            <button onClick={() => handleQuickComplete(b)} style={{ ...s.btnIcon, color: "#166534", background: "#dcfce7", fontSize: 12, padding: "2px 6px", fontWeight: "bold" }} title="סמן כהושלמה">✅ סיום</button>
+                            <button onClick={() => handleQuickExtend(b)} style={{ ...s.btnIcon, color: "#1d4ed8", background: "#dbeafe", fontSize: 12, padding: "2px 6px", fontWeight: "bold" }} title="הארך ביום אחד">📅 +יום</button>
+                          </>
+                        )}
                         <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
                         {b.drive_link && (
                           <button onClick={() => setViewPhotos(b)} style={s.btnIcon} title="צפה בתמונות">
@@ -801,6 +844,7 @@ export default function Bookings() {
           {paginated.map((b) => {
             const car = carsMap[b.car_id];
             const st = statusMap[b.status] || statusMap.cancelled;
+            const overdue = isBookingOverdue(b);
             return (
               <div key={b.id} style={s.mobileCard}>
                 <div style={s.mobileCardHead}>
@@ -827,13 +871,27 @@ export default function Bookings() {
                     {b.status === "active" && <div style={s.sub}>איסוף: {b.pickup_time || "08:00"}</div>}
                   </div>
                   <div>
-                    <b>עד תאריך:</b> {formatDate(b.end_date)}
-                    {b.status === "active" && <div style={s.sub}>החזרה: {b.return_time || "08:00"}</div>}
+                    <b style={{ color: overdue ? "#dc2626" : "inherit" }}>עד תאריך:</b>{" "}
+                    <span style={{ color: overdue ? "#dc2626" : "inherit", fontWeight: overdue ? "bold" : "normal" }}>
+                      {formatDate(b.end_date)}
+                    </span>
+                    {b.status === "active" && <div style={{ ...s.sub, color: overdue ? "#ef4444" : s.sub.color }}>החזרה: {b.return_time || "08:00"}</div>}
+                    {overdue && (
+                      <div style={{ fontSize: 10, color: "#dc2626", fontWeight: "bold", marginTop: 2 }}>
+                        ⚠️ חלף זמן החזרה
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div style={s.mobileFooter}>
                    <span style={{ fontWeight:700, color:"#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
-                   <div style={{ display:"flex", gap:8 }}>
+                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                     {overdue && (
+                       <>
+                         <button onClick={() => handleQuickComplete(b)} style={{ ...s.btnIcon, color: "#166534", background: "#dcfce7", fontSize: 12, padding: "2px 6px", fontWeight: "bold" }} title="סמן כהושלמה">✅ סיום</button>
+                         <button onClick={() => handleQuickExtend(b)} style={{ ...s.btnIcon, color: "#1d4ed8", background: "#dbeafe", fontSize: 12, padding: "2px 6px", fontWeight: "bold" }} title="הארך ביום אחד">📅 +יום</button>
+                       </>
+                     )}
                      <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
                      {b.drive_link && (
                        <button onClick={() => setViewPhotos(b)} style={s.btnIcon} title="צפה בתמונות">
