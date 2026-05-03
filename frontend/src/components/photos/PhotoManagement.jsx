@@ -49,12 +49,6 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button 
-            onClick={(e) => { e.stopPropagation(); window.open(urls[currentIndex], "_blank"); }}
-            style={{ background: "rgba(255,255,255,0.2)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 15px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}
-          >
-            📂 פתח מקור
-          </button>
-          <button 
             onClick={onClose} 
             style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", width: 36, height: 36, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
@@ -256,19 +250,8 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
                 background: "#f0f9ff", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", color: "#0369a1", fontWeight: 700
               }}
             >
-              📸 צילום רציף (מהיר)
+              📸 צילום רציף
             </button>
-
-            <label style={{ 
-              width: "100%", textAlign: "right", padding: "12px 16px", cursor: "pointer", 
-              fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderTop: "1px solid #f1f5f9"
-            }}>
-              📷 צילום בודד (מצלמה)
-              <input 
-                type="file" accept="image/*" capture="environment" style={{ display: "none" }}
-                onChange={(e) => { if (e.target.files?.length > 0) { onUpload(e.target.files); onToggle(); e.target.value = ""; } }}
-              />
-            </label>
 
             <label style={{ 
               width: "100%", textAlign: "right", padding: "12px 16px", cursor: "pointer", 
