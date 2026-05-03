@@ -39,6 +39,7 @@ export default function Cars() {
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState("");
   const [confirmPermanentDelete, setConfirmPermanentDelete] = useState(null);
+  const [editCar, setEditCar]   = useState(null);
   const [categories, setCategories] = useState([]);
   const [openFolders, setOpenFolders] = useState({}); // { categoryName: boolean }
   const canManageCars = useAuthStore(s => s.can(Permissions.CARS_MANAGE));
