@@ -67,8 +67,6 @@ export function Dashboard() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [rangeStart, setRangeStart] = useState(toISO(addDays(todayBase, -2)));
   const [rangeEnd, setRangeEnd]     = useState(toISO(addDays(todayBase, 4)));
-  const [quickFilterOptions, setQuickFilterOptions] = useState([]);
-  const [selectedQuickFilter, setSelectedQuickFilter] = useState(null);
   const [categories, setCategories] = useState([]);
 
   const modelOptions = useMemo(
@@ -87,16 +85,9 @@ export function Dashboard() {
       const matchesModel = selectedModels.length === 0 || selectedModels.includes(c.name);
       if (!matchesModel) return false;
 
-      // Quick filter
-      if (selectedQuickFilter) {
-        if (selectedQuickFilter.max_price && c.price_per_day > Number(selectedQuickFilter.max_price)) return false;
-        if (selectedQuickFilter.category && c.category !== selectedQuickFilter.category) return false;
-        if (selectedQuickFilter.is_hybrid !== undefined && selectedQuickFilter.is_hybrid !== "" && !!c.is_hybrid !== (selectedQuickFilter.is_hybrid === "true" || selectedQuickFilter.is_hybrid === true)) return false;
-      }
-
       return true;
     }),
-    [cars, selectedModels, selectedQuickFilter]
+    [cars, selectedModels, selectedCategories]
   );
   const visibleDays = Math.max(diffDays(rangeStart, rangeEnd) + 1, 1);
 
@@ -108,7 +99,6 @@ export function Dashboard() {
 
   useEffect(() => {
     carsAPI.list().then(setCars).catch(() => setCars([]));
-    settingsAPI.get("quick_filters").then(res => setQuickFilterOptions(res.value || [])).catch(() => {});
     settingsAPI.get("category_hierarchy").then(res => setCategories(res.value || [])).catch(() => {});
   }, []);
 
@@ -211,25 +201,6 @@ export function Dashboard() {
             <button onClick={() => shiftRange(7)} style={chipStyle}>7 ימים ▶</button>
           </div>
 
-          {/* Quick Category Filters */}
-          <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", width:isMobile ? "100%" : "auto", marginTop:isMobile ? 10 : 0 }}>
-            <span style={fieldLabel}>קטגוריה</span>
-            <button 
-              onClick={() => setSelectedQuickFilter(null)} 
-              style={!selectedQuickFilter ? activeChip : chipStyle}
-            >
-              הכל
-            </button>
-            {quickFilterOptions.map(f => (
-              <button 
-                key={f.label} 
-                onClick={() => setSelectedQuickFilter(selectedQuickFilter?.label === f.label ? null : f)} 
-                style={selectedQuickFilter?.label === f.label ? activeChip : chipStyle}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div style={{ marginTop:10, fontSize:12, color:"#64748b" }}>
@@ -237,7 +208,6 @@ export function Dashboard() {
           {selectedCategories.length === 0 ? "כל הקטגוריות" : selectedCategories.join(", ")}
           {" · "}
           {selectedModels.length === 0 ? "כל הדגמים" : selectedModels.join(", ")}
-          {selectedQuickFilter && <span> (סינון מהיר: <strong>{selectedQuickFilter.label}</strong>)</span>}
           {" · "}
           <strong>{filteredCars.length}</strong> רכבים ·
           טווח: <strong>{visibleDays}</strong> ימים

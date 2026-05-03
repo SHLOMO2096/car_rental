@@ -4,7 +4,6 @@ import { toast } from "../store/toast";
 import { useIsMobile } from "../hooks/useIsMobile";
 
 export default function Settings() {
-  const [quickFilters, setQuickFilters] = useState([]);
   const [categories, setCategories] = useState([]);
   const [general, setGeneral] = useState({
     default_pickup_time: "08:30",
@@ -20,11 +19,9 @@ export default function Settings() {
 
   useEffect(() => {
     Promise.all([
-      settingsAPI.get("quick_filters").catch(() => ({ value: [] })),
       settingsAPI.get("category_hierarchy").catch(() => ({ value: [] })),
       settingsAPI.get("general_settings").catch(() => ({ value: null })),
-    ]).then(([filters, cats, gen]) => {
-      setQuickFilters(filters.value || []);
+    ]).then(([cats, gen]) => {
       setCategories(cats.value || []);
       if (gen.value) setGeneral(prev => ({ ...prev, ...gen.value }));
     })
@@ -35,7 +32,6 @@ export default function Settings() {
   const save = async () => {
     setSaving(true);
     try {
-      await settingsAPI.update("quick_filters", quickFilters);
       await settingsAPI.update("category_hierarchy", categories);
       await settingsAPI.update("general_settings", general);
       toast.success("ההגדרות נשמרו בהצלחה");
@@ -46,19 +42,6 @@ export default function Settings() {
     }
   };
 
-  const addFilter = () => {
-    setQuickFilters([...quickFilters, { label: "חדש", max_price: "", category: "", is_hybrid: "" }]);
-  };
-
-  const removeFilter = (index) => {
-    setQuickFilters(quickFilters.filter((_, i) => i !== index));
-  };
-
-  const updateFilter = (index, field, value) => {
-    const updated = [...quickFilters];
-    updated[index][field] = value;
-    setQuickFilters(updated);
-  };
 
   const addCategory = () => {
     setCategories([...categories, { name: "", base_price: "", hybrid_price: "" }]);
@@ -80,69 +63,6 @@ export default function Settings() {
     <div dir="rtl" style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 24 }}>הגדרות מערכת</h1>
 
-      <div style={s.card}>
-        <h2 style={s.cardTitle}>ניהול סינונים מהירים (דשבורד)</h2>
-        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
-          כאן ניתן להגדיר את כפתורי הסינון המהיר שיופיעו בלוח הבקרה. 
-          ניתן לסנן לפי מחיר מקסימלי או לפי סוג רכב (למשל hybrid).
-        </p>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {quickFilters.map((f, i) => (
-            <div key={i} style={s.filterRow}>
-              <div style={s.field}>
-                <label style={s.label}>שם הסינון (Label)</label>
-                <input 
-                  value={f.label} 
-                  onChange={e => updateFilter(i, "label", e.target.value)} 
-                  style={s.input} 
-                  placeholder="למשל: AB"
-                />
-              </div>
-              <div style={s.field}>
-                <label style={s.label}>מחיר עד (₪)</label>
-                <input 
-                  type="number" 
-                  value={f.max_price} 
-                  onChange={e => updateFilter(i, "max_price", e.target.value)} 
-                  style={s.input} 
-                  placeholder="השאר ריק אם לא רלוונטי"
-                />
-              </div>
-              <div style={s.field}>
-                <label style={s.label}>קטגוריה</label>
-                <select 
-                  value={f.category || ""} 
-                  onChange={e => updateFilter(i, "category", e.target.value)} 
-                  style={s.input}
-                >
-                  <option value="">— הכל —</option>
-                  {categories.map(c => (
-                    <option key={c.name} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={s.field}>
-                <label style={s.label}>סוג הנעה</label>
-                <select 
-                  value={f.is_hybrid || ""} 
-                  onChange={e => updateFilter(i, "is_hybrid", e.target.value)} 
-                  style={s.input}
-                >
-                  <option value="">הכל</option>
-                  <option value="true">היברידי 🌿</option>
-                  <option value="false">רגיל ⛽</option>
-                </select>
-              </div>
-              <button onClick={() => removeFilter(i)} style={s.btnRemove}>🗑</button>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-          <button onClick={addFilter} style={s.btnAdd}>+ הוסף סינון</button>
-        </div>
-      </div>
 
       <div style={{ ...s.card, marginTop: 24 }}>
         <h2 style={s.cardTitle}>היררכיית קטגוריות ומחירים</h2>
