@@ -5,6 +5,7 @@ import { reportsAPI } from "../api/reports";
 import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
 import { settingsAPI } from "../api/settings";
+import Modal from "../components/ui/Modal";
 import Confirm from "../components/ui/Confirm";
 import { toast } from "../store/toast";
 import { getUserFacingErrorMessage } from "../api/errors";
