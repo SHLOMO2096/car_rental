@@ -272,6 +272,23 @@ export function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* ── TV Mode Action ── */}
+      <div style={{ marginTop: 40, display: "flex", justifyContent: "center", marginBottom: 20 }}>
+        <button 
+          onClick={() => window.open(window.location.origin + "/?view=tv", "_blank")}
+          style={{ 
+            background: "#1e293b", color: "#fff", border: "none", borderRadius: 12,
+            padding: "14px 28px", fontSize: 15, fontWeight: 800, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 10, boxShadow: "0 10px 25px -5px rgba(30,41,59,0.3)",
+            transition: "transform 0.2s"
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+        >
+          🖥️ פתח במצב תצוגה (מסך מלא)
+        </button>
+      </div>
     </div>
   );
 }
