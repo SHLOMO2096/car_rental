@@ -62,7 +62,7 @@ export function Dashboard() {
   todayBase.setHours(0,0,0,0);
   const todayISO = toISO(todayBase);
 
-  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedModels, setSelectedModels] = useState([]);
   const [rangeStart, setRangeStart] = useState(toISO(addDays(todayBase, -2)));
   const [rangeEnd, setRangeEnd]     = useState(toISO(addDays(todayBase, 4)));
 
@@ -71,26 +71,34 @@ export function Dashboard() {
     [cars]
   );
   const filteredCars = useMemo(
-    () => cars.filter(c => c.is_active && (!selectedModel || c.name === selectedModel)),
-    [cars, selectedModel]
+    () => cars.filter(c => c.is_active && (selectedModels.length === 0 || selectedModels.includes(c.name))),
+    [cars, selectedModels]
   );
   const visibleDays = Math.max(diffDays(rangeStart, rangeEnd) + 1, 1);
+
+  function toggleModel(model) {
+    setSelectedModels(prev =>
+      prev.includes(model) ? prev.filter(m => m !== model) : [...prev, model]
+    );
+  }
 
   useEffect(() => {
     carsAPI.list().then(setCars).catch(() => setCars([]));
   }, []);
 
   useEffect(() => {
-    reportsAPI.summary(selectedModel || undefined)
+    // For API: pass first selected model or undefined (summary API takes single model)
+    const modelParam = selectedModels.length === 1 ? selectedModels[0] : undefined;
+    reportsAPI.summary(modelParam)
       .then(setSummary)
       .catch(() => setSummary({ total: 0, active: 0, revenue: 0 }));
-    reportsAPI.monthly(year, selectedModel || undefined)
+    reportsAPI.monthly(year, modelParam)
       .then(rows => setMonthly(rows.map(r => ({ ...r, name: MONTH_NAMES[r.month - 1] }))))
       .catch(() => setMonthly([]));
-    reportsAPI.topCars(5, selectedModel || undefined)
+    reportsAPI.topCars(5, modelParam)
       .then(setTopCars)
       .catch(() => setTopCars([]));
-  }, [year, selectedModel]);
+  }, [year, selectedModels]);
 
   function setStartAndKeepRange(nextStart) {
     setRangeStart(nextStart);
@@ -112,18 +120,66 @@ export function Dashboard() {
 
   return (
     <div dir="rtl">
-      <h1 style={{ fontSize:isMobile ? 20 : 24, fontWeight:800, marginBottom:isMobile ? 14 : 24 }}>לוח בקרה</h1>
+      <h1 style={{ fontSize:isMobile ? 20 : 24, fontWeight:800, marginBottom:isMobile ? 14 : 20 }}>לוח בקרה</h1>
 
+      {/* ── Filter Panel ── */}
       <div style={{ ...cardStyle, padding:isMobile ? 12 : 16, marginBottom:20 }}>
-        <div style={{ display:"flex", gap:12, alignItems:"end", flexWrap:"wrap" }}>
-          <label style={{ ...fieldWrap, minWidth:isMobile ? "100%" : 160 }}>
-            <span style={fieldLabel}>דגם</span>
-            <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} style={inputStyle}>
-              <option value="">כל הדגמים</option>
-              {modelOptions.map(model => <option key={model} value={model}>{model}</option>)}
-            </select>
-          </label>
+        <div style={{ display:"flex", gap:12, alignItems:"flex-start", flexWrap:"wrap" }}>
 
+          {/* Multi-model filter */}
+          <div style={{ ...fieldWrap, minWidth: isMobile ? "100%" : 220 }}>
+            <span style={fieldLabel}>סינון דגמים</span>
+            <div style={{
+              border:"1px solid #cbd5e1", borderRadius:8, background:"#fff",
+              padding:"6px 10px", maxHeight:130, overflowY:"auto",
+              display:"flex", flexDirection:"column", gap:4,
+            }}>
+              {/* All models option */}
+              <label style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer",
+                              fontSize:13, fontWeight: selectedModels.length===0 ? 700 : 400,
+                              color: selectedModels.length===0 ? "#1d4ed8" : "#374151",
+                              padding:"2px 0" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedModels.length === 0}
+                  onChange={() => setSelectedModels([])}
+                  style={{ accentColor:"#1d4ed8" }}
+                />
+                כל הדגמים
+              </label>
+              <div style={{ borderTop:"1px solid #f1f5f9", margin:"2px 0" }} />
+              {modelOptions.map(model => (
+                <label key={model} style={{ display:"flex", alignItems:"center", gap:6,
+                                           cursor:"pointer", fontSize:13,
+                                           fontWeight: selectedModels.includes(model) ? 700 : 400,
+                                           color: selectedModels.includes(model) ? "#1d4ed8" : "#374151",
+                                           padding:"2px 0" }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedModels.includes(model)}
+                    onChange={() => toggleModel(model)}
+                    style={{ accentColor:"#1d4ed8" }}
+                  />
+                  {model}
+                </label>
+              ))}
+            </div>
+            {selectedModels.length > 0 && (
+              <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:4 }}>
+                {selectedModels.map(m => (
+                  <span key={m} style={{ background:"#dbeafe", color:"#1d4ed8", borderRadius:999,
+                                         padding:"2px 8px", fontSize:11, fontWeight:700,
+                                         display:"flex", alignItems:"center", gap:4 }}>
+                    {m}
+                    <span onClick={() => toggleModel(m)}
+                          style={{ cursor:"pointer", fontWeight:900, fontSize:13, lineHeight:1 }}>×</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Date range */}
           <label style={{ ...fieldWrap, minWidth:isMobile ? "100%" : 160 }}>
             <span style={fieldLabel}>מתאריך</span>
             <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} style={inputStyle} />
@@ -141,41 +197,47 @@ export function Dashboard() {
                 {days} ימים
               </button>
             ))}
-            <button onClick={() => shiftRange(-7)} style={chipStyle}>7 ימים אחורה</button>
-            <button onClick={() => shiftRange(7)} style={chipStyle}>7 ימים קדימה</button>
+            <button onClick={() => shiftRange(-7)} style={chipStyle}>◀ 7 ימים</button>
+            <button onClick={() => shiftRange(7)} style={chipStyle}>7 ימים ▶</button>
           </div>
         </div>
 
         <div style={{ marginTop:10, fontSize:12, color:"#64748b" }}>
-          מוצג כעת: <strong>{selectedModel || "כל הדגמים"}</strong> · טווח: <strong>{visibleDays}</strong> ימים
+          מוצג כעת:
+          {selectedModels.length === 0
+            ? <strong> כל הדגמים</strong>
+            : <strong> {selectedModels.join(", ")}</strong>}
+          {" · "}
+          <strong>{filteredCars.length}</strong> רכבים ·
+          טווח: <strong>{visibleDays}</strong> ימים
         </div>
       </div>
 
-      {/* Stats */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile ? "1fr" : "repeat(auto-fit,minmax(180px,1fr))", gap:16, marginBottom:32 }}>
+      {/* ── Availability Grid (FIRST prominent element) ── */}
+      <AvailabilityGrid cars={filteredCars} startDate={rangeStart} endDate={rangeEnd} navigate={navigate} isMobile={isMobile} />
+
+      {/* ── Stats cards (below the grid) ── */}
+      <div style={{ display:"grid", gridTemplateColumns:isMobile ? "repeat(2,1fr)" : "repeat(auto-fit,minmax(180px,1fr))", gap:12, margin:"20px 0" }}>
         {[
           { label:"סה״כ הזמנות",  value: summary?.total   ?? "—", color:"#3b82f6", icon:"📋" },
           { label:"הזמנות פעילות",value: summary?.active  ?? "—", color:"#22c55e", icon:"✅" },
           { label:"הכנסות השנה",  value: summary ? `₪${Math.round(summary.revenue).toLocaleString()}` : "—", color:"#f59e0b", icon:"💰" },
-          { label:"רכבים מוצגים",  value: filteredCars.length,      color:"#8b5cf6", icon:"🚗" },
+          { label:"רכבים מוצגים",  value: filteredCars.length, color:"#8b5cf6", icon:"🚗" },
         ].map(s => (
-          <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:"20px 24px",
-               border:`1px solid ${s.color}30`, display:"flex", gap:14, alignItems:"center",
+          <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:isMobile ? "14px 16px" : "20px 24px",
+               border:`1px solid ${s.color}30`, display:"flex", gap:12, alignItems:"center",
                boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-            <span style={{ fontSize:32 }}>{s.icon}</span>
+            <span style={{ fontSize: isMobile ? 24 : 32 }}>{s.icon}</span>
             <div>
-              <div style={{ fontSize:28, fontWeight:800, color:s.color }}>{s.value}</div>
-              <div style={{ fontSize:12, color:"#94a3b8" }}>{s.label}</div>
+              <div style={{ fontSize: isMobile ? 22 : 28, fontWeight:800, color:s.color }}>{s.value}</div>
+              <div style={{ fontSize:11, color:"#94a3b8" }}>{s.label}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Availability Grid */}
-      <AvailabilityGrid cars={filteredCars} startDate={rangeStart} endDate={rangeEnd} navigate={navigate} isMobile={isMobile} />
-
-      {/* Charts row */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile ? "1fr" : "2fr 1fr", gap:20, marginTop:20 }}>
+      {/* ── Charts row ── */}
+      <div style={{ display:"grid", gridTemplateColumns:isMobile ? "1fr" : "2fr 1fr", gap:20, marginTop:4 }}>
         <div style={{ ...cardStyle, padding:isMobile ? 12 : 20 }}>
           <h3 style={cardTitle}>הכנסות חודשיות {year}</h3>
           <ResponsiveContainer width="100%" height={260}>
@@ -189,8 +251,8 @@ export function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-         <div style={{ ...cardStyle, padding:isMobile ? 12 : 20 }}>
-           <h3 style={cardTitle}>רכבים מובילים</h3>
+        <div style={{ ...cardStyle, padding:isMobile ? 12 : 20 }}>
+          <h3 style={cardTitle}>רכבים מובילים</h3>
           {topCars.length === 0 && <div style={{ color:"#94a3b8", fontSize:13 }}>אין נתונים להצגה</div>}
           {topCars.map((c, i) => (
             <div key={c.car_id} style={{ display:"flex", alignItems:"center", gap:10,
