@@ -513,11 +513,46 @@ export default function Bookings() {
      finally { setConfirm(null); }
    }
 
+   async function compressImage(file, maxDimension = 1600, quality = 0.8) {
+     return new Promise((resolve) => {
+       const reader = new FileReader();
+       reader.onload = (event) => {
+         const img = new Image();
+         img.src = event.target.result;
+         img.onload = () => {
+           let { width, height } = img;
+           if (width > maxDimension || height > maxDimension) {
+             if (width > height) {
+               height = Math.round((height * maxDimension) / width);
+               width = maxDimension;
+             } else {
+               width = Math.round((width * maxDimension) / height);
+               height = maxDimension;
+             }
+           }
+           const canvas = document.createElement("canvas");
+           canvas.width = width;
+           canvas.height = height;
+           const ctx = canvas.getContext("2d");
+           ctx.drawImage(img, 0, 0, width, height);
+           canvas.toBlob((blob) => {
+             if (blob) resolve(new File([blob], file.name, { type: "image/jpeg", lastModified: Date.now() }));
+             else resolve(file);
+           }, "image/jpeg", quality);
+         };
+         img.onerror = () => resolve(file);
+       };
+       reader.onerror = () => resolve(file);
+       reader.readAsDataURL(file);
+     });
+   }
+
    async function handlePhotoUpload(bookingId, file) {
      if (!file) return;
      setPhotoUploading(true);
      try {
-       const result = await bookingsAPI.uploadPhoto(bookingId, file);
+       const compressed = await compressImage(file);
+       const result = await bookingsAPI.uploadPhoto(bookingId, compressed);
        toast.success(`✓ צילום הועלה בהצלחה ל-Google Drive`);
        if (result.link) {
          // Open the link if available
@@ -724,7 +759,6 @@ export default function Bookings() {
                               id={`file-upload-${b.id}`}
                               type="file"
                               accept="image/*"
-                              capture="environment"
                               style={{ display:"none" }}
                               disabled={photoUploading && photoUploadId === b.id}
                               onChange={(e) => {
@@ -811,7 +845,6 @@ export default function Bookings() {
                            id={`file-upload-mobile-${b.id}`}
                            type="file"
                            accept="image/*"
-                           capture="environment"
                            style={{ display:"none" }}
                            disabled={photoUploading && photoUploadId === b.id}
                            onChange={(e) => {
