@@ -83,7 +83,7 @@ export function Dashboard() {
 
       // Quick filter
       if (selectedQuickFilter) {
-        if (selectedQuickFilter.max_price && c.price_per_day > selectedQuickFilter.max_price) return false;
+        if (selectedQuickFilter.max_price && c.price_per_day > Number(selectedQuickFilter.max_price)) return false;
         if (selectedQuickFilter.type && c.type !== selectedQuickFilter.type) return false;
       }
 
