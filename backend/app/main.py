@@ -2,12 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.session import engine, Base
-import app.models.user    # noqa
-import app.models.car     # noqa
-import app.models.booking # noqa
-import app.models.customer # noqa
-import app.models.audit_log # noqa
-import app.models.settings  # noqa
+import app.models  # noqa: F401
 from app.routers import auth, cars, bookings, reports, suggestions, customers, settings as settings_router
 
 # יצירת טבלאות (בפרודקשן — השתמש ב-Alembic)
