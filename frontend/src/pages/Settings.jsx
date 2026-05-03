@@ -5,13 +5,26 @@ import { useIsMobile } from "../hooks/useIsMobile";
 
 export default function Settings() {
   const [quickFilters, setQuickFilters] = useState([]);
+  const [groupPrices, setGroupPrices] = useState([]);
+  const [general, setGeneral] = useState({
+    default_pickup_time: "08:30",
+    default_return_time: "08:00",
+    closure_time: "12:00"
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const isMobile = useIsMobile(640);
 
   useEffect(() => {
-    settingsAPI.get("quick_filters")
-      .then(res => setQuickFilters(res.value || []))
+    Promise.all([
+      settingsAPI.get("quick_filters").catch(() => ({ value: [] })),
+      settingsAPI.get("group_prices").catch(() => ({ value: [] })),
+      settingsAPI.get("general_settings").catch(() => ({ value: null })),
+    ]).then(([filters, prices, gen]) => {
+      setQuickFilters(filters.value || []);
+      setGroupPrices(prices.value || []);
+      if (gen.value) setGeneral(prev => ({ ...prev, ...gen.value }));
+    })
       .catch(() => toast.error("נכשל בטעינת הגדרות"))
       .finally(() => setLoading(false));
   }, []);
@@ -20,6 +33,8 @@ export default function Settings() {
     setSaving(true);
     try {
       await settingsAPI.update("quick_filters", quickFilters);
+      await settingsAPI.update("group_prices", groupPrices);
+      await settingsAPI.update("general_settings", general);
       toast.success("ההגדרות נשמרו בהצלחה");
     } catch (e) {
       toast.error("נכשל בשמירת הגדרות");
@@ -40,6 +55,20 @@ export default function Settings() {
     const updated = [...quickFilters];
     updated[index][field] = value;
     setQuickFilters(updated);
+  };
+
+  const addGroupPrice = () => {
+    setGroupPrices([...groupPrices, { group: "", price: "" }]);
+  };
+
+  const updateGroupPrice = (index, field, value) => {
+    const updated = [...groupPrices];
+    updated[index][field] = value;
+    setGroupPrices(updated);
+  };
+
+  const removeGroupPrice = (index) => {
+    setGroupPrices(groupPrices.filter((_, i) => i !== index));
   };
 
   if (loading) return <div style={{ padding: 20 }}>טוען...</div>;
@@ -99,10 +128,78 @@ export default function Settings() {
 
         <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
           <button onClick={addFilter} style={s.btnAdd}>+ הוסף סינון</button>
-          <button onClick={save} disabled={saving} style={s.btnSave}>
-            {saving ? "שומר..." : "שמור שינויים"}
-          </button>
         </div>
+      </div>
+
+      <div style={{ ...s.card, marginTop: 24 }}>
+        <h2 style={s.cardTitle}>מחירון לפי קבוצת רכב</h2>
+        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+          הגדר מחירי ברירת מחדל לכל קבוצה (A, B, C וכו'). מחירים אלו ישמשו את המערכת לחישובים אוטומטיים.
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {groupPrices.map((p, i) => (
+            <div key={i} style={{ ...s.filterRow, background: "#fdf4ff" }}>
+              <div style={s.field}>
+                <label style={s.label}>קבוצה</label>
+                <input 
+                  value={p.group} 
+                  onChange={e => updateGroupPrice(i, "group", e.target.value.toUpperCase())} 
+                  style={s.input} 
+                  placeholder="למשל: A"
+                />
+              </div>
+              <div style={s.field}>
+                <label style={s.label}>מחיר ליום (₪)</label>
+                <input 
+                  type="number" 
+                  value={p.price} 
+                  onChange={e => updateGroupPrice(i, "price", e.target.value)} 
+                  style={s.input} 
+                />
+              </div>
+              <button onClick={() => removeGroupPrice(i)} style={s.btnRemove}>🗑</button>
+            </div>
+          ))}
+        </div>
+
+      <div style={{ ...s.card, marginTop: 24 }}>
+        <h2 style={s.cardTitle}>הגדרות כלליות</h2>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 20 }}>
+          <div style={s.field}>
+            <label style={s.label}>שעת איסוף ברירת מחדל</label>
+            <input 
+              type="time" 
+              value={general.default_pickup_time} 
+              onChange={e => setGeneral({ ...general, default_pickup_time: e.target.value })} 
+              style={s.input} 
+            />
+          </div>
+          <div style={s.field}>
+            <label style={s.label}>שעת החזרה ברירת מחדל</label>
+            <input 
+              type="time" 
+              value={general.default_return_time} 
+              onChange={e => setGeneral({ ...general, default_return_time: e.target.value })} 
+              style={s.input} 
+            />
+          </div>
+          <div style={s.field}>
+            <label style={s.label}>שעת סגירה (ערבי חג/שבת)</label>
+            <input 
+              type="time" 
+              value={general.closure_time} 
+              onChange={e => setGeneral({ ...general, closure_time: e.target.value })} 
+              style={s.input} 
+            />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
+        <button onClick={save} disabled={saving} style={{ ...s.btnSave, padding: "12px 32px", fontSize: 16 }}>
+          {saving ? "שומר..." : "💾 שמור הכל"}
+        </button>
       </div>
     </div>
   );

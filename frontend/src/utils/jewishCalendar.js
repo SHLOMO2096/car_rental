@@ -62,9 +62,10 @@ export function getJewishDayMeta(dateInput) {
   };
 }
 
-export function isAfterClosureTime(value) {
+export function isAfterClosureTime(value, closureTimeStr = "12:00") {
   if (!value || !/^\d{2}:\d{2}$/.test(value)) return false;
   const [hh, mm] = value.split(":").map(Number);
-  return (hh * 60 + mm) > 12 * 60;
+  const [limitHH, limitMM] = (closureTimeStr || "12:00").split(":").map(Number);
+  return (hh * 60 + mm) > (limitHH * 60 + limitMM);
 }
 

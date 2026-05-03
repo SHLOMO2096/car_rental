@@ -4,6 +4,7 @@ import { getUserFacingErrorMessage } from "../api/errors";
 import { bookingsAPI } from "../api/bookings";
 import { carsAPI } from "../api/cars";
 import { customersAPI } from "../api/customers";
+import { settingsAPI } from "../api/settings";
 import { useAuthStore } from "../store/auth";
 import { toast } from "../store/toast";
 import { Permissions } from "../permissions";
@@ -50,14 +51,14 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
 }
 
-function makeEmptyForm() {
+function makeEmptyForm(defaults = {}) {
   return {
     customer_id: "",
     car_id: "", customer_name: "", customer_email: "",
     customer_has_no_email: false,
     customer_phone: "", customer_id_num: "",
-    start_date: todayISO(),    start_time: "08:00",
-    end_date:   tomorrowISO(), end_time:   "08:00",
+    start_date: todayISO(),    start_time: defaults.default_pickup_time || "08:00",
+    end_date:   tomorrowISO(), end_time:   defaults.default_return_time || "08:00",
     notes: "",
   };
 }
@@ -72,7 +73,9 @@ export default function Bookings() {
   const [statusFilter, setStatus] = useState("all");
   const [modal, setModal]         = useState(null);
   const [editBooking, setEdit]    = useState(null);
-  const [form, setForm]           = useState(makeEmptyForm);
+  const [generalSettings, setGeneralSettings] = useState(null);
+  const [groupPrices, setGroupPrices] = useState([]);
+  const [form, setForm]           = useState(() => makeEmptyForm({}));
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState("");
   const [confirm, setConfirm]     = useState(null);
@@ -110,9 +113,11 @@ export default function Bookings() {
   }
 
   const load = useCallback(async () => {
-    const [bookingsRes, carsRes] = await Promise.allSettled([
+    const [bookingsRes, carsRes, genRes, pricesRes] = await Promise.allSettled([
       bookingsAPI.list(),
       carsAPI.list({ active_only: false }),
+      settingsAPI.get("general_settings"),
+      settingsAPI.get("group_prices"),
     ]);
 
     if (bookingsRes.status === "fulfilled") {
@@ -129,6 +134,13 @@ export default function Bookings() {
       toast.error(getUserFacingErrorMessage(carsRes.reason), { title: "טעינת רכבים" });
     }
 
+    if (genRes.status === "fulfilled" && genRes.value?.value) {
+      setGeneralSettings(genRes.value.value);
+    }
+    if (pricesRes.status === "fulfilled" && pricesRes.value?.value) {
+      setGroupPrices(pricesRes.value.value);
+    }
+
     setLoading(false);
   }, []);
 
@@ -139,7 +151,7 @@ export default function Bookings() {
     if (!prefill) return;
 
     setForm({
-      ...makeEmptyForm(),
+      ...makeEmptyForm(generalSettings || {}),
       car_id: prefill.car_id || "",
       customer_id: prefill.customer_id ? String(prefill.customer_id) : "",
       customer_name: prefill.customer_name || "",
@@ -216,19 +228,21 @@ export default function Bookings() {
   const paginated  = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
 
   function openCreate() {
-    setForm(makeEmptyForm()); setEdit(null); setFormError(""); setModal("create");
+    setForm(makeEmptyForm(generalSettings || {})); setEdit(null); setFormError(""); setModal("create");
     setConflictModal(null);
     setCustomerMatches([]);
   }
   function openEdit(b) {
     setForm({
-      ...makeEmptyForm(),
+      ...makeEmptyForm(generalSettings || {}),
       customer_id: b.customer_id ? String(b.customer_id) : "",
       car_id: String(b.car_id), customer_name: b.customer_name,
       customer_email: b.customer_email||"", customer_phone: b.customer_phone||"",
       customer_has_no_email: !b.customer_email,
       customer_id_num: b.customer_id_num||"", start_date: b.start_date,
       end_date: b.end_date, notes: b.notes||"",
+      start_time: b.pickup_time || generalSettings?.default_pickup_time || "08:00",
+      end_time: b.return_time || generalSettings?.default_return_time || "08:00",
     });
     setEdit(b); setFormError(""); setModal("edit");
     setConflictModal(null);
@@ -460,11 +474,13 @@ export default function Bookings() {
       const endMeta = getJewishDayMeta(form.end_date);
       const warnings = [];
 
-      if (startMeta.closureAtNoon && isAfterClosureTime(form.start_time || "08:00")) {
-        warnings.push(`איסוף אחרי 12:00 בתאריך ${formatDate(form.start_date)} (${startMeta.isShabbat ? "שבת" : "ערב חג"})`);
+      const closureTime = generalSettings?.closure_time || "12:00";
+
+      if (startMeta.closureAtNoon && isAfterClosureTime(form.start_time || "08:00", closureTime)) {
+        warnings.push(`איסוף אחרי ${closureTime} בתאריך ${formatDate(form.start_date)} (${startMeta.isShabbat ? "שבת" : "ערב חג"})`);
       }
-      if (endMeta.closureAtNoon && isAfterClosureTime(form.end_time || "08:00")) {
-        warnings.push(`החזרה אחרי 12:00 בתאריך ${formatDate(form.end_date)} (${endMeta.isShabbat ? "שבת" : "ערב חג"})`);
+      if (endMeta.closureAtNoon && isAfterClosureTime(form.end_time || "08:00", closureTime)) {
+        warnings.push(`החזרה אחרי ${closureTime} בתאריך ${formatDate(form.end_date)} (${endMeta.isShabbat ? "שבת" : "ערב חג"})`);
       }
 
       if (warnings.length > 0) {
@@ -624,7 +640,13 @@ export default function Bookings() {
   const days        = form.start_date && form.end_date
     ? Math.max(1, Math.round((new Date(form.end_date) - new Date(form.start_date)) / 86400000))
     : 0;
-  const previewTotal = previewCar && days ? previewCar.price_per_day * days : 0;
+  
+  let pricePerDay = previewCar?.price_per_day || 0;
+  if (previewCar?.group) {
+    const gPrice = groupPrices.find(gp => gp.group === previewCar.group);
+    if (gPrice?.price) pricePerDay = Number(gPrice.price);
+  }
+  const previewTotal = pricePerDay * days;
 
   const conflictModelOptions = conflictModal
     ? [...new Set(cars.filter((c) => c.is_active).map((c) => c.name))]
