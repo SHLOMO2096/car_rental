@@ -1493,13 +1493,13 @@ function PhotoMenu({ booking, onView, onUpload, isOpen, onToggle }) {
       {isOpen && (
         <>
           <div 
-            style={{ position: "fixed", inset: 0, zIndex: 999 }} 
+            style={{ position: "fixed", inset: 0, zIndex: 9999 }} 
             onClick={(e) => { e.stopPropagation(); onToggle(); }} 
           />
           <div style={{
             position: "absolute", bottom: "100%", left: 0, marginBottom: 8,
-            zIndex: 1000, background: "#fff", borderRadius: 10, 
-            boxShadow: "0 10px 25px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0",
+            zIndex: 10000, background: "#fff", borderRadius: 10, 
+            boxShadow: "0 10px 25px rgba(0,0,0,0.25)", border: "1px solid #e2e8f0",
             minWidth: 160, overflow: "hidden"
           }} onClick={e => e.stopPropagation()}>
             <div style={{ padding: "8px 12px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 12, color: "#64748b" }}>

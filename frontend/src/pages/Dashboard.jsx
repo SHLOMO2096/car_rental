@@ -441,9 +441,9 @@ function PhotoMenu({ booking, onView, onUpload, isOpen, onToggle }) {
           />
           <div style={{
             position: "absolute", bottom: "100%", left: 0, marginBottom: 8,
-            zIndex: 1002, background: "#fff", borderRadius: 12, 
-            boxShadow: "0 10px 40px rgba(0,0,0,0.2)", border: "1px solid #e2e8f0",
-            minWidth: 180, overflow: "hidden"
+            zIndex: 10000, background: "#fff", borderRadius: 12, 
+            boxShadow: "0 10px 40px rgba(0,0,0,0.3)", border: "1px solid #e2e8f0",
+            minWidth: 190, overflow: "hidden"
           }} onClick={e => e.stopPropagation()}>
             <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 12, color: "#64748b", background: "#f8fafc" }}>
               פעולות תמונה
@@ -917,18 +917,37 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
                     const isDragging = dragBooking?.id === b.id;
 
                     let bg, fg, label;
+                    const firstName = b.customer_name?.split(" ")[0] || "לקוח";
+                    
                     if (isSameDay) {
                       bg = "#e9d5ff"; fg = "#7c3aed";
-                      label = <>⬦ חד-יומי<br/><small>{b.pickup_time||"08:30"}</small></>;
+                      label = (
+                        <div style={{ display:"flex", flexDirection:"column", fontSize:10 }}>
+                          <span style={{ fontWeight:800 }}>{firstName}</span>
+                          <span>⬦ חד-יומי ({b.pickup_time||"08:30"})</span>
+                        </div>
+                      );
                     } else if (isFirst) {
                       bg = "#dbeafe"; fg = "#1d4ed8";
-                      label = <>🚀 יציאה<br/><small>{b.pickup_time||"08:30"}</small></>;
+                      label = (
+                        <div style={{ display:"flex", flexDirection:"column", fontSize:10 }}>
+                          <span style={{ fontWeight:800 }}>{firstName}</span>
+                          <span>🚀 יציאה ({b.pickup_time||"08:30"})</span>
+                        </div>
+                      );
                     } else if (isLast) {
                       bg = "#fef9c3"; fg = "#854d0e";
-                      label = <>↩ חזרה<br/><small>{b.return_time||"08:00"}</small></>;
+                      label = (
+                        <div style={{ display:"flex", flexDirection:"column", fontSize:10 }}>
+                          <span style={{ fontWeight:800 }}>{firstName}</span>
+                          <span>↩ חזרה ({b.return_time||"08:00"})</span>
+                        </div>
+                      );
                     } else {
                       bg = "#fee2e2"; fg = "#b91c1c";
-                      label = b.customer_name?.split(" ")[0] ?? "תפוס";
+                      label = (
+                        <div style={{ fontWeight:700, fontSize:10 }}>{firstName}</div>
+                      );
                     }
 
                     return (
