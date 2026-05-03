@@ -321,22 +321,60 @@ export default function Customers() {
     <div dir="rtl">
       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xlsm" onChange={handleImportFile} style={{ display: "none" }} />
 
+      {/* ─── Header + Search ─── */}
       <div style={s.header}>
         <h1 style={s.h1}>ניהול לקוחות</h1>
-        <div style={{ ...s.topActions, width: isMobile ? "100%" : "auto" }}>
-          <input
-            placeholder="🔍 חיפוש לפי שם / טלפון / מייל / תעודת זהות"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ ...s.searchInput, minWidth: isMobile ? "100%" : 320 }}
-          />
-          <button onClick={() => fileInputRef.current?.click()} disabled={importing} style={{ ...s.btnImport, width: isMobile ? "100%" : "auto" }}>
-            {importing ? "מייבא..." : "⬆️ ייבוא לקוחות"}
-          </button>
-          {canSendBulkEmail && (
-            <button onClick={openBulkEmail} style={{ ...s.btnEmailPrimary, width: isMobile ? "100%" : "auto" }}>📣 הודעה לכל הלקוחות</button>
-          )}
-        </div>
+
+        {/* Mobile: full-width search FIRST, then secondary actions */}
+        {isMobile ? (
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Dominant search bar */}
+            <div style={{ position: "relative" }}>
+              <span style={{
+                position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                fontSize: 18, pointerEvents: "none",
+              }}>🔍</span>
+              <input
+                placeholder="חיפוש לפי שם / טלפון / מייל / תעודת זהות"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  width: "100%", padding: "12px 42px 12px 14px",
+                  borderRadius: 12, border: "2px solid #3b82f6",
+                  fontSize: 15, boxSizing: "border-box", outline: "none",
+                  boxShadow: "0 2px 8px rgba(59,130,246,0.15)",
+                  fontWeight: 500,
+                }}
+              />
+            </div>
+            {/* Secondary actions row */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={() => fileInputRef.current?.click()} disabled={importing}
+                style={{ ...s.btnImport, flex: 1, minWidth: 0 }}>
+                {importing ? "מייבא..." : "⬆️ ייבוא"}
+              </button>
+              {canSendBulkEmail && (
+                <button onClick={openBulkEmail}
+                  style={{ ...s.btnEmailPrimary, flex: 1, minWidth: 0 }}>📣 הודעה המונית</button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ ...s.topActions }}>
+            <input
+              placeholder="🔍 חיפוש לפי שם / טלפון / מייל / תעודת זהות"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ ...s.searchInput, minWidth: 320 }}
+            />
+            <button onClick={() => fileInputRef.current?.click()} disabled={importing} style={s.btnImport}>
+              {importing ? "מייבא..." : "⬆️ ייבוא לקוחות"}
+            </button>
+            {canSendBulkEmail && (
+              <button onClick={openBulkEmail} style={s.btnEmailPrimary}>📣 הודעה לכל הלקוחות</button>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={s.card}>

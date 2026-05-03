@@ -65,7 +65,10 @@ export function CalendarPage() {
 
   const firstDay    = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const startOffset = (firstDay.getDay() + 1) % 7; // RTL: Sunday=0
+  // RTL grid: column order is א(Sun)=col1 ... ש(Sat)=col7 (leftmost in RTL)
+  // JS getDay(): Sun=0, Mon=1, ..., Sat=6
+  // We want: Sun→0 offset, Mon→1, ..., Sat→6
+  const startOffset = firstDay.getDay(); // Sun=0..Sat=6
 
   const monthStr = String(month + 1).padStart(2, "0");
   const start = `${year}-${monthStr}-01`;
@@ -93,7 +96,8 @@ export function CalendarPage() {
   }, [bookings, month]);
 
    const MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
-                      "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+                       "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+   // RTL column order: right→left = א(Sun), ב(Mon), ג(Tue), ד(Wed), ה(Thu), ו(Fri), ש(Sat=left)
    const DAYS_HE   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
 
   function prevMonth() { if (month === 0) { setMonth(11); setYear(y => y-1); } else setMonth(m => m-1); }
@@ -138,11 +142,20 @@ export function CalendarPage() {
         </div>
       )}
 
+      {/* Scroll wrapper for mobile */}
+      <div style={{ overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ minWidth: isMobile ? 420 : undefined }}>
+
       {/* Days header */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:2 }}>
-        {DAYS_HE.map(d => (
-          <div key={d} style={{ textAlign:"center", fontSize:12, fontWeight:700,
-               color:"#64748b", padding:"8px 0" }}>{d}</div>
+        {DAYS_HE.map((d, i) => (
+          <div key={d} style={{
+            textAlign:"center", fontSize: isMobile ? 11 : 12, fontWeight:700,
+            color: i === 6 ? "#7c3aed" : "#64748b",
+            padding: isMobile ? "6px 0" : "8px 0",
+            background: i === 6 ? "#f5f3ff" : "transparent",
+            borderRadius: i === 6 ? "6px 6px 0 0" : 0,
+          }}>{d}</div>
         ))}
       </div>
 
@@ -224,6 +237,9 @@ export function CalendarPage() {
         })}
       </div>
 
+        </div>{/* end minWidth div */}
+      </div>{/* end scroll wrapper */}
+
       {/* Hebrew month legend */}
       {showHebrew && (
         <div style={{
@@ -269,7 +285,7 @@ export function CalendarPage() {
 const navBtn  = { background:"#f1f5f9", border:"1px solid #e2e8f0", borderRadius:8,
                   padding:"6px 14px", cursor:"pointer", fontSize:16 };
 const dayCell = { minHeight:90, padding:6, borderRadius:6, verticalAlign:"top" };
-const mobileDayCell = { minHeight:52, padding:3, fontSize:10 };
+const mobileDayCell = { minHeight:60, padding:"3px 2px", fontSize:10 };
 const emptyCell = { minHeight:90, background:"#fafafa", borderRadius:6, border:"1px solid #f1f5f9" };
 const tagBase = {
   fontSize: 9,
