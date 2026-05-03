@@ -167,7 +167,9 @@ class GoogleDriveService:
         Returns:
             File metadata dict or None
         """
-        filename = f"Booking_{booking_id}_{car_name}_{customer_name}.jpg"
+        import time
+        ts = int(time.time())
+        filename = f"Booking_{booking_id}_{car_name}_{customer_name}_{ts}.jpg"
         description = f"Booking #{booking_id}: {customer_name} - {car_name}"
         
         return self.upload_file(file_bytes, filename, description=description)

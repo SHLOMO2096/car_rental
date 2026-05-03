@@ -467,7 +467,13 @@ export default function Customers() {
                       <td style={s.td}>{b.total_price ? `₪${Math.round(b.total_price).toLocaleString()}` : "—"}</td>
                       <td style={s.td}>
                         {b.drive_link ? (
-                          <a href={b.drive_link} target="_blank" rel="noreferrer" style={s.btnPhoto}>📸 צפה</a>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            {b.drive_link.split(",").filter(Boolean).map((link, idx, arr) => (
+                              <a key={idx} href={link} target="_blank" rel="noreferrer" style={{ ...s.btnPhoto, padding: "2px 6px", fontSize: 11 }}>
+                                📸 צפה {arr.length > 1 ? idx+1 : ''}
+                              </a>
+                            ))}
+                          </div>
                         ) : "—"}
                       </td>
                     </tr>

@@ -708,9 +708,9 @@ export default function Bookings() {
                     <td style={s.td}>
                       <div style={{ display:"flex", gap:5 }}>
                         <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
-                        {b.drive_link && (
-                          <a href={b.drive_link} target="_blank" rel="noreferrer" style={{ ...s.btnIcon, textDecoration: "none" }} title="צפה בצילום">🖼️</a>
-                        )}
+                        {(b.drive_link || "").split(",").filter(Boolean).map((link, idx, arr) => (
+                          <a key={idx} href={link} target="_blank" rel="noreferrer" style={{ ...s.btnIcon, textDecoration: "none" }} title={`צפה בצילום ${arr.length > 1 ? idx+1 : ''}`}>🖼️<small style={{ fontSize: 9 }}>{arr.length > 1 ? idx+1 : ''}</small></a>
+                        ))}
                         {b.status === "active" && (
                           <>
                             <label
@@ -795,9 +795,9 @@ export default function Bookings() {
                    <span style={{ fontWeight:700, color:"#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
                    <div style={{ display:"flex", gap:8 }}>
                      <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
-                     {b.drive_link && (
-                       <a href={b.drive_link} target="_blank" rel="noreferrer" style={{ ...s.btnIcon, textDecoration: "none" }} title="צפה בצילום">🖼️</a>
-                     )}
+                     {(b.drive_link || "").split(",").filter(Boolean).map((link, idx, arr) => (
+                       <a key={idx} href={link} target="_blank" rel="noreferrer" style={{ ...s.btnIcon, textDecoration: "none" }} title={`צפה בצילום ${arr.length > 1 ? idx+1 : ''}`}>🖼️<small style={{ fontSize: 9 }}>{arr.length > 1 ? idx+1 : ''}</small></a>
+                     ))}
                      {b.status === "active" && (
                        <>
                          <label

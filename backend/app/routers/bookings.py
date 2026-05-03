@@ -301,7 +301,12 @@ async def upload_booking_photo(
     if not result:
         raise HTTPException(500, "נכשל העלאת הקובץ ל-Google Drive")
 
-    booking.drive_link = result.get("link")
+    new_link = result.get("link")
+    if new_link:
+        if booking.drive_link:
+            booking.drive_link = f"{booking.drive_link},{new_link}"
+        else:
+            booking.drive_link = new_link
     db.commit()
 
     log_audit_event(
