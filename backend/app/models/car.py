@@ -29,6 +29,7 @@ class Car(Base):
     is_hybrid     = Column(Boolean, default=False)        # האם היברידי
     color         = Column(String(50))
     price_per_day = Column(Float, nullable=True)          # יכול להיות ריק כדי להשתמש במחיר קטגוריה
+    test_date     = Column(String(50))                    # תאריך טסט מהדוח
     description   = Column(Text)
     image_url     = Column(String(500))
     is_active     = Column(Boolean, default=True, nullable=False)

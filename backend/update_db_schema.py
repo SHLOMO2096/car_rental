@@ -14,6 +14,7 @@ def update_schema_and_seed():
             print("Updating schema (adding columns if missing)...")
             conn.execute(text("ALTER TABLE cars ADD COLUMN IF NOT EXISTS category VARCHAR(100);"))
             conn.execute(text("ALTER TABLE cars ADD COLUMN IF NOT EXISTS is_hybrid BOOLEAN DEFAULT FALSE;"))
+            conn.execute(text("ALTER TABLE cars ADD COLUMN IF NOT EXISTS test_date VARCHAR(50);"))
             conn.execute(text("ALTER TABLE cars ALTER COLUMN price_per_day DROP NOT NULL;"))
             
             # 2. Seed Categories if hierarchy is empty

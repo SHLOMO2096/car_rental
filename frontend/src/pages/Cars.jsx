@@ -25,7 +25,7 @@ const typeMap = Object.fromEntries(CAR_TYPES.map(t => [t.value, t]));
 
 const EMPTY_FORM = { 
   name:"", category:"", is_hybrid: false, year: new Date().getFullYear(),
-  plate:"", color:"", price_per_day:"", description:"", image_url:"" 
+  plate:"", color:"", price_per_day:"", test_date: "", description:"", image_url:"" 
 };
 
 export default function Cars() {
@@ -87,6 +87,7 @@ export default function Cars() {
       plate: car.plate,
       color: car.color||"", 
       price_per_day: car.price_per_day || "",
+      test_date: car.test_date || "",
       description: car.description||"", 
       image_url: car.image_url||"" 
     });
@@ -209,6 +210,11 @@ export default function Cars() {
                           {car.is_hybrid && <span title="היברידי" style={{ marginRight: 6 }}>🌿</span>}
                         </div>
                         <div style={s.carSub}>{car.plate} • {car.color} • {car.year}</div>
+                        {car.test_date && (
+                          <div style={{ fontSize: 11, color: "#e11d48", fontWeight: 600, marginTop: 4 }}>
+                            🗓 טסט עד: {car.test_date}
+                          </div>
+                        )}
                         
                         <div style={s.price}>
                           ₪{Number(displayPrice || 0).toLocaleString()} / יום
@@ -283,6 +289,10 @@ export default function Cars() {
             <input type="number" value={form.price_per_day} min={0}
               placeholder="השאר ריק למחיר קטגוריה"
               onChange={e => setForm(f=>({...f,price_per_day:e.target.value}))} style={s.input} />
+          </Field>
+          <Field label="תאריך טסט">
+            <input value={form.test_date} placeholder="למשל: 19/02/2027"
+              onChange={e => setForm(f=>({...f,test_date:e.target.value}))} style={s.input} />
           </Field>
         </div>
         <Field label="תיאור">
