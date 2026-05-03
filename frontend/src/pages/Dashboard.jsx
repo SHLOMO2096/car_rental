@@ -607,19 +607,32 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
                       return true;
                     });
 
-                    if (cellBookings.length > 1 && !dragBooking) {
+                    if (cellBookings.length > 1) {
                         return (
                             <td key={car.id}
-                                title={cellBookings.map(b => `${b.customer_name} | ${b.pickup_time||"08:30"} - ${b.return_time||"08:00"}`).join("\n---\n")}
-                                onClick={() => {
-                                  if (dragBooking) return;
-                                  setBookingAction({ booking: cellBookings[0], carName: car.name || `רכב #${car.id}` });
-                                }}
                                 onDragOver={e => handleDragOverCell(e, car.id)}
                                 onDrop={e => handleDrop(e, car)}
                                 onDragLeave={() => setDragOverCarId(null)}
-                                style={{ ...gtd, textAlign:"center", background: "#fef08a", color: "#854d0e", cursor: "pointer", fontWeight: "bold" }}>
-                                ◧ מפוצל
+                                style={{ ...gtd, padding: 2, textAlign:"center", background: isDropColumn ? (isConflict ? "#fecaca" : "#bfdbfe") : "#fef08a", outline: isConflict ? "2px solid #ef4444" : "none", outlineOffset: "-2px" }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 2, height: "100%" }}>
+                                    {cellBookings.map(b => {
+                                        const isDraggingThis = dragBooking?.id === b.id;
+                                        return (
+                                        <div key={b.id}
+                                             title={`${b.customer_name} | ${b.start_date} ${b.pickup_time||""} - ${b.end_date} ${b.return_time||""}\n${isDraggingThis ? "גרור לרכב אחר להעברה" : ""}`}
+                                             draggable={true}
+                                             onDragStart={e => handleDragStart(e, b)}
+                                             onDragEnd={handleDragEnd}
+                                             onClick={e => {
+                                                 e.stopPropagation();
+                                                 if (dragBooking) return;
+                                                 setBookingAction({ booking: b, carName: car.name || `רכב #${car.id}` });
+                                             }}
+                                             style={{ flex: 1, background: isDraggingThis ? "#e0f2fe" : "rgba(255,255,255,0.7)", borderRadius: 2, padding: "2px 4px", fontSize: 10, color: isDraggingThis ? "#0369a1" : "#854d0e", cursor: isDraggingThis ? "grabbing" : "grab", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", border: "1px solid rgba(133,77,14,0.2)", opacity: isDraggingThis ? 0.7 : 1 }}>
+                                             {b.customer_name?.split(" ")[0]}
+                                        </div>
+                                    )})}
+                                </div>
                             </td>
                         );
                     }

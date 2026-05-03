@@ -713,26 +713,25 @@ export default function Bookings() {
                         )}
                         {b.status === "active" && (
                           <>
-                            <button
-                              onClick={() => {
-                                const input = document.getElementById(`file-upload-${b.id}`);
-                                input?.click();
-                              }}
-                              style={s.btnIcon}
+                            <label
+                              htmlFor={`file-upload-${b.id}`}
+                              style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
                               title="העלה צילום רכב"
-                              disabled={photoUploading && photoUploadId === b.id}
                             >
                               {photoUploading && photoUploadId === b.id ? "⏳" : "📸"}
-                            </button>
+                            </label>
                             <input
                               id={`file-upload-${b.id}`}
                               type="file"
                               accept="image/*"
+                              capture="environment"
                               style={{ display:"none" }}
+                              disabled={photoUploading && photoUploadId === b.id}
                               onChange={(e) => {
                                 if (e.target.files?.[0]) {
                                   setPhotoUploadId(b.id);
                                   handlePhotoUpload(b.id, e.target.files[0]);
+                                  e.target.value = "";
                                 }
                               }}
                             />
@@ -801,26 +800,25 @@ export default function Bookings() {
                      )}
                      {b.status === "active" && (
                        <>
-                         <button
-                           onClick={() => {
-                             const input = document.getElementById(`file-upload-mobile-${b.id}`);
-                             input?.click();
-                           }}
-                           style={s.btnIcon}
+                         <label
+                           htmlFor={`file-upload-mobile-${b.id}`}
+                           style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
                            title="העלה צילום רכב"
-                           disabled={photoUploading && photoUploadId === b.id}
                          >
                            {photoUploading && photoUploadId === b.id ? "⏳" : "📸"}
-                         </button>
+                         </label>
                          <input
                            id={`file-upload-mobile-${b.id}`}
                            type="file"
                            accept="image/*"
+                           capture="environment"
                            style={{ display:"none" }}
+                           disabled={photoUploading && photoUploadId === b.id}
                            onChange={(e) => {
                              if (e.target.files?.[0]) {
                                setPhotoUploadId(b.id);
                                handlePhotoUpload(b.id, e.target.files[0]);
+                               e.target.value = "";
                              }
                            }}
                          />
