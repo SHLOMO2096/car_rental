@@ -6,6 +6,7 @@ import { carsAPI } from "../api/cars";
 import { useAuthStore } from "../store/auth";
 import { toast } from "../store/toast";
 import { Permissions } from "../permissions";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const EMPTY_FORM = {
   car_id: "",
@@ -34,6 +35,7 @@ export default function Suggestions() {
   const [cooldownUntil, setCooldownUntil] = useState(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const canApplySuggestions = useAuthStore((s) => s.can(Permissions.SUGGESTIONS_APPLY));
+  const isMobile = useIsMobile(640);
 
   useEffect(() => {
     if (!cooldownUntil) {
@@ -197,7 +199,7 @@ export default function Suggestions() {
   return (
     <div dir="rtl">
       <div style={s.header}>
-        <h1 style={s.h1}>הצעות חכמות</h1>
+        <h1 style={{ ...s.h1, fontSize: isMobile ? 20 : 24 }}>הצעות חכמות</h1>
         <div style={s.subtitle}>חלופות חכמות ושיבוץ מחדש להזמנות</div>
       </div>
 
@@ -283,8 +285,8 @@ export default function Suggestions() {
           </div>
         </div>
 
-        <div style={s.footer}>
-          <button type="submit" disabled={!canSearch || searching || isCoolingDown} style={s.primaryBtn}>
+        <div style={{ marginTop: 12, display: "flex", justifyContent: isMobile ? "stretch" : "flex-end" }}>
+          <button type="submit" disabled={!canSearch || searching || isCoolingDown} style={{ ...s.primaryBtn, width: isMobile ? "100%" : "auto" }}>
             {searching ? "מחפש..." : isCoolingDown ? `המתן ${cooldownSeconds}s` : "חפש חלופות"}
           </button>
         </div>
@@ -299,7 +301,7 @@ export default function Suggestions() {
           const applyBusy = applyingToken === item.apply_token;
           return (
             <div key={`${item.type}-${item.car_id}-${idx}`} style={s.resultCard}>
-              <div style={s.resultTop}>
+              <div style={{ ...s.resultTop, flexWrap: "wrap" }}>
                 <div style={s.typeBadge}>{TYPE_LABEL[item.type] || item.type}</div>
                 <div style={s.score}>Score: {Math.round(item.score)}</div>
               </div>

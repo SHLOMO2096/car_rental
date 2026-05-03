@@ -285,7 +285,7 @@ const s = {
   input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e2e8f0",
                 fontSize:14, outline:"none", boxSizing:"border-box" },
   label:      { display:"block", fontSize:12, fontWeight:600, color:"#475569", marginBottom:5 },
-  formGrid:   { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 },
+  formGrid:   { display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginBottom:12 },
   modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 },
   errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:8,
                 padding:"10px 14px", fontSize:13, marginTop:8 },

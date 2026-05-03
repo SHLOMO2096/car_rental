@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { bookingsAPI } from "../api/bookings";
 import { carsAPI } from "../api/cars";
 import { getJewishDayMeta } from "../utils/jewishCalendar";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const TYPE_COLORS = {
   sedan:"#3b82f6", crossover:"#8b5cf6", suv:"#10b981", hatchback:"#f59e0b",
@@ -60,6 +61,7 @@ export function CalendarPage() {
   const [bookings, setBookings] = useState([]);
   const [cars, setCars]         = useState({});
   const [showHebrew, setShowHebrew] = useState(true);
+  const isMobile = useIsMobile(640);
 
   const firstDay    = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -104,23 +106,22 @@ export function CalendarPage() {
   return (
     <div dir="rtl">
       {/* ── Header ── */}
-      <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:8, flexWrap:"wrap" }}>
-        <h1 style={{ fontSize:24, fontWeight:800, margin:0 }}>לוח זמינות רכבים</h1>
-        <div style={{ flex:1 }} />
-        {/* Hebrew toggle */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
+        <h1 style={{ fontSize: isMobile ? 18 : 24, fontWeight:800, margin:0, flex: isMobile ? "1 1 100%" : "0 0 auto" }}>לוח זמינות רכבים</h1>
+        {!isMobile && <div style={{ flex:1 }} />}
         <button
           onClick={() => setShowHebrew(v => !v)}
           style={{
             ...navBtn,
             background: showHebrew ? "#1d4ed8" : "#f1f5f9",
             color: showHebrew ? "#fff" : "#334155",
-            fontSize:13, fontWeight:700,
+            fontSize: isMobile ? 11 : 13, fontWeight:700,
           }}
         >
-          {showHebrew ? "✡ עברי מופעל" : "✡ הצג תאריך עברי"}
+          {showHebrew ? "✦ עברי" : "✦ הצג עברי"}
         </button>
         <button onClick={prevMonth} style={navBtn}>→</button>
-        <span style={{ fontWeight:700, fontSize:16, minWidth:140, textAlign:"center" }}>
+        <span style={{ fontWeight:700, fontSize: isMobile ? 13 : 16, minWidth: isMobile ? 100 : 140, textAlign:"center" }}>
           {MONTHS_HE[month]} {year}
         </span>
         <button onClick={nextMonth} style={navBtn}>←</button>
@@ -164,6 +165,7 @@ export function CalendarPage() {
           return (
             <div key={day} style={{
               ...dayCell,
+              ...(isMobile ? mobileDayCell : {}),
               ...dayStyle,
             }}>
               {/* Day number row */}
@@ -267,6 +269,7 @@ export function CalendarPage() {
 const navBtn  = { background:"#f1f5f9", border:"1px solid #e2e8f0", borderRadius:8,
                   padding:"6px 14px", cursor:"pointer", fontSize:16 };
 const dayCell = { minHeight:90, padding:6, borderRadius:6, verticalAlign:"top" };
+const mobileDayCell = { minHeight:52, padding:3, fontSize:10 };
 const emptyCell = { minHeight:90, background:"#fafafa", borderRadius:6, border:"1px solid #f1f5f9" };
 const tagBase = {
   fontSize: 9,

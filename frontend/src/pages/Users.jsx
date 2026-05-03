@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { authAPI } from "../api/auth";
+import { useIsMobile } from "../hooks/useIsMobile";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 
@@ -12,6 +13,7 @@ export default function Users() {
   const [form, setForm]         = useState(EMPTY_FORM);
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState("");
+  const isMobile = useIsMobile(900);
 
   const load = () => authAPI.listUsers().then(setUsers);
   useEffect(() => { load(); }, []);
@@ -52,45 +54,62 @@ export default function Users() {
         <button onClick={openCreate} style={s.btnPrimary}>+ משתמש חדש</button>
       </div>
 
-      <div style={s.tableWrap}>
-        <table style={{ width:"100%", borderCollapse:"collapse" }}>
-          <thead>
-            <tr style={{ background:"#f8fafc" }}>
-              {["#","שם מלא","אימייל","תפקיד","סטטוס","נוצר","פעולות"].map(h => (
-                <th key={h} style={s.th}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id} style={{ borderBottom:"1px solid #f1f5f9",
-                opacity: u.is_active ? 1 : 0.5 }}>
-                <td style={s.td}><span style={s.idBadge}>#{u.id}</span></td>
-                <td style={s.td}><strong>{u.full_name}</strong></td>
-                <td style={s.td}>{u.email}</td>
-                <td style={s.td}>
-                  <Badge label={u.role === "admin" ? "מנהל" : "סוכן"}
-                         color={u.role === "admin" ? "blue" : "gray"} />
-                </td>
-                <td style={s.td}>
-                  <Badge label={u.is_active ? "פעיל" : "מושבת"}
-                         color={u.is_active ? "green" : "gray"} />
-                </td>
-                <td style={s.td}>{new Date(u.created_at).toLocaleDateString("he-IL")}</td>
-                <td style={s.td}>
-                  <div style={{ display:"flex", gap:6 }}>
-                    <button onClick={() => openEdit(u)} style={s.btnEdit}>✏️ ערוך</button>
-                    <button onClick={() => toggleActive(u)}
-                      style={u.is_active ? s.btnWarn : s.btnSuccess}>
-                      {u.is_active ? "השבת" : "הפעל"}
-                    </button>
-                  </div>
-                </td>
+      {!isMobile ? (
+        <div style={s.tableWrap}>
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead>
+              <tr style={{ background:"#f8fafc" }}>
+                {["#","שם מלא","אימייל","תפקיד","סטטוס","נוצר","פעולות"].map(h => (
+                  <th key={h} style={s.th}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id} style={{ borderBottom:"1px solid #f1f5f9", opacity: u.is_active ? 1 : 0.5 }}>
+                  <td style={s.td}><span style={s.idBadge}>#{u.id}</span></td>
+                  <td style={s.td}><strong>{u.full_name}</strong></td>
+                  <td style={s.td}>{u.email}</td>
+                  <td style={s.td}><Badge label={u.role === "admin" ? "מנהל" : "סוכן"} color={u.role === "admin" ? "blue" : "gray"} /></td>
+                  <td style={s.td}><Badge label={u.is_active ? "פעיל" : "מושבת"} color={u.is_active ? "green" : "gray"} /></td>
+                  <td style={s.td}>{new Date(u.created_at).toLocaleDateString("he-IL")}</td>
+                  <td style={s.td}>
+                    <div style={{ display:"flex", gap:6 }}>
+                      <button onClick={() => openEdit(u)} style={s.btnEdit}>✏️ ערוך</button>
+                      <button onClick={() => toggleActive(u)} style={u.is_active ? s.btnWarn : s.btnSuccess}>
+                        {u.is_active ? "השבת" : "הפעל"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div style={{ display:"grid", gap:10 }}>
+          {users.map(u => (
+            <div key={u.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:14, opacity: u.is_active ? 1 : 0.55 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                <span style={s.idBadge}>#{u.id}</span>
+                <Badge label={u.is_active ? "פעיל" : "מושבת"} color={u.is_active ? "green" : "gray"} />
+              </div>
+              <div style={{ fontWeight:700, fontSize:15, marginBottom:2 }}>{u.full_name}</div>
+              <div style={{ fontSize:12, color:"#64748b", marginBottom:6 }}>{u.email}</div>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", marginBottom:8 }}>
+                <Badge label={u.role === "admin" ? "מנהל" : "סוכן"} color={u.role === "admin" ? "blue" : "gray"} />
+                <span style={{ fontSize:11, color:"#94a3b8" }}>נוצר: {new Date(u.created_at).toLocaleDateString("he-IL")}</span>
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={() => openEdit(u)} style={s.btnEdit}>✏️ ערוך</button>
+                <button onClick={() => toggleActive(u)} style={u.is_active ? s.btnWarn : s.btnSuccess}>
+                  {u.is_active ? "השבת" : "הפעל"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Modal open={modal} onClose={() => setModal(false)}
         title={editUser ? "עריכת משתמש" : "משתמש חדש"}>

@@ -61,18 +61,17 @@ function Layout({ children }) {
           style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.45)", zIndex:999 }}
         />
       )}
-      {/* Sidebar */}
       <aside style={{
         width:220, background:"#1e293b", display:"flex",
         flexDirection:"column",
         position:isMobile ? "fixed" : "sticky",
         top:0,
-        left:isMobile ? (menuOpen ? 0 : -240) : undefined,
-        right:isMobile ? "auto" : undefined,
+        right:isMobile ? (menuOpen ? 0 : -240) : undefined,
         height:"100vh",
         flexShrink:0,
         zIndex:1000,
-        transition:"left 0.2s ease",
+        transition:"right 0.22s ease",
+        overflowY: "auto",
       }}>
         <div style={{ padding:"22px 18px 18px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
