@@ -987,11 +987,29 @@ export default function Bookings() {
             <select value={form.car_id} onChange={e => setForm(f => ({ ...f, car_id: e.target.value }))}
               style={s.input} disabled={modal === "edit"}>
               <option value="">— בחר רכב —</option>
-              {cars.filter(c => c.is_active).map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.plate}) — ₪{c.price_per_day}/יום
-                </option>
-              ))}
+              {([...categories, { name: "ללא קטגוריה" }]).map(cat => {
+                const catCars = cars.filter(c => c.is_active && (c.category === cat.name || (!c.category && cat.name === "ללא קטגוריה")));
+                if (catCars.length === 0) return null;
+                
+                return (
+                  <optgroup key={cat.name} label={cat.name}>
+                    {catCars.map(c => {
+                      let effectivePrice = c.price_per_day;
+                      if (!effectivePrice) {
+                        const carCat = categories.find(cc => cc.name === c.category);
+                        if (carCat) {
+                          effectivePrice = c.is_hybrid ? (carCat.hybrid_price || carCat.base_price) : carCat.base_price;
+                        }
+                      }
+                      return (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.plate}) {c.is_hybrid ? "🌿" : ""} — ₪{effectivePrice}/יום
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                );
+              })}
             </select>
           </div>
           <div>
@@ -1100,9 +1118,8 @@ export default function Bookings() {
         </div>
 
         {/* Price preview */}
-        {previewTotal > 0 && (
           <div style={s.pricePreview}>
-            💰 {days} ימים × ₪{previewCar.price_per_day} = <strong>₪{previewTotal.toLocaleString()}</strong>
+            💰 {days} ימים × ₪{pricePerDay} = <strong>₪{previewTotal.toLocaleString()}</strong>
             {form.customer_email && <span style={{ marginRight: 12 }}>📧 אישור יישלח ללקוח</span>}
           </div>
         )}

@@ -47,7 +47,7 @@ export default function Settings() {
   };
 
   const addFilter = () => {
-    setQuickFilters([...quickFilters, { label: "חדש", max_price: "", type: "" }]);
+    setQuickFilters([...quickFilters, { label: "חדש", max_price: "", category: "", is_hybrid: "" }]);
   };
 
   const removeFilter = (index) => {
@@ -110,18 +110,28 @@ export default function Settings() {
                 />
               </div>
               <div style={s.field}>
-                <label style={s.label}>סוג רכב (Type)</label>
+                <label style={s.label}>קטגוריה</label>
                 <select 
-                  value={f.type || ""} 
-                  onChange={e => updateFilter(i, "type", e.target.value)} 
+                  value={f.category || ""} 
+                  onChange={e => updateFilter(i, "category", e.target.value)} 
                   style={s.input}
                 >
-                  <option value="">— ללא —</option>
-                  <option value="hybrid">Hybrid (היברידי)</option>
-                  <option value="electric">Electric (חשמלי)</option>
-                  <option value="luxury">Luxury (יוקרה)</option>
-                  <option value="suv">SUV</option>
-                  <option value="van">Van</option>
+                  <option value="">— הכל —</option>
+                  {categories.map(c => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={s.field}>
+                <label style={s.label}>סוג הנעה</label>
+                <select 
+                  value={f.is_hybrid || ""} 
+                  onChange={e => updateFilter(i, "is_hybrid", e.target.value)} 
+                  style={s.input}
+                >
+                  <option value="">הכל</option>
+                  <option value="true">היברידי 🌿</option>
+                  <option value="false">רגיל ⛽</option>
                 </select>
               </div>
               <button onClick={() => removeFilter(i)} style={s.btnRemove}>🗑</button>

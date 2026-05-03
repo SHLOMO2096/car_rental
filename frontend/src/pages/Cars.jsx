@@ -188,57 +188,70 @@ export default function Cars() {
               </div>
 
               {isOpen && (
-                <div style={s.grid}>
-                  {catCars.map(car => {
-                    const carCat = categories.find(c => c.name === car.category);
-                    let displayPrice = car.price_per_day;
-                    let isInherited = false;
-                    if (!displayPrice && carCat) {
-                      displayPrice = car.is_hybrid ? (carCat.hybrid_price || carCat.base_price) : carCat.base_price;
-                      isInherited = true;
-                    }
+                <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: "0 10px 20px" }}>
+                  {[true, false].map(isHybrid => {
+                    const subCars = catCars.filter(c => !!c.is_hybrid === isHybrid);
+                    if (subCars.length === 0) return null;
 
                     return (
-                      <div key={car.id} style={{ ...s.card, opacity: car.is_active ? 1 : 0.55 }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                          <span style={{ fontSize:32 }}>🚗</span>
-                          <Badge label={car.is_active ? "פעיל" : "לא פעיל"}
-                                 color={car.is_active ? "green" : "gray"} />
-                        </div>
-                        <div style={s.carName}>
-                          {car.name}
-                          {car.is_hybrid && <span title="היברידי" style={{ marginRight: 6 }}>🌿</span>}
-                        </div>
-                        <div style={s.carSub}>{car.plate} • {car.color} • {car.year}</div>
-                        {car.test_date && (
-                          <div style={{ fontSize: 11, color: "#e11d48", fontWeight: 600, marginTop: 4 }}>
-                            🗓 טסט עד: {car.test_date}
-                          </div>
-                        )}
-                        
-                        <div style={s.price}>
-                          ₪{Number(displayPrice || 0).toLocaleString()} / יום
-                          {isInherited && <span style={s.priceHint}>(מחיר קטגוריה)</span>}
-                        </div>
-                        
-                        <div style={{ display:"flex", gap:6, marginTop:12, flexWrap:"wrap" }}>
-                          {car.is_active && (
-                            <button
-                              onClick={() => navigate("/bookings", {
-                                state: { bookingPrefill: { car_id: car.id } }
-                              })}
-                              style={s.btnBook}>📅 הזמן
-                            </button>
-                          )}
-                          {canManageCars && (
-                            <>
-                              <button onClick={() => openEdit(car)} style={s.btnEdit}>✏️ ערוך</button>
-                              <button onClick={() => toggleActive(car)}
-                                style={car.is_active ? s.btnWarn : s.btnSuccess}>
-                                {car.is_active ? "⏸ השבת" : "▶ הפעל"}
-                              </button>
-                            </>
-                          )}
+                      <div key={isHybrid ? "hybrid" : "regular"}>
+                        <h4 style={{ fontSize: 13, color: "#64748b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                          {isHybrid ? "🌿 היברידי" : "⛽ רגיל"}
+                          <span style={{ fontWeight: 400, fontSize: 11 }}>({subCars.length})</span>
+                        </h4>
+                        <div style={s.grid}>
+                          {subCars.map(car => {
+                            const carCat = categories.find(c => c.name === car.category);
+                            let displayPrice = car.price_per_day;
+                            let isInherited = false;
+                            if (!displayPrice && carCat) {
+                              displayPrice = car.is_hybrid ? (carCat.hybrid_price || carCat.base_price) : carCat.base_price;
+                              isInherited = true;
+                            }
+
+                            return (
+                              <div key={car.id} style={{ ...s.card, opacity: car.is_active ? 1 : 0.55 }}>
+                                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                                  <span style={{ fontSize:32 }}>🚗</span>
+                                  <Badge label={car.is_active ? "פעיל" : "לא פעיל"}
+                                         color={car.is_active ? "green" : "gray"} />
+                                </div>
+                                <div style={s.carName}>{car.name}</div>
+                                <div style={s.carSub}>{car.plate} • {car.color} • {car.year}</div>
+                                
+                                {car.test_date && (
+                                  <div style={{ fontSize: 11, color: "#e11d48", fontWeight: 600, marginTop: 4 }}>
+                                    🗓 טסט עד: {car.test_date}
+                                  </div>
+                                )}
+                                
+                                <div style={s.price}>
+                                  ₪{Number(displayPrice || 0).toLocaleString()} / יום
+                                  {isInherited && <span style={s.priceHint}>(מחיר קטגוריה)</span>}
+                                </div>
+                                
+                                <div style={{ display:"flex", gap:6, marginTop:12, flexWrap:"wrap" }}>
+                                  {car.is_active && (
+                                    <button
+                                      onClick={() => navigate("/bookings", {
+                                        state: { bookingPrefill: { car_id: car.id } }
+                                      })}
+                                      style={s.btnBook}>📅 הזמן
+                                    </button>
+                                  )}
+                                  {canManageCars && (
+                                    <>
+                                      <button onClick={() => openEdit(car)} style={s.btnEdit}>✏️ ערוך</button>
+                                      <button onClick={() => toggleActive(car)}
+                                        style={car.is_active ? s.btnWarn : s.btnSuccess}>
+                                        {car.is_active ? "⏸ השבת" : "▶ הפעל"}
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );

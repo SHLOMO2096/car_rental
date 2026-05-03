@@ -84,7 +84,8 @@ export function Dashboard() {
       // Quick filter
       if (selectedQuickFilter) {
         if (selectedQuickFilter.max_price && c.price_per_day > Number(selectedQuickFilter.max_price)) return false;
-        if (selectedQuickFilter.type && c.type !== selectedQuickFilter.type) return false;
+        if (selectedQuickFilter.category && c.category !== selectedQuickFilter.category) return false;
+        if (selectedQuickFilter.is_hybrid !== undefined && selectedQuickFilter.is_hybrid !== "" && !!c.is_hybrid !== (selectedQuickFilter.is_hybrid === "true" || selectedQuickFilter.is_hybrid === true)) return false;
       }
 
       return true;
