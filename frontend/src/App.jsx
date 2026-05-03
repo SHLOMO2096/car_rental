@@ -38,21 +38,10 @@ function Layout({ children }) {
   const nav = useNavigate();
   const isMobile = useIsMobile(900);
   const [menuOpen, setMenuOpen] = useState(false);
-  const isTV = new URLSearchParams(window.location.search).get("view") === "tv";
 
   useEffect(() => {
     if (!isMobile) setMenuOpen(false);
   }, [isMobile]);
-
-  if (isTV) {
-    return (
-      <div dir="rtl" style={{ display:"flex", minHeight:"100vh", background:"#f8fafc", fontFamily:"'Segoe UI','Arial Hebrew',Arial,sans-serif" }}>
-        <main style={{ flex:1, padding: 20, overflowY:"auto", minWidth:0 }}>
-          {children}
-        </main>
-      </div>
-    );
-  }
 
   const links = [
     { to:"/",          label:"לוח בקרה",   icon:"📊" },

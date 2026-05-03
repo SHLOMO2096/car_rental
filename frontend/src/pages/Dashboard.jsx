@@ -68,6 +68,7 @@ export function Dashboard() {
   const [rangeStart, setRangeStart] = useState(toISO(addDays(todayBase, -2)));
   const [rangeEnd, setRangeEnd]     = useState(toISO(addDays(todayBase, 4)));
   const [categories, setCategories] = useState([]);
+  const [focusMode, setFocusMode]   = useState(false);
 
   const modelOptions = useMemo(
     () => [...new Set(cars.filter(c => c.is_active).map(c => c.name))].sort((a, b) => a.localeCompare(b, "he")),
@@ -134,22 +135,6 @@ export function Dashboard() {
     setRangeEnd(prev => toISO(addDays(fromISO(prev), days)));
   }
 
-  const isTV = new URLSearchParams(window.location.search).get("view") === "tv";
-
-  if (isTV) {
-    return (
-      <div dir="rtl" style={{ padding: 0 }}>
-        <AvailabilityGrid 
-          cars={filteredCars} 
-          startDate={rangeStart} 
-          endDate={rangeEnd} 
-          navigate={navigate} 
-          isMobile={false} 
-          fullHeight={true} 
-        />
-      </div>
-    );
-  }
 
   return (
     <div dir="rtl">
@@ -232,7 +217,51 @@ export function Dashboard() {
       </div>
 
       {/* ── Availability Grid (FIRST prominent element) ── */}
-      <AvailabilityGrid cars={filteredCars} startDate={rangeStart} endDate={rangeEnd} navigate={navigate} isMobile={isMobile} />
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:10, marginTop:10 }}>
+        <h2 style={{ ...cardTitle, marginBottom:0 }}>זמינות רכבים ({filteredCars.length})</h2>
+        <button 
+          onClick={() => setFocusMode(true)}
+          style={{ ...chipStyle, display:"flex", alignItems:"center", gap:6, padding:"4px 10px", background:"#f1f5f9" }}
+        >
+          ⛶ מסך מלא
+        </button>
+      </div>
+
+      <AvailabilityGrid 
+        cars={filteredCars} 
+        startDate={rangeStart} 
+        endDate={rangeEnd} 
+        navigate={navigate} 
+        isMobile={isMobile}
+      />
+
+      {/* Focus Mode Overlay */}
+      {focusMode && (
+        <div style={{ position:"fixed", inset:0, background:"#f8fafc", zIndex:9999, padding:isMobile ? 10 : 25, overflowY:"auto" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:15 }}>
+             <div>
+               <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:"#1e293b" }}>לוח זמנים - מצב פוקוס</h2>
+               <div style={{ fontSize:12, color:"#64748b" }}>{rangeStart} עד {rangeEnd} · {filteredCars.length} רכבים</div>
+             </div>
+             <button 
+               onClick={() => setFocusMode(false)} 
+               style={{ padding:"8px 16px", borderRadius:8, background:"#ef4444", color:"#fff", border:"none", cursor:"pointer" }}
+             >
+               ✖ סגור מסך מלא
+             </button>
+          </div>
+          <div style={{ background:"#fff", borderRadius:12, boxShadow:"0 4px 20px rgba(0,0,0,0.1)", padding:10 }}>
+            <AvailabilityGrid 
+              cars={filteredCars} 
+              startDate={rangeStart} 
+              endDate={rangeEnd} 
+              navigate={navigate} 
+              isMobile={isMobile}
+              fullHeight={true}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Stats cards (below the grid) ── */}
       <div style={{ display:"grid", gridTemplateColumns:isMobile ? "repeat(2,1fr)" : "repeat(auto-fit,minmax(180px,1fr))", gap:12, margin:"20px 0" }}>
@@ -290,22 +319,6 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* ── TV Mode Action ── */}
-      <div style={{ marginTop: 40, display: "flex", justifyContent: "center", marginBottom: 20 }}>
-        <button 
-          onClick={() => window.open(window.location.origin + "/?view=tv", "_blank")}
-          style={{ 
-            background: "#1e293b", color: "#fff", border: "none", borderRadius: 12,
-            padding: "14px 28px", fontSize: 15, fontWeight: 800, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 10, boxShadow: "0 10px 25px -5px rgba(30,41,59,0.3)",
-            transition: "transform 0.2s"
-          }}
-          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
-          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-        >
-          🖥️ פתח במצב תצוגה (מסך מלא)
-        </button>
-      </div>
     </div>
   );
 }
