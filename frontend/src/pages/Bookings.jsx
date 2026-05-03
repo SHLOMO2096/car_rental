@@ -1424,8 +1424,10 @@ export default function Bookings() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div style={{ textAlign: "center", padding: 20, color: "#64748b" }}>אין תמונות להצגה</div>
+          )}
+        </div>
       </Modal>
 
       {/* Floating Upload Queue Status */}
