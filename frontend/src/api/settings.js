@@ -1,14 +1,14 @@
-import axios from "axios";
+import api from "./client";
 
-const API_URL = "/api/settings";
+const API_URL = "/settings";
 
 export const settingsAPI = {
   get: async (key) => {
-    const res = await axios.get(`${API_URL}/${key}`);
+    const res = await api.get(`${API_URL}/${key}`);
     return res.data;
   },
   update: async (key, value) => {
-    const res = await axios.put(`${API_URL}/${key}`, { value });
+    const res = await api.put(`${API_URL}/${key}`, { value });
     return res.data;
   },
 };

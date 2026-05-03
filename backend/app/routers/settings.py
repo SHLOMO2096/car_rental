@@ -14,7 +14,15 @@ def get_setting(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission(Permissions.BOOKINGS_VIEW)),
 ):
-    setting = db.query(SystemSetting).filter(SystemSetting.key == key).first()
+    try:
+        setting = db.query(SystemSetting).filter(SystemSetting.key == key).first()
+    except Exception as e:
+        # If table doesn't exist, try to create it once
+        from app.db.session import engine, Base
+        import app.models.settings
+        Base.metadata.create_all(bind=engine)
+        setting = db.query(SystemSetting).filter(SystemSetting.key == key).first()
+
     if not setting:
         # Default for quick_filters if not exists
         if key == "quick_filters":
