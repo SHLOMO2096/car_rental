@@ -74,7 +74,7 @@ export default function Bookings() {
   const [modal, setModal] = useState(null);
   const [editBooking, setEdit] = useState(null);
   const [generalSettings, setGeneralSettings] = useState(null);
-  const [groupPrices, setGroupPrices] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(() => makeEmptyForm({}));
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -117,7 +117,7 @@ export default function Bookings() {
       bookingsAPI.list(),
       carsAPI.list({ active_only: false }),
       settingsAPI.get("general_settings"),
-      settingsAPI.get("group_prices"),
+      settingsAPI.get("category_hierarchy"),
     ]);
 
     if (bookingsRes.status === "fulfilled") {
@@ -138,7 +138,7 @@ export default function Bookings() {
       setGeneralSettings(genRes.value.value);
     }
     if (pricesRes.status === "fulfilled" && pricesRes.value?.value) {
-      setGroupPrices(pricesRes.value.value);
+      setCategories(pricesRes.value.value);
     }
 
     setLoading(false);
@@ -644,9 +644,12 @@ export default function Bookings() {
   const days    = isNaN(diffMs) || diffMs <= 0 ? 0 : Math.ceil((diffMs - graceMs) / 86400000);
 
   let pricePerDay = previewCar?.price_per_day || 0;
-  if (previewCar?.group) {
-    const gPrice = groupPrices.find(gp => gp.group === previewCar.group);
-    if (gPrice?.price) pricePerDay = Number(gPrice.price);
+
+  if (!pricePerDay && previewCar?.category) {
+    const carCat = categories.find(c => c.name === previewCar.category);
+    if (carCat) {
+      pricePerDay = previewCar.is_hybrid ? (Number(carCat.hybrid_price) || Number(carCat.base_price)) : Number(carCat.base_price);
+    }
   }
   const previewTotal = pricePerDay * days;
 

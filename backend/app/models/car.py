@@ -25,8 +25,10 @@ class Car(Base):
     group         = Column(String(10))                    # קבוצת רכב (A, B, C, D, E, G …)
     year          = Column(Integer, nullable=False)
     plate         = Column(String(20), unique=True, nullable=False, index=True)
+    category      = Column(String(100), index=True)       # למשל: מיני, משפחתי
+    is_hybrid     = Column(Boolean, default=False)        # האם היברידי
     color         = Column(String(50))
-    price_per_day = Column(Float, nullable=False)
+    price_per_day = Column(Float, nullable=True)          # יכול להיות ריק כדי להשתמש במחיר קטגוריה
     description   = Column(Text)
     image_url     = Column(String(500))
     is_active     = Column(Boolean, default=True, nullable=False)

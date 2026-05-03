@@ -5,6 +5,7 @@ import { carsAPI } from "../api/cars";
 import { useAuthStore } from "../store/auth";
 import { toast } from "../store/toast";
 import { Permissions } from "../permissions";
+import { settingsAPI } from "../api/settings";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
@@ -22,8 +23,10 @@ const CAR_TYPES = [
 ];
 const typeMap = Object.fromEntries(CAR_TYPES.map(t => [t.value, t]));
 
-const EMPTY_FORM = { name:"", type:"sedan", year: new Date().getFullYear(),
-                     plate:"", color:"", price_per_day:"", description:"", image_url:"" };
+const EMPTY_FORM = { 
+  name:"", category:"", is_hybrid: false, year: new Date().getFullYear(),
+  plate:"", color:"", price_per_day:"", description:"", image_url:"" 
+};
 
 export default function Cars() {
   const navigate = useNavigate();
@@ -36,14 +39,34 @@ export default function Cars() {
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState("");
   const [confirmPermanentDelete, setConfirmPermanentDelete] = useState(null);
-  const [editCar, setEditCar]   = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [openFolders, setOpenFolders] = useState({}); // { categoryName: boolean }
   const canManageCars = useAuthStore(s => s.can(Permissions.CARS_MANAGE));
   const canDeleteCars = useAuthStore(s => s.can(Permissions.CARS_DELETE));
 
-  const load = () => carsAPI.list({ active_only: false })
-    .then(setCars).finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [carsList, settingsRes] = await Promise.all([
+        carsAPI.list({ active_only: false }),
+        settingsAPI.get("category_hierarchy").catch(() => ({ value: [] }))
+      ]);
+      setCars(carsList || []);
+      const cats = settingsRes.value || [];
+      setCategories(cats);
+      
+      // Open all folders by default
+      const initialFolders = { "unassigned": true };
+      cats.forEach(c => initialFolders[c.name] = true);
+      setOpenFolders(initialFolders);
+    } catch (e) {
+      toast.error("נכשל בטעינת נתונים");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const filtered = cars.filter(c => {
     if (typeFilter !== "all" && c.type !== typeFilter) return false;
@@ -55,9 +78,17 @@ export default function Cars() {
     setForm(EMPTY_FORM); setEditCar(null); setFormError(""); setModal("create");
   }
   function openEdit(car) {
-    setForm({ name: car.name, type: car.type, year: car.year, plate: car.plate,
-              color: car.color||"", price_per_day: car.price_per_day,
-              description: car.description||"", image_url: car.image_url||"" });
+    setForm({ 
+      name: car.name, 
+      category: car.category || "", 
+      is_hybrid: !!car.is_hybrid,
+      year: car.year, 
+      plate: car.plate,
+      color: car.color||"", 
+      price_per_day: car.price_per_day || "",
+      description: car.description||"", 
+      image_url: car.image_url||"" 
+    });
     setEditCar(car); setFormError(""); setModal("edit");
   }
   function closeModal() { setModal(null); setEditCar(null); }
@@ -68,7 +99,11 @@ export default function Cars() {
     if (!form.price_per_day || +form.price_per_day <= 0) return setFormError("מחיר לא תקין");
     setSaving(true); setFormError("");
     try {
-      const data = { ...form, year: +form.year, price_per_day: +form.price_per_day };
+      const data = { 
+        ...form, 
+        year: +form.year, 
+        price_per_day: form.price_per_day ? +form.price_per_day : null 
+      };
       if (modal === "create") await carsAPI.create(data);
       else await carsAPI.update(editCar.id, data);
       await load(); closeModal();
@@ -125,53 +160,88 @@ export default function Cars() {
         <Chip label="לא פעילים" value={cars.filter(c=>!c.is_active).length} color="#94a3b8" />
       </div>
 
-      {/* Grid */}
-      <div style={s.grid}>
-        {filtered.map(car => {
-          const t = typeMap[car.type] || { emoji:"🚗", label: car.type };
+      {/* Folders (Grouped by Category) */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {([...categories, { name: "ללא קטגוריה", internalKey: "unassigned" }]).map(cat => {
+          const catName = cat.internalKey === "unassigned" ? "" : cat.name;
+          const displayTitle = cat.internalKey === "unassigned" ? "רכבים ללא קטגוריה" : cat.name;
+          const catCars = filtered.filter(c => (c.category || "") === catName);
+          if (catCars.length === 0 && cat.internalKey !== "unassigned") return null;
+          if (catCars.length === 0 && cat.internalKey === "unassigned" && filtered.length > 0) return null;
+
+          const isOpen = openFolders[cat.name || "unassigned"];
+
           return (
-            <div key={car.id} style={{ ...s.card, opacity: car.is_active ? 1 : 0.55 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <span style={{ fontSize:36 }}>{t.emoji}</span>
-                <Badge label={car.is_active ? "פעיל" : "לא פעיל"}
-                       color={car.is_active ? "green" : "gray"} />
+            <div key={cat.name || "unassigned"} style={s.folderSection}>
+              <div 
+                style={s.folderHeader} 
+                onClick={() => setOpenFolders(prev => ({ ...prev, [cat.name || "unassigned"]: !isOpen }))}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 20 }}>{isOpen ? "📂" : "📁"}</span>
+                  <span style={{ fontWeight: 800, fontSize: 18 }}>{displayTitle}</span>
+                  <span style={s.folderBadge}>{catCars.length}</span>
+                </div>
+                <span>{isOpen ? "▲" : "▼"}</span>
               </div>
-              <div style={s.carName}>{car.name}</div>
-              <div style={s.carSub}>{car.plate} • {car.color} • {car.year}</div>
-              <div style={{ display:"flex", gap:6, margin:"8px 0" }}>
-                <span style={s.typeTag}>{t.label}</span>
-              </div>
-              <div style={s.price}>₪{car.price_per_day.toLocaleString()} / יום</div>
-              {car.description && (
-                <div style={s.desc}>{car.description}</div>
+
+              {isOpen && (
+                <div style={s.grid}>
+                  {catCars.map(car => {
+                    const carCat = categories.find(c => c.name === car.category);
+                    let displayPrice = car.price_per_day;
+                    let isInherited = false;
+                    if (!displayPrice && carCat) {
+                      displayPrice = car.is_hybrid ? (carCat.hybrid_price || carCat.base_price) : carCat.base_price;
+                      isInherited = true;
+                    }
+
+                    return (
+                      <div key={car.id} style={{ ...s.card, opacity: car.is_active ? 1 : 0.55 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                          <span style={{ fontSize:32 }}>🚗</span>
+                          <Badge label={car.is_active ? "פעיל" : "לא פעיל"}
+                                 color={car.is_active ? "green" : "gray"} />
+                        </div>
+                        <div style={s.carName}>
+                          {car.name}
+                          {car.is_hybrid && <span title="היברידי" style={{ marginRight: 6 }}>🌿</span>}
+                        </div>
+                        <div style={s.carSub}>{car.plate} • {car.color} • {car.year}</div>
+                        
+                        <div style={s.price}>
+                          ₪{Number(displayPrice || 0).toLocaleString()} / יום
+                          {isInherited && <span style={s.priceHint}>(מחיר קטגוריה)</span>}
+                        </div>
+                        
+                        <div style={{ display:"flex", gap:6, marginTop:12, flexWrap:"wrap" }}>
+                          {car.is_active && (
+                            <button
+                              onClick={() => navigate("/bookings", {
+                                state: { bookingPrefill: { car_id: car.id } }
+                              })}
+                              style={s.btnBook}>📅 הזמן
+                            </button>
+                          )}
+                          {canManageCars && (
+                            <>
+                              <button onClick={() => openEdit(car)} style={s.btnEdit}>✏️ ערוך</button>
+                              <button onClick={() => toggleActive(car)}
+                                style={car.is_active ? s.btnWarn : s.btnSuccess}>
+                                {car.is_active ? "⏸ השבת" : "▶ הפעל"}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
-              <div style={{ display:"flex", gap:6, marginTop:12, flexWrap:"wrap" }}>
-                {car.is_active && (
-                  <button
-                    onClick={() => navigate("/bookings", {
-                      state: { bookingPrefill: { car_id: car.id } }
-                    })}
-                    style={s.btnBook}>📅 הזמן
-                  </button>
-                )}
-                {canManageCars && (
-                  <>
-                    <button onClick={() => openEdit(car)} style={s.btnEdit}>✏️ ערוך</button>
-                    <button onClick={() => toggleActive(car)}
-                      style={car.is_active ? s.btnWarn : s.btnSuccess}>
-                      {car.is_active ? "⏸ השבת" : "▶ הפעל"}
-                    </button>
-                    {canDeleteCars && (
-                      <button onClick={() => setConfirmPermanentDelete(car)} style={s.btnDanger}>
-                        🗑 מחיקה לצמיתות
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
             </div>
           );
         })}
+        
         {filtered.length === 0 && (
           <div style={s.empty}>לא נמצאו רכבים</div>
         )}
@@ -184,10 +254,18 @@ export default function Cars() {
           <Field label="שם רכב *">
             <input value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))} style={s.input} />
           </Field>
-          <Field label="סוג *">
-            <select value={form.type} onChange={e => setForm(f=>({...f,type:e.target.value}))} style={s.input}>
-              {CAR_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          <Field label="קטגוריה *">
+            <select value={form.category} onChange={e => setForm(f=>({...f,category:e.target.value}))} style={s.input}>
+              <option value="">— ללא קטגוריה —</option>
+              {categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
             </select>
+          </Field>
+          <Field label="סוג הנעה">
+            <label style={{ display: "flex", alignItems: "center", gap: 8, height: "100%", cursor: "pointer" }}>
+              <input type="checkbox" checked={form.is_hybrid} 
+                onChange={e => setForm(f=>({...f,is_hybrid:e.target.checked}))} />
+              <span style={{ fontSize: 14 }}>רכב היברידי 🌿</span>
+            </label>
           </Field>
           <Field label="שנה *">
             <input type="number" value={form.year} min={1990} max={2030}
@@ -200,8 +278,9 @@ export default function Cars() {
           <Field label="צבע">
             <input value={form.color} onChange={e => setForm(f=>({...f,color:e.target.value}))} style={s.input} />
           </Field>
-          <Field label="מחיר ליום (₪) *">
-            <input type="number" value={form.price_per_day} min={1}
+          <Field label="מחיר ליום (₪)">
+            <input type="number" value={form.price_per_day} min={0}
+              placeholder="השאר ריק למחיר קטגוריה"
               onChange={e => setForm(f=>({...f,price_per_day:e.target.value}))} style={s.input} />
           </Field>
         </div>
@@ -258,13 +337,21 @@ const s = {
                 fontSize:14, outline:"none", minWidth:220 },
   select:     { padding:"8px 14px", borderRadius:8, border:"1px solid #e2e8f0",
                 fontSize:14, cursor:"pointer", background:"#fff" },
-  grid:       { display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:16 },
+  folderSection: { marginBottom: 12 },
+  folderHeader: { display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "12px 16px", background: "#f8fafc", borderRadius: 12,
+                  border: "1px solid #e2e8f0", cursor: "pointer", userSelect: "none",
+                  transition: "background 0.2s" },
+  folderBadge: { background: "#e2e8f0", color: "#475569", borderRadius: 12,
+                 padding: "2px 8px", fontSize: 12, fontWeight: 700 },
+  grid:       { display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap: 16, marginTop: 16 },
   card:       { background:"#fff", borderRadius:14, padding:18,
                 border:"1px solid #e2e8f0", boxShadow:"0 1px 4px rgba(0,0,0,0.05)",
                 transition:"transform 0.15s, box-shadow 0.15s" },
   carName:    { fontWeight:800, fontSize:16, marginTop:8 },
   carSub:     { fontSize:12, color:"#94a3b8", marginTop:2 },
-  price:      { fontSize:15, fontWeight:700, color:"#1d4ed8", marginTop:6 },
+  price:      { fontSize:15, fontWeight:700, color:"#1d4ed8", marginTop:6, display: "flex", alignItems: "center", gap: 6 },
+  priceHint:  { fontSize:11, color: "#94a3b8", fontWeight: 400 },
   desc:       { fontSize:12, color:"#64748b", marginTop:6, lineHeight:1.5 },
   typeTag:    { background:"#eff6ff", color:"#3b82f6", borderRadius:20,
                 padding:"2px 10px", fontSize:11, fontWeight:600 },

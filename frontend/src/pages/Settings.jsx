@@ -5,7 +5,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 
 export default function Settings() {
   const [quickFilters, setQuickFilters] = useState([]);
-  const [groupPrices, setGroupPrices] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [general, setGeneral] = useState({
     default_pickup_time: "08:30",
     default_return_time: "08:00",
@@ -21,11 +21,11 @@ export default function Settings() {
   useEffect(() => {
     Promise.all([
       settingsAPI.get("quick_filters").catch(() => ({ value: [] })),
-      settingsAPI.get("group_prices").catch(() => ({ value: [] })),
+      settingsAPI.get("category_hierarchy").catch(() => ({ value: [] })),
       settingsAPI.get("general_settings").catch(() => ({ value: null })),
-    ]).then(([filters, prices, gen]) => {
+    ]).then(([filters, cats, gen]) => {
       setQuickFilters(filters.value || []);
-      setGroupPrices(prices.value || []);
+      setCategories(cats.value || []);
       if (gen.value) setGeneral(prev => ({ ...prev, ...gen.value }));
     })
       .catch(() => toast.error("נכשל בטעינת הגדרות"))
@@ -36,7 +36,7 @@ export default function Settings() {
     setSaving(true);
     try {
       await settingsAPI.update("quick_filters", quickFilters);
-      await settingsAPI.update("group_prices", groupPrices);
+      await settingsAPI.update("category_hierarchy", categories);
       await settingsAPI.update("general_settings", general);
       toast.success("ההגדרות נשמרו בהצלחה");
     } catch (e) {
@@ -60,18 +60,18 @@ export default function Settings() {
     setQuickFilters(updated);
   };
 
-  const addGroupPrice = () => {
-    setGroupPrices([...groupPrices, { group: "", price: "" }]);
+  const addCategory = () => {
+    setCategories([...categories, { name: "", base_price: "", hybrid_price: "" }]);
   };
 
-  const updateGroupPrice = (index, field, value) => {
-    const updated = [...groupPrices];
+  const updateCategory = (index, field, value) => {
+    const updated = [...categories];
     updated[index][field] = value;
-    setGroupPrices(updated);
+    setCategories(updated);
   };
 
-  const removeGroupPrice = (index) => {
-    setGroupPrices(groupPrices.filter((_, i) => i !== index));
+  const removeCategory = (index) => {
+    setCategories(categories.filter((_, i) => i !== index));
   };
 
   if (loading) return <div style={{ padding: 20 }}>טוען...</div>;
@@ -135,38 +135,48 @@ export default function Settings() {
       </div>
 
       <div style={{ ...s.card, marginTop: 24 }}>
-        <h2 style={s.cardTitle}>מחירון לפי קבוצת רכב</h2>
+        <h2 style={s.cardTitle}>היררכיית קטגוריות ומחירים</h2>
         <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
-          הגדר מחירי ברירת מחדל לכל קבוצה (A, B, C וכו'). מחירים אלו ישמשו את המערכת לחישובים אוטומטיים.
+          הגדר מחירי בסיס לכל קטגוריה. ניתן להגדיר מחיר שונה לרכב היברידי בתוך אותה קטגוריה.
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {groupPrices.map((p, i) => (
+          {categories.map((c, i) => (
             <div key={i} style={{ ...s.filterRow, background: "#fdf4ff" }}>
-              <div style={s.field}>
-                <label style={s.label}>קבוצה</label>
+              <div style={{ ...s.field, flex: 1.5 }}>
+                <label style={s.label}>שם הקטגוריה</label>
                 <input 
-                  value={p.group} 
-                  onChange={e => updateGroupPrice(i, "group", e.target.value.toUpperCase())} 
+                  value={c.name} 
+                  onChange={e => updateCategory(i, "name", e.target.value)} 
                   style={s.input} 
-                  placeholder="למשל: A"
+                  placeholder="למשל: מיני"
                 />
               </div>
               <div style={s.field}>
-                <label style={s.label}>מחיר ליום (₪)</label>
+                <label style={s.label}>מחיר בסיס (₪)</label>
                 <input 
                   type="number" 
-                  value={p.price} 
-                  onChange={e => updateGroupPrice(i, "price", e.target.value)} 
+                  value={c.base_price} 
+                  onChange={e => updateCategory(i, "base_price", e.target.value)} 
                   style={s.input} 
                 />
               </div>
-              <button onClick={() => removeGroupPrice(i)} style={s.btnRemove}>🗑</button>
+              <div style={s.field}>
+                <label style={s.label}>מחיר היברידי (₪)</label>
+                <input 
+                  type="number" 
+                  value={c.hybrid_price} 
+                  onChange={e => updateCategory(i, "hybrid_price", e.target.value)} 
+                  style={s.input} 
+                  placeholder="אופציונלי"
+                />
+              </div>
+              <button onClick={() => removeCategory(i)} style={s.btnRemove}>🗑</button>
             </div>
           ))}
         </div>
         <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-          <button onClick={addGroupPrice} style={s.btnAdd}>+ הוסף קבוצה</button>
+          <button onClick={addCategory} style={s.btnAdd}>+ הוסף קבוצה</button>
         </div>
       </div>
 
