@@ -13,6 +13,7 @@ import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { getJewishDayMeta, isAfterClosureTime } from "../utils/jewishCalendar";
+import { PhotoMenu, CameraCaptureModal, ImageGallery } from "../components/photos/PhotoManagement";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "פעיל", color: "green" },
@@ -1408,30 +1409,12 @@ export default function Bookings() {
         confirmColor={actionConfirm?.confirmColor || "#1d4ed8"}
         onConfirm={() => closeActionConfirm(true)}
         onCancel={() => closeActionConfirm(false)} />
-      <Modal open={!!viewPhotos} onClose={() => setViewPhotos(null)} title={`תמונות הזמנה #${viewPhotos?.id}`}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {viewPhotos?.drive_link ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {viewPhotos.drive_link.split(",").filter(Boolean).map((url, idx) => (
-                <div key={idx} style={{ position: "relative" }}>
-                  <img src={url} alt={`Photo ${idx}`} style={{ width: "100%", borderRadius: 8, border: "1px solid #e2e8f0" }} />
-                  <button
-                    onClick={() => window.open(url, "_blank")}
-                    style={{
-                      position: "absolute", bottom: 5, right: 5, background: "rgba(0,0,0,0.6)",
-                      color: "#fff", border: "none", borderRadius: 4, padding: "2px 6px", fontSize: 10, cursor: "pointer"
-                    }}
-                  >
-                    📂 פתח מקור
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign: "center", padding: 20, color: "#64748b" }}>אין תמונות להצגה</div>
-          )}
-        </div>
-      </Modal>
+      {viewPhotos && (
+        <ImageGallery 
+          photos={viewPhotos.drive_link} 
+          onClose={() => setViewPhotos(null)} 
+        />
+      )}
 
       {cameraCapture && (
         <CameraCaptureModal 
@@ -1477,177 +1460,6 @@ export default function Bookings() {
   );
 }
 
-function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpen, onToggle }) {
-  const photoCount = booking.drive_link ? booking.drive_link.split(",").filter(Boolean).length : 0;
-  
-  return (
-    <div style={{ position: "relative", display: "inline-block" }}>
-      <button 
-        onClick={(e) => { e.stopPropagation(); onToggle(); }} 
-        style={{ 
-          ...s.btnIcon, 
-          position: "relative",
-          background: photoCount > 0 ? "#eff6ff" : "transparent",
-          color: photoCount > 0 ? "#1d4ed8" : "inherit",
-          border: photoCount > 0 ? "1px solid #bfdbfe" : "none",
-          padding: "4px 8px",
-          display: "flex",
-          alignItems: "center",
-          gap: 4
-        }}
-        title="ניהול תמונות"
-      >
-        📸
-        {photoCount > 0 && <span style={{ fontSize: 10, fontWeight: 800 }}>{photoCount}</span>}
-      </button>
-
-      {isOpen && (
-        <>
-          <div 
-            style={{ position: "fixed", inset: 0, zIndex: 9999 }} 
-            onClick={(e) => { e.stopPropagation(); onToggle(); }} 
-          />
-          <div style={{
-            position: "absolute", bottom: "100%", left: 0, marginBottom: 8,
-            zIndex: 10000, background: "#fff", borderRadius: 10, 
-            boxShadow: "0 10px 25px rgba(0,0,0,0.25)", border: "1px solid #e2e8f0",
-            minWidth: 160, overflow: "hidden"
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: "8px 12px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 12, color: "#64748b" }}>
-              פעולות תמונה #{booking.id}
-            </div>
-            
-            {photoCount > 0 && (
-              <button 
-                onClick={() => { onView(); onToggle(); }}
-                style={{ 
-                  width: "100%", textAlign: "right", padding: "10px 14px", border: "none", 
-                  background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 8, alignItems: "center"
-                }}
-              >
-                🖼️ צפה בתמונות ({photoCount})
-              </button>
-            )}
-
-            <button 
-              onClick={() => { onContinuousCamera(); onToggle(); }}
-              style={{ 
-                width: "100%", textAlign: "right", padding: "10px 14px", border: "none", 
-                background: "#f0f9ff", cursor: "pointer", fontSize: 13, display: "flex", gap: 8, alignItems: "center", color: "#0369a1", fontWeight: 700
-              }}
-            >
-              📸 צילום רציף (מהיר)
-            </button>
-
-            <label style={{ 
-              width: "100%", textAlign: "right", padding: "10px 14px", cursor: "pointer", 
-              fontSize: 13, display: "flex", gap: 8, alignItems: "center", borderTop: "1px solid #f1f5f9"
-            }}>
-              📷 צילום בודד (מצלמת מכשיר)
-              <input 
-                type="file" accept="image/*" capture="environment" style={{ display: "none" }}
-                onChange={(e) => { if (e.target.files?.length > 0) { onUpload(e.target.files); onToggle(); e.target.value = ""; } }}
-              />
-            </label>
-
-            <label style={{ 
-              width: "100%", textAlign: "right", padding: "10px 14px", cursor: "pointer", 
-              fontSize: 13, display: "flex", gap: 8, alignItems: "center", borderTop: "1px solid #f1f5f9"
-            }}>
-              📁 בחר מהגלריה
-              <input 
-                type="file" accept="image/*" multiple style={{ display: "none" }}
-                onChange={(e) => { if (e.target.files?.length > 0) { onUpload(e.target.files); onToggle(); e.target.value = ""; } }}
-              />
-            </label>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-
-function CameraCaptureModal({ bookingId, onClose, onCapture }) {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const [stream, setStream] = useState(null);
-  const [flash, setFlash] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function startCamera() {
-      try {
-        const s = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
-        });
-        setStream(s);
-        if (videoRef.current) videoRef.current.srcObject = s;
-      } catch (err) {
-        console.error("Camera error:", err);
-        setError("לא ניתן לגשת למצלמה. וודא שנתת הרשאות.");
-      }
-    }
-    startCamera();
-    return () => {
-      if (stream) stream.getTracks().forEach(track => track.stop());
-    };
-  }, []);
-
-  const capture = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    
-    setFlash(true);
-    setTimeout(() => setFlash(false), 150);
-
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const file = new File([blob], `capture_${Date.now()}.jpg`, { type: "image/jpeg" });
-        onCapture(file);
-      }
-    }, 'image/jpeg', 0.85);
-  };
-
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 20000, background: "#000", display: "flex", flexDirection: "column" }}>
-      <div style={{ position: "absolute", top: 20, right: 20, zIndex: 20001 }}>
-        <button onClick={onClose} style={{ background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", borderRadius: "50%", width: 40, height: 40, fontSize: 20, cursor: "pointer" }}>✕</button>
-      </div>
-      
-      {error ? (
-        <div style={{ color: "#fff", padding: 40, textAlign: "center" }}>{error}</div>
-      ) : (
-        <>
-          <video ref={videoRef} autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          <canvas ref={canvasRef} style={{ display: "none" }} />
-          
-          {flash && <div style={{ position: "absolute", inset: 0, background: "#fff", opacity: 0.8, zIndex: 20002 }} />}
-
-          <div style={{ position: "absolute", bottom: 40, left: 0, right: 0, display: "flex", justifyContent: "center", alignItems: "center", gap: 30 }}>
-            <button 
-              onClick={capture}
-              style={{ 
-                width: 80, height: 80, borderRadius: "50%", border: "6px solid #fff", 
-                background: "rgba(255,255,255,0.3)", cursor: "pointer", display: "flex", 
-                alignItems: "center", justifyContent: "center" 
-              }}
-            >
-              <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#fff" }} />
-            </button>
-          </div>
-          <div style={{ position: "absolute", bottom: 130, width: "100%", textAlign: "center", color: "#fff", fontSize: 14, fontWeight: 700, textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
-            צילום רציף - לחץ כדי לצלם
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 function formatDate(d) {
   if (!d) return "—";
