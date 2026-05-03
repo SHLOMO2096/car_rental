@@ -372,7 +372,7 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel }
   );
 }
 
-function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, onClose }) {
+function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, onClose, photoMenu }) {
   return (
     <div
       style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}
@@ -387,15 +387,20 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
         <div style={{ fontSize:13, color:"#475569", marginBottom:4 }}><strong>לקוח:</strong> {booking.customer_name}</div>
         <div style={{ fontSize:13, color:"#475569", marginBottom:4 }}><strong>רכב:</strong> {carName}</div>
         <div style={{ fontSize:13, color:"#475569", marginBottom:16 }}><strong>תאריכים:</strong> {booking.start_date} - {booking.end_date}</div>
-        <div style={{ display:"flex", gap:10, justifyContent:"flex-end", flexWrap:"wrap" }}>
-          <button onClick={onClose} style={{ padding:"9px 16px", borderRadius:8, border:"1px solid #cbd5e1", background:"#fff", color:"#374151", cursor:"pointer" }}>סגור</button>
-          {onDelete && (
-            <button onClick={onDelete} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#fee2e2", color:"#dc2626", fontWeight:700, cursor:"pointer" }}>🗑 מחק הזמנה</button>
-          )}
-          {booking.customer_id && onCustomer && (
-            <button onClick={onCustomer} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#0f766e", color:"#fff", fontWeight:700, cursor:"pointer" }}>👤 פרטי לקוח</button>
-          )}
-          <button onClick={onEdit} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#2563eb", color:"#fff", fontWeight:700, cursor:"pointer" }}>עריכת הזמנה</button>
+        <div style={{ display:"flex", gap:10, justifyContent:"space-between", alignItems:"center", flexWrap:"wrap" }}>
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+             <button onClick={onClose} style={{ padding:"9px 16px", borderRadius:8, border:"1px solid #cbd5e1", background:"#fff", color:"#374151", cursor:"pointer" }}>סגור</button>
+             {photoMenu}
+          </div>
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+            {onDelete && (
+              <button onClick={onDelete} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#fee2e2", color:"#dc2626", fontWeight:700, cursor:"pointer" }}>🗑 מחק</button>
+            )}
+            {booking.customer_id && onCustomer && (
+              <button onClick={onCustomer} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#0f766e", color:"#fff", fontWeight:700, cursor:"pointer" }}>👤 לקוח</button>
+            )}
+            <button onClick={onEdit} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#2563eb", color:"#fff", fontWeight:700, cursor:"pointer" }}>עריכה</button>
+          </div>
         </div>
       </div>
     </div>
@@ -414,6 +419,9 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
   const [dropLoading, setDropLoading]   = useState(false);
   const [bookingAction, setBookingAction] = useState(null); // { booking, carName }
   const [confirmDeleteBooking, setConfirmDeleteBooking] = useState(null);
+  const [viewPhotos, setViewPhotos] = useState(null);
+  const [activePhotoMenu, setActivePhotoMenu] = useState(null);
+  const [uploadQueue, setUploadQueue] = useState([]);
 
   const todayBase = new Date(); todayBase.setHours(0,0,0,0);
   const todayStr  = toISO(todayBase);
@@ -545,6 +553,68 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
     }
   }
 
+  async function compressImage(file, maxDimension = 2048, quality = 0.9) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (blob) resolve(new File([blob], file.name, { type: "image/jpeg", lastModified: Date.now() }));
+            else resolve(file);
+          }, "image/jpeg", quality);
+        };
+        img.onerror = () => resolve(file);
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handlePhotoUpload(bookingId, files) {
+    if (!files || files.length === 0) return;
+    const fileList = Array.from(files);
+    const newUploads = fileList.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      bookingId,
+      fileName: file.name,
+      status: "compressing"
+    }));
+    setUploadQueue(prev => [...prev, ...newUploads]);
+    fileList.forEach(async (file, index) => {
+      const uploadId = newUploads[index].id;
+      try {
+        const compressed = await compressImage(file);
+        setUploadQueue(prev => prev.map(u => u.id === uploadId ? { ...u, status: "uploading" } : u));
+        await bookingsAPI.uploadPhoto(bookingId, compressed);
+        setUploadQueue(prev => prev.map(u => u.id === uploadId ? { ...u, status: "done" } : u));
+        setTimeout(() => {
+          setUploadQueue(prev => prev.filter(u => u.id !== uploadId));
+          // Refresh grid to show new photo count
+          bookingsAPI.calendar(startDate, endDate).then(setBookings);
+        }, 3000);
+      } catch (e) {
+        setUploadQueue(prev => prev.map(u => u.id === uploadId ? { ...u, status: "error", error: getUserFacingErrorMessage(e) } : u));
+      }
+    });
+  }
+
   if (activeCars.length === 0) {
     return (
       <div style={{ ...cardStyle, padding:20, marginBottom:20, color:"#64748b" }}>
@@ -559,7 +629,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
         <BookingActionModal
           booking={bookingAction.booking}
           carName={bookingAction.carName}
-          onClose={() => setBookingAction(null)}
+          onClose={() => { setBookingAction(null); setActivePhotoMenu(null); }}
           onDelete={() => {
             setConfirmDeleteBooking(bookingAction.booking);
             setBookingAction(null);
@@ -572,6 +642,15 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
             navigate("/customers", { state: { highlightCustomerId: bookingAction.booking.customer_id } });
             setBookingAction(null);
           }}
+          photoMenu={(
+            <PhotoMenu 
+               booking={bookingAction.booking}
+               onView={() => setViewPhotos(bookingAction.booking)}
+               onUpload={(files) => handlePhotoUpload(bookingAction.booking.id, files)}
+               isOpen={activePhotoMenu === bookingAction.booking.id}
+               onToggle={() => setActivePhotoMenu(activePhotoMenu === bookingAction.booking.id ? null : bookingAction.booking.id)}
+            />
+          )}
         />
       )}
       {confirmDrop && (
@@ -805,6 +884,63 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
         </table>
       </div>
     </div>
+      <Modal open={!!viewPhotos} onClose={() => setViewPhotos(null)} title={`תמונות הזמנה #${viewPhotos?.id}`}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {viewPhotos?.drive_link ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {viewPhotos.drive_link.split(",").filter(Boolean).map((url, idx) => (
+                <div key={idx} style={{ position: "relative" }}>
+                  <img src={url} alt={`Photo ${idx}`} style={{ width: "100%", borderRadius: 8, border: "1px solid #e2e8f0" }} />
+                  <button
+                    onClick={() => window.open(url, "_blank")}
+                    style={{
+                      position: "absolute", bottom: 5, right: 5, background: "rgba(0,0,0,0.6)",
+                      color: "#fff", border: "none", borderRadius: 4, padding: "2px 6px", fontSize: 10, cursor: "pointer"
+                    }}
+                  >
+                    📂 פתח מקור
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: 20, color: "#64748b" }}>אין תמונות להצגה</div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Floating Upload Queue Status */}
+      {uploadQueue.length > 0 && (
+        <div style={{
+          position: "fixed", bottom: 20, left: 20, zIndex: 10000,
+          background: "#1e293b", color: "#fff", padding: "12px 20px",
+          borderRadius: 12, boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+          display: "flex", flexDirection: "column", gap: 8, minWidth: 200,
+          maxWidth: 300, border: "1px solid #334155"
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 13, borderBottom: "1px solid #334155", paddingBottom: 6, display: "flex", justifyContent: "space-between" }}>
+            <span>📤 העלאת תמונות ({uploadQueue.filter(u => u.status !== "done").length})</span>
+            <button onClick={() => setUploadQueue([])} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 11 }}>נקה הכל</button>
+          </div>
+          <div style={{ maxHeight: 150, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+            {uploadQueue.map(u => (
+              <div key={u.id} style={{ fontSize: 11, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>
+                  #{u.bookingId} - {u.fileName}
+                </span>
+                <span style={{ 
+                  color: u.status === "done" ? "#22c55e" : (u.status === "error" ? "#ef4444" : "#3b82f6"),
+                  fontWeight: 600 
+                }}>
+                  {u.status === "compressing" ? "דוחס..." : 
+                   u.status === "uploading" ? "מעלה..." : 
+                   u.status === "done" ? "✓ הושלם" : "✘ שגיאה"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }

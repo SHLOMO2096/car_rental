@@ -85,6 +85,7 @@ export default function Bookings() {
   const [dateFilter, setDateFilter] = useState("all"); // "all" | "today" | "tomorrow" | "custom"
   const [customDate, setCustomDate] = useState("");
   const [uploadQueue, setUploadQueue] = useState([]); // Array of { id, bookingId, status: 'pending'|'compressing'|'uploading'|'done'|'error' }
+  const [activePhotoMenu, setActivePhotoMenu] = useState(null); // bookingId
   const PER_PAGE = 15;
   const canDeleteBookings = useAuthStore(s => s.can(Permissions.BOOKINGS_DELETE));
   const [conflictModal, setConflictModal] = useState(null);
@@ -839,60 +840,14 @@ export default function Bookings() {
                           </>
                         )}
                         <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
-                        {b.drive_link && (
-                          <button onClick={() => setViewPhotos(b)} style={s.btnIcon} title="צפה בתמונות">
-                            🖼️
-                            {b.drive_link.split(",").filter(Boolean).length > 1 && (
-                              <small style={{ fontSize: 10, fontWeight: "bold", marginRight: 2 }}>{b.drive_link.split(",").filter(Boolean).length}</small>
-                            )}
-                          </button>
-                        )}
                         {b.status === "active" && (
-                          <>
-                            <label
-                              htmlFor={`file-upload-camera-${b.id}`}
-                              style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
-                              title="צלם תמונה מהמצלמה"
-                            >
-                              📷
-                            </label>
-                            <input
-                              id={`file-upload-camera-${b.id}`}
-                              type="file"
-                              accept="image/*"
-                              capture="environment"
-                              style={{ display: "none" }}
-                              onChange={(e) => {
-                                if (e.target.files?.length > 0) {
-                                  handlePhotoUpload(b.id, e.target.files);
-                                  e.target.value = "";
-                                }
-                              }}
-                            />
-
-                            <label
-                              htmlFor={`file-upload-gallery-${b.id}`}
-                              style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
-                              title="העלה תמונות מהגלריה"
-                            >
-                              🖼️
-                            </label>
-                            <input
-                              id={`file-upload-gallery-${b.id}`}
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              style={{ display: "none" }}
-                              onChange={(e) => {
-                                if (e.target.files?.length > 0) {
-                                  handlePhotoUpload(b.id, e.target.files);
-                                  e.target.value = "";
-                                }
-                              }}
-                            />
-                            <button onClick={() => setConfirm({ action: "cancel", item: b })}
-                              style={s.btnIcon} title="בטל הזמנה">🚫</button>
-                          </>
+                          <PhotoMenu 
+                            booking={b} 
+                            onView={() => setViewPhotos(b)} 
+                            onUpload={(files) => handlePhotoUpload(b.id, files)}
+                            isOpen={activePhotoMenu === b.id}
+                            onToggle={() => setActivePhotoMenu(activePhotoMenu === b.id ? null : b.id)}
+                          />
                         )}
                         {canDeleteBookings && (
                           <button onClick={() => setConfirm({ action: "delete", item: b })}
@@ -965,59 +920,14 @@ export default function Bookings() {
                       </>
                     )}
                     <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
-                    {b.drive_link && (
-                      <button onClick={() => setViewPhotos(b)} style={s.btnIcon} title="צפה בתמונות">
-                        🖼️
-                        {b.drive_link.split(",").filter(Boolean).length > 1 && (
-                          <small style={{ fontSize: 10, fontWeight: "bold", marginRight: 2 }}>{b.drive_link.split(",").filter(Boolean).length}</small>
-                        )}
-                      </button>
-                    )}
                     {b.status === "active" && (
-                      <>
-                        <label
-                          htmlFor={`file-upload-camera-mobile-${b.id}`}
-                          style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
-                          title="צלם תמונה"
-                        >
-                          📷
-                        </label>
-                        <input
-                          id={`file-upload-camera-mobile-${b.id}`}
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          style={{ display: "none" }}
-                          onChange={(e) => {
-                            if (e.target.files?.length > 0) {
-                              handlePhotoUpload(b.id, e.target.files);
-                              e.target.value = "";
-                            }
-                          }}
-                        />
-
-                        <label
-                          htmlFor={`file-upload-gallery-mobile-${b.id}`}
-                          style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
-                          title="בחר מהגלריה"
-                        >
-                          🖼️
-                        </label>
-                        <input
-                          id={`file-upload-gallery-mobile-${b.id}`}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          style={{ display: "none" }}
-                          onChange={(e) => {
-                            if (e.target.files?.length > 0) {
-                              handlePhotoUpload(b.id, e.target.files);
-                              e.target.value = "";
-                            }
-                          }}
-                        />
-                        <button onClick={() => setConfirm({ action: "cancel", item: b })} style={s.btnIcon} title="בטל הזמנה">🚫</button>
-                      </>
+                      <PhotoMenu 
+                        booking={b} 
+                        onView={() => setViewPhotos(b)} 
+                        onUpload={(files) => handlePhotoUpload(b.id, files)}
+                        isOpen={activePhotoMenu === b.id}
+                        onToggle={() => setActivePhotoMenu(activePhotoMenu === b.id ? null : b.id)}
+                      />
                     )}
                     {canDeleteBookings && (
                       <button onClick={() => setConfirm({ action: "delete", item: b })} style={s.btnIcon} title="מחק">🗑️</button>
@@ -1496,19 +1406,22 @@ export default function Bookings() {
         onConfirm={() => closeActionConfirm(true)}
         onCancel={() => closeActionConfirm(false)} />
       <Modal open={!!viewPhotos} onClose={() => setViewPhotos(null)} title={`תמונות הזמנה #${viewPhotos?.id}`}>
-        {viewPhotos && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ marginBottom: 10, color: "#64748b", fontSize: 14 }}>
-              נמצאו {(viewPhotos.drive_link || "").split(",").filter(Boolean).length} תמונות ב-Google Drive:
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {viewPhotos?.drive_link ? (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {(viewPhotos.drive_link || "").split(",").filter(Boolean).map((link, idx) => (
-                <a key={idx} href={link} target="_blank" rel="noreferrer" style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", padding: "16px",
-                  background: "#f1f5f9", borderRadius: 8, textDecoration: "none", color: "#1d4ed8", fontWeight: "bold"
-                }}>
-                  📸 צפה בתמונה {idx + 1}
-                </a>
+              {viewPhotos.drive_link.split(",").filter(Boolean).map((url, idx) => (
+                <div key={idx} style={{ position: "relative" }}>
+                  <img src={url} alt={`Photo ${idx}`} style={{ width: "100%", borderRadius: 8, border: "1px solid #e2e8f0" }} />
+                  <button
+                    onClick={() => window.open(url, "_blank")}
+                    style={{
+                      position: "absolute", bottom: 5, right: 5, background: "rgba(0,0,0,0.6)",
+                      color: "#fff", border: "none", borderRadius: 4, padding: "2px 6px", fontSize: 10, cursor: "pointer"
+                    }}
+                  >
+                    📂 פתח מקור
+                  </button>
+                </div>
               ))}
             </div>
           </div>
