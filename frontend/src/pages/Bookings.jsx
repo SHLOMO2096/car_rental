@@ -1466,6 +1466,86 @@ export default function Bookings() {
   );
 }
 
+function PhotoMenu({ booking, onView, onUpload, isOpen, onToggle }) {
+  const photoCount = booking.drive_link ? booking.drive_link.split(",").filter(Boolean).length : 0;
+  
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <button 
+        onClick={(e) => { e.stopPropagation(); onToggle(); }} 
+        style={{ 
+          ...s.btnIcon, 
+          position: "relative",
+          background: photoCount > 0 ? "#eff6ff" : "transparent",
+          color: photoCount > 0 ? "#1d4ed8" : "inherit",
+          border: photoCount > 0 ? "1px solid #bfdbfe" : "none",
+          padding: "4px 8px",
+          display: "flex",
+          alignItems: "center",
+          gap: 4
+        }}
+        title="ניהול תמונות"
+      >
+        📸
+        {photoCount > 0 && <span style={{ fontSize: 10, fontWeight: 800 }}>{photoCount}</span>}
+      </button>
+
+      {isOpen && (
+        <>
+          <div 
+            style={{ position: "fixed", inset: 0, zIndex: 999 }} 
+            onClick={(e) => { e.stopPropagation(); onToggle(); }} 
+          />
+          <div style={{
+            position: "absolute", bottom: "100%", left: 0, marginBottom: 8,
+            zIndex: 1000, background: "#fff", borderRadius: 10, 
+            boxShadow: "0 10px 25px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0",
+            minWidth: 160, overflow: "hidden"
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "8px 12px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 12, color: "#64748b" }}>
+              פעולות תמונה #{booking.id}
+            </div>
+            
+            {photoCount > 0 && (
+              <button 
+                onClick={() => { onView(); onToggle(); }}
+                style={{ 
+                  width: "100%", textAlign: "right", padding: "10px 14px", border: "none", 
+                  background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 8, alignItems: "center"
+                }}
+              >
+                🖼️ צפה בתמונות ({photoCount})
+              </button>
+            )}
+
+            <label style={{ 
+              width: "100%", textAlign: "right", padding: "10px 14px", cursor: "pointer", 
+              fontSize: 13, display: "flex", gap: 8, alignItems: "center", borderTop: photoCount > 0 ? "1px solid #f1f5f9" : "none"
+            }}>
+              📷 צלם תמונה חדשה
+              <input 
+                type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+                onChange={(e) => { if (e.target.files?.length > 0) { onUpload(e.target.files); onToggle(); e.target.value = ""; } }}
+              />
+            </label>
+
+            <label style={{ 
+              width: "100%", textAlign: "right", padding: "10px 14px", cursor: "pointer", 
+              fontSize: 13, display: "flex", gap: 8, alignItems: "center", borderTop: "1px solid #f1f5f9"
+            }}>
+              📁 בחר מהגלריה
+              <input 
+                type="file" accept="image/*" multiple style={{ display: "none" }}
+                onChange={(e) => { if (e.target.files?.length > 0) { onUpload(e.target.files); onToggle(); e.target.value = ""; } }}
+              />
+            </label>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function formatDate(d) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("he-IL");
