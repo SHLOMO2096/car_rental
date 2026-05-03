@@ -134,6 +134,23 @@ export function Dashboard() {
     setRangeEnd(prev => toISO(addDays(fromISO(prev), days)));
   }
 
+  const isTV = new URLSearchParams(window.location.search).get("view") === "tv";
+
+  if (isTV) {
+    return (
+      <div dir="rtl" style={{ padding: 0 }}>
+        <AvailabilityGrid 
+          cars={filteredCars} 
+          startDate={rangeStart} 
+          endDate={rangeEnd} 
+          navigate={navigate} 
+          isMobile={false} 
+          fullHeight={true} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div dir="rtl">
       <h1 style={{ fontSize:isMobile ? 20 : 24, fontWeight:800, marginBottom:isMobile ? 14 : 20 }}>לוח בקרה</h1>
@@ -373,7 +390,7 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
 }
 
 // ── Availability Grid ──────────────────────────────────────────────────────────
-function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
+function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHeight }) {
   const [bookings, setBookings]     = useState([]);
   const [loadingGrid, setLoadingGrid] = useState(false);
 
@@ -589,7 +606,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
       </div>
 
       {/* Grid table */}
-      <div style={{ overflowX:"auto", overflowY:"auto", maxHeight:isMobile ? 380 : 480 }}>
+      <div style={{ overflowX:"auto", overflowY:"auto", maxHeight: fullHeight ? "none" : (isMobile ? 380 : 480) }}>
         <table style={{ borderCollapse:"collapse", fontSize:11 }}>
           <thead>
             <tr>
