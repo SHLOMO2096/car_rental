@@ -4,6 +4,21 @@ import Modal from "../ui/Modal";
 /**
  * ImageGallery - A Lightbox-style viewer for booking photos.
  */
+/**
+ * Converts a Google Drive sharing link to a direct image link.
+ */
+function getDirectDriveLink(url) {
+  if (!url || !url.includes("drive.google.com")) return url;
+  
+  // Extract file ID using regex
+  const match = url.match(/\/d\/(.+?)\/(view|edit|preview)/) || url.match(/id=(.+?)(&|$)/);
+  if (match && match[1]) {
+    // New reliable Google Drive direct link format
+    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  return url;
+}
+
 export function ImageGallery({ photos, initialIndex = 0, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [loading, setLoading] = useState(true);
@@ -62,7 +77,7 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
         {loading && <div style={{ position: "absolute", color: "#fff", fontSize: 14 }}>טוען תמונה...</div>}
         
         <img 
-          src={urls[currentIndex]} 
+          src={getDirectDriveLink(urls[currentIndex])} 
           alt={`Photo ${currentIndex + 1}`} 
           onLoad={() => setLoading(false)}
           style={{ 
