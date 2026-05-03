@@ -403,7 +403,7 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
           </div>
         </div>
       </div>
-    </div>
+    );
 }
 
 function PhotoMenu({ booking, onView, onUpload, isOpen, onToggle }) {
