@@ -15,9 +15,9 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { getJewishDayMeta, isAfterClosureTime } from "../utils/jewishCalendar";
 
 const STATUS_OPTIONS = [
-  { value: "active",    label: "פעיל",    color: "green" },
-  { value: "completed", label: "הושלם",   color: "blue"  },
-  { value: "cancelled", label: "בוטל",    color: "gray"  },
+  { value: "active", label: "פעיל", color: "green" },
+  { value: "completed", label: "הושלם", color: "blue" },
+  { value: "cancelled", label: "בוטל", color: "gray" },
 ];
 const statusMap = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s]));
 
@@ -57,8 +57,8 @@ function makeEmptyForm(defaults = {}) {
     car_id: "", customer_name: "", customer_email: "",
     customer_has_no_email: false,
     customer_phone: "", customer_id_num: "",
-    start_date: todayISO(),    start_time: defaults.default_pickup_time || "08:00",
-    end_date:   tomorrowISO(), end_time:   defaults.default_return_time || "08:00",
+    start_date: todayISO(), start_time: defaults.default_pickup_time || "08:00",
+    end_date: tomorrowISO(), end_time: defaults.default_return_time || "08:00",
     notes: "",
   };
 }
@@ -66,28 +66,28 @@ function makeEmptyForm(defaults = {}) {
 export default function Bookings() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [bookings, setBookings]   = useState([]);
-  const [cars, setCars]           = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState("");
+  const [bookings, setBookings] = useState([]);
+  const [cars, setCars] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatus] = useState("all");
-  const [modal, setModal]         = useState(null);
-  const [editBooking, setEdit]    = useState(null);
+  const [modal, setModal] = useState(null);
+  const [editBooking, setEdit] = useState(null);
   const [generalSettings, setGeneralSettings] = useState(null);
   const [groupPrices, setGroupPrices] = useState([]);
-  const [form, setForm]           = useState(() => makeEmptyForm({}));
-  const [saving, setSaving]       = useState(false);
+  const [form, setForm] = useState(() => makeEmptyForm({}));
+  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-  const [confirm, setConfirm]     = useState(null);
+  const [confirm, setConfirm] = useState(null);
   const [actionConfirm, setActionConfirm] = useState(null);
   const actionConfirmResolveRef = useRef(null);
-   const [page, setPage]           = useState(1);
-   const [dateFilter, setDateFilter] = useState("all"); // "all" | "today" | "tomorrow" | "custom"
-   const [customDate, setCustomDate] = useState("");
-   const [photoUploadId, setPhotoUploadId] = useState(null); // Track which booking is uploading
-   const [photoUploading, setPhotoUploading] = useState(false);
-   const PER_PAGE = 15;
-  const canDeleteBookings    = useAuthStore(s => s.can(Permissions.BOOKINGS_DELETE));
+  const [page, setPage] = useState(1);
+  const [dateFilter, setDateFilter] = useState("all"); // "all" | "today" | "tomorrow" | "custom"
+  const [customDate, setCustomDate] = useState("");
+  const [photoUploadId, setPhotoUploadId] = useState(null); // Track which booking is uploading
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const PER_PAGE = 15;
+  const canDeleteBookings = useAuthStore(s => s.can(Permissions.BOOKINGS_DELETE));
   const [conflictModal, setConflictModal] = useState(null);
   const [resolvingConflict, setResolvingConflict] = useState(false);
   const [dragItem, setDragItem] = useState(null);
@@ -202,10 +202,10 @@ export default function Bookings() {
 
   // Resolve the active date filter to a date string (or null)
   const activeDateStr =
-    dateFilter === "today"    ? todayISO() :
-    dateFilter === "tomorrow" ? tomorrowISO() :
-    dateFilter === "custom"   ? customDate :
-    null;
+    dateFilter === "today" ? todayISO() :
+      dateFilter === "tomorrow" ? tomorrowISO() :
+        dateFilter === "custom" ? customDate :
+          null;
 
   const filtered = bookings.filter(b => {
     if (statusFilter !== "all" && b.status !== statusFilter) return false;
@@ -217,15 +217,15 @@ export default function Bookings() {
       const q = search.toLowerCase();
       const car = carsMap[b.car_id];
       if (!b.customer_name.toLowerCase().includes(q) &&
-          !(b.customer_phone||"").includes(q) &&
-          !(car?.name||"").toLowerCase().includes(q) &&
-          !(b.customer_id_num||"").includes(q)) return false;
+        !(b.customer_phone || "").includes(q) &&
+        !(car?.name || "").toLowerCase().includes(q) &&
+        !(b.customer_id_num || "").includes(q)) return false;
     }
     return true;
   });
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated  = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   function openCreate() {
     setForm(makeEmptyForm(generalSettings || {})); setEdit(null); setFormError(""); setModal("create");
@@ -237,10 +237,10 @@ export default function Bookings() {
       ...makeEmptyForm(generalSettings || {}),
       customer_id: b.customer_id ? String(b.customer_id) : "",
       car_id: String(b.car_id), customer_name: b.customer_name,
-      customer_email: b.customer_email||"", customer_phone: b.customer_phone||"",
+      customer_email: b.customer_email || "", customer_phone: b.customer_phone || "",
       customer_has_no_email: !b.customer_email,
-      customer_id_num: b.customer_id_num||"", start_date: b.start_date,
-      end_date: b.end_date, notes: b.notes||"",
+      customer_id_num: b.customer_id_num || "", start_date: b.start_date,
+      end_date: b.end_date, notes: b.notes || "",
       start_time: b.pickup_time || generalSettings?.default_pickup_time || "08:00",
       end_time: b.return_time || generalSettings?.default_return_time || "08:00",
     });
@@ -251,18 +251,18 @@ export default function Bookings() {
 
   function buildBookingPayload(form, carId) {
     return {
-      car_id:          carId,
-      customer_id:     form.customer_id ? Number(form.customer_id) : null,
-      customer_name:   form.customer_name.trim() || null,
-      customer_email:  form.customer_email.trim()  || null,
+      car_id: carId,
+      customer_id: form.customer_id ? Number(form.customer_id) : null,
+      customer_name: form.customer_name.trim() || null,
+      customer_email: form.customer_email.trim() || null,
       ...(modal === "create" ? { customer_has_no_email: !!form.customer_has_no_email } : {}),
-      customer_phone:  form.customer_phone.trim()  || null,
+      customer_phone: form.customer_phone.trim() || null,
       customer_id_num: form.customer_id_num.trim() || null,
-      start_date:      form.start_date || null,
-      end_date:        form.end_date || null,
-      pickup_time:     form.start_time || null,
-      return_time:     form.end_time   || null,
-      notes:           form.notes.trim()           || null,
+      start_date: form.start_date || null,
+      end_date: form.end_date || null,
+      pickup_time: form.start_time || null,
+      return_time: form.end_time || null,
+      notes: form.notes.trim() || null,
     };
   }
 
@@ -457,7 +457,7 @@ export default function Bookings() {
   }
 
   async function handleSave() {
-    if (!form.car_id)           return setFormError("יש לבחור רכב");
+    if (!form.car_id) return setFormError("יש לבחור רכב");
     if (!form.customer_name.trim()) return setFormError("יש להזין שם לקוח");
     if (!form.customer_has_no_email && !form.customer_email.trim()) {
       return setFormError("יש להזין כתובת מייל תקינה או לסמן שאין מייל ללקוח");
@@ -465,8 +465,8 @@ export default function Bookings() {
     if (!form.customer_has_no_email && form.customer_email.trim() && !isValidEmail(form.customer_email)) {
       return setFormError("כתובת המייל אינה תקינה");
     }
-    if (!form.start_date)       return setFormError("יש לבחור תאריך התחלה");
-    if (!form.end_date)         return setFormError("יש לבחור תאריך סיום");
+    if (!form.start_date) return setFormError("יש לבחור תאריך התחלה");
+    if (!form.end_date) return setFormError("יש לבחור תאריך סיום");
     if (form.end_date < form.start_date) return setFormError("תאריך סיום לפני תחילה");
 
     if (modal === "create") {
@@ -520,68 +520,68 @@ export default function Bookings() {
     finally { setConfirm(null); }
   }
 
-   async function handleDelete(b) {
-     try {
-       await bookingsAPI.delete(b.id);
-       await load();
-       toast.success("ההזמנה נמחקה בהצלחה");
-     }
-     catch (e) { toast.error(getUserFacingErrorMessage(e)); }
-     finally { setConfirm(null); }
-   }
+  async function handleDelete(b) {
+    try {
+      await bookingsAPI.delete(b.id);
+      await load();
+      toast.success("ההזמנה נמחקה בהצלחה");
+    }
+    catch (e) { toast.error(getUserFacingErrorMessage(e)); }
+    finally { setConfirm(null); }
+  }
 
-   async function compressImage(file, maxDimension = 2048, quality = 0.9) {
-     return new Promise((resolve) => {
-       const reader = new FileReader();
-       reader.onload = (event) => {
-         const img = new Image();
-         img.src = event.target.result;
-         img.onload = () => {
-           let { width, height } = img;
-           if (width > maxDimension || height > maxDimension) {
-             if (width > height) {
-               height = Math.round((height * maxDimension) / width);
-               width = maxDimension;
-             } else {
-               width = Math.round((width * maxDimension) / height);
-               height = maxDimension;
-             }
-           }
-           const canvas = document.createElement("canvas");
-           canvas.width = width;
-           canvas.height = height;
-           const ctx = canvas.getContext("2d");
-           ctx.drawImage(img, 0, 0, width, height);
-           canvas.toBlob((blob) => {
-             if (blob) resolve(new File([blob], file.name, { type: "image/jpeg", lastModified: Date.now() }));
-             else resolve(file);
-           }, "image/jpeg", quality);
-         };
-         img.onerror = () => resolve(file);
-       };
-       reader.onerror = () => resolve(file);
-       reader.readAsDataURL(file);
-     });
-   }
+  async function compressImage(file, maxDimension = 2048, quality = 0.9) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (blob) resolve(new File([blob], file.name, { type: "image/jpeg", lastModified: Date.now() }));
+            else resolve(file);
+          }, "image/jpeg", quality);
+        };
+        img.onerror = () => resolve(file);
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  }
 
-   async function handlePhotoUpload(bookingId, file) {
-     if (!file) return;
-     setPhotoUploading(true);
-     try {
-       const compressed = await compressImage(file);
-       const result = await bookingsAPI.uploadPhoto(bookingId, compressed);
-       toast.success(`✓ צילום הועלה בהצלחה ל-Google Drive`);
-       if (result.link) {
-         // Open the link if available
-         window.open(result.link, "_blank");
-       }
-     } catch (e) {
-       toast.error(getUserFacingErrorMessage(e));
-     } finally {
-       setPhotoUploading(false);
-       setPhotoUploadId(null);
-     }
-   }
+  async function handlePhotoUpload(bookingId, file) {
+    if (!file) return;
+    setPhotoUploading(true);
+    try {
+      const compressed = await compressImage(file);
+      const result = await bookingsAPI.uploadPhoto(bookingId, compressed);
+      toast.success(`✓ צילום הועלה בהצלחה ל-Google Drive`);
+      if (result.link) {
+        // Open the link if available
+        window.open(result.link, "_blank");
+      }
+    } catch (e) {
+      toast.error(getUserFacingErrorMessage(e));
+    } finally {
+      setPhotoUploading(false);
+      setPhotoUploadId(null);
+    }
+  }
 
   async function handleQuickComplete(b) {
     try {
@@ -636,11 +636,13 @@ export default function Bookings() {
   }
 
   // price preview
-  const previewCar  = form.car_id ? carsMap[+form.car_id] : null;
-  const days        = form.start_date && form.end_date
-    ? Math.max(1, Math.round((new Date(form.end_date) - new Date(form.start_date)) / 86400000))
-    : 0;
-  
+  const previewCar = form.car_id ? carsMap[+form.car_id] : null;
+  const startDt = new Date(`${form.start_date}T${form.start_time || "00:00"}`);
+  const endDt   = new Date(`${form.end_date}T${form.end_time || "00:00"}`);
+  const diffMs  = endDt - startDt;
+  const graceMs = (Number(generalSettings?.grace_period_hours) || 0) * 3600000;
+  const days    = isNaN(diffMs) || diffMs <= 0 ? 0 : Math.ceil((diffMs - graceMs) / 86400000);
+
   let pricePerDay = previewCar?.price_per_day || 0;
   if (previewCar?.group) {
     const gPrice = groupPrices.find(gp => gp.group === previewCar.group);
@@ -655,9 +657,9 @@ export default function Bookings() {
 
   const conflictVisibleCars = conflictModal
     ? cars.filter((c) => c.is_active && (
-        !conflictModal.modelFilter || conflictModal.modelFilter.length === 0 ||
-        conflictModal.modelFilter.includes(c.name)
-      ))
+      !conflictModal.modelFilter || conflictModal.modelFilter.length === 0 ||
+      conflictModal.modelFilter.includes(c.name)
+    ))
     : [];
 
   const conflictDates = conflictModal
@@ -682,32 +684,32 @@ export default function Bookings() {
       : { start: form.start_date, end: form.end_date })
     : null;
 
-  if (loading) return <div style={{ padding:40, textAlign:"center", color:"#94a3b8" }}>טוען...</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>טוען...</div>;
 
   return (
     <div dir="rtl">
       {/* Header */}
       <div style={s.header}>
         <h1 style={s.h1}>ניהול הזמנות</h1>
-        <div style={{ display:"flex", gap:10, flexWrap:"wrap", width:isMobile ? "100%" : "auto" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
           <input placeholder="🔍 לקוח, טלפון, רכב..." value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }} style={{ ...s.searchInput, minWidth:isMobile ? "100%" : 220 }} />
+            onChange={e => { setSearch(e.target.value); setPage(1); }} style={{ ...s.searchInput, minWidth: isMobile ? "100%" : 220 }} />
           <select value={statusFilter}
-            onChange={e => { setStatus(e.target.value); setPage(1); }} style={{ ...s.select, width:isMobile ? "100%" : "auto" }}>
+            onChange={e => { setStatus(e.target.value); setPage(1); }} style={{ ...s.select, width: isMobile ? "100%" : "auto" }}>
             <option value="all">כל הסטטוסים</option>
             {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          <button onClick={openCreate} style={{ ...s.btnPrimary, width:isMobile ? "100%" : "auto" }}>+ הזמנה חדשה</button>
+          <button onClick={openCreate} style={{ ...s.btnPrimary, width: isMobile ? "100%" : "auto" }}>+ הזמנה חדשה</button>
         </div>
       </div>
 
       {/* Date filter bar */}
-      <div style={{ ...s.dateFilterBar, overflowX:isMobile ? "auto" : "visible", flexWrap:isMobile ? "nowrap" : "wrap" }}>
+      <div style={{ ...s.dateFilterBar, overflowX: isMobile ? "auto" : "visible", flexWrap: isMobile ? "nowrap" : "wrap" }}>
         {[
-          { key:"all",      label:"כל התאריכים" },
-          { key:"today",    label:"היום" },
-          { key:"tomorrow", label:"מחר" },
-          { key:"custom",   label:"תאריך ספציפי 📅" },
+          { key: "all", label: "כל התאריכים" },
+          { key: "today", label: "היום" },
+          { key: "tomorrow", label: "מחר" },
+          { key: "custom", label: "תאריך ספציפי 📅" },
         ].map(opt => (
           <button key={opt.key}
             onClick={() => { setDateFilter(opt.key); setPage(1); }}
@@ -728,7 +730,7 @@ export default function Bookings() {
       </div>
 
       {/* Counter */}
-      <div style={{ fontSize:13, color:"#64748b", marginBottom:14 }}>
+      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>
         {filtered.length} הזמנות נמצאו
       </div>
 
@@ -737,8 +739,8 @@ export default function Bookings() {
         <div style={s.tableWrap}>
           <table style={s.table}>
             <thead>
-              <tr style={{ background:"#f8fafc" }}>
-                {["#","לקוח","רכב","מתאריך","עד תאריך","סכום","סטטוס","פעולות"].map(h => (
+              <tr style={{ background: "#f8fafc" }}>
+                {["#", "לקוח", "רכב", "מתאריך", "עד תאריך", "סכום", "סטטוס", "פעולות"].map(h => (
                   <th key={h} style={s.th}>{h}</th>
                 ))}
               </tr>
@@ -746,7 +748,7 @@ export default function Bookings() {
             <tbody>
               {paginated.map(b => {
                 const car = carsMap[b.car_id];
-                const st  = statusMap[b.status] || statusMap.cancelled;
+                const st = statusMap[b.status] || statusMap.cancelled;
                 const overdue = isBookingOverdue(b);
                 return (
                   <tr key={b.id} style={s.tr}>
@@ -763,13 +765,13 @@ export default function Bookings() {
                           👤 {b.customer_name}
                         </button>
                       ) : (
-                        <div style={{ fontWeight:600 }}>{b.customer_name}</div>
+                        <div style={{ fontWeight: 600 }}>{b.customer_name}</div>
                       )}
                       {b.customer_phone && <div style={s.sub}>{b.customer_phone}</div>}
                       {b.customer_email && <div style={s.sub}>{b.customer_email}</div>}
                     </td>
                     <td style={s.td}>
-                      <div style={{ fontWeight:600 }}>{car?.name || "—"}</div>
+                      <div style={{ fontWeight: 600 }}>{car?.name || "—"}</div>
                       {car && <div style={s.sub}>{car.plate}</div>}
                     </td>
                     <td style={s.td}>
@@ -792,16 +794,16 @@ export default function Bookings() {
                       )}
                     </td>
                     <td style={s.td}>
-                      <span style={{ fontWeight:700, color:"#1d4ed8" }}>
+                      <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
                         {b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}
                       </span>
                     </td>
                     <td style={s.td}>
                       <Badge label={st.label} color={st.color} />
-                      {b.email_sent && <span title="אימייל נשלח" style={{ marginRight:4 }}>📧</span>}
+                      {b.email_sent && <span title="אימייל נשלח" style={{ marginRight: 4 }}>📧</span>}
                     </td>
                     <td style={s.td}>
-                      <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                         {overdue && (
                           <>
                             <button onClick={() => handleQuickComplete(b)} style={{ ...s.btnIcon, color: "#166534", background: "#dcfce7", fontSize: 12, padding: "2px 6px", fontWeight: "bold" }} title="סמן כהושלמה">✅ סיום</button>
@@ -830,7 +832,7 @@ export default function Bookings() {
                               id={`file-upload-${b.id}`}
                               type="file"
                               accept="image/*"
-                              style={{ display:"none" }}
+                              style={{ display: "none" }}
                               disabled={photoUploading && photoUploadId === b.id}
                               onChange={(e) => {
                                 if (e.target.files?.[0]) {
@@ -840,12 +842,12 @@ export default function Bookings() {
                                 }
                               }}
                             />
-                            <button onClick={() => setConfirm({ action:"cancel", item:b })}
+                            <button onClick={() => setConfirm({ action: "cancel", item: b })}
                               style={s.btnIcon} title="בטל הזמנה">🚫</button>
                           </>
                         )}
                         {canDeleteBookings && (
-                          <button onClick={() => setConfirm({ action:"delete", item:b })}
+                          <button onClick={() => setConfirm({ action: "delete", item: b })}
                             style={s.btnIcon} title="מחק">🗑️</button>
                         )}
                       </div>
@@ -854,7 +856,7 @@ export default function Bookings() {
                 );
               })}
               {paginated.length === 0 && (
-                <tr><td colSpan={8} style={{ textAlign:"center", padding:40, color:"#94a3b8" }}>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: 40, color: "#94a3b8" }}>
                   לא נמצאו הזמנות
                 </td></tr>
               )}
@@ -906,54 +908,54 @@ export default function Bookings() {
                   </div>
                 </div>
                 <div style={s.mobileFooter}>
-                   <span style={{ fontWeight:700, color:"#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
-                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                     {overdue && (
-                       <>
-                         <button onClick={() => handleQuickComplete(b)} style={{ ...s.btnIcon, color: "#166534", background: "#dcfce7", fontSize: 12, padding: "2px 6px", fontWeight: "bold" }} title="סמן כהושלמה">✅ סיום</button>
-                         <button onClick={() => handleQuickExtend(b)} style={{ ...s.btnIcon, color: "#1d4ed8", background: "#dbeafe", fontSize: 12, padding: "2px 6px", fontWeight: "bold" }} title="הארך ביום אחד">📅 +יום</button>
-                       </>
-                     )}
-                     <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
-                     {b.drive_link && (
-                       <button onClick={() => setViewPhotos(b)} style={s.btnIcon} title="צפה בתמונות">
-                         🖼️
-                         {b.drive_link.split(",").filter(Boolean).length > 1 && (
-                           <small style={{ fontSize: 10, fontWeight: "bold", marginRight: 2 }}>{b.drive_link.split(",").filter(Boolean).length}</small>
-                         )}
-                       </button>
-                     )}
-                     {b.status === "active" && (
-                       <>
-                         <label
-                           htmlFor={`file-upload-mobile-${b.id}`}
-                           style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
-                           title="העלה צילום רכב"
-                         >
-                           {photoUploading && photoUploadId === b.id ? "⏳" : "📸"}
-                         </label>
-                         <input
-                           id={`file-upload-mobile-${b.id}`}
-                           type="file"
-                           accept="image/*"
-                           style={{ display:"none" }}
-                           disabled={photoUploading && photoUploadId === b.id}
-                           onChange={(e) => {
-                             if (e.target.files?.[0]) {
-                               setPhotoUploadId(b.id);
-                               handlePhotoUpload(b.id, e.target.files[0]);
-                               e.target.value = "";
-                             }
-                           }}
-                         />
-                         <button onClick={() => setConfirm({ action:"cancel", item:b })} style={s.btnIcon} title="בטל הזמנה">🚫</button>
-                       </>
-                     )}
-                     {canDeleteBookings && (
-                       <button onClick={() => setConfirm({ action:"delete", item:b })} style={s.btnIcon} title="מחק">🗑️</button>
-                     )}
-                   </div>
-                 </div>
+                  <span style={{ fontWeight: 700, color: "#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {overdue && (
+                      <>
+                        <button onClick={() => handleQuickComplete(b)} style={{ ...s.btnIcon, color: "#166534", background: "#dcfce7", fontSize: 12, padding: "2px 6px", fontWeight: "bold" }} title="סמן כהושלמה">✅ סיום</button>
+                        <button onClick={() => handleQuickExtend(b)} style={{ ...s.btnIcon, color: "#1d4ed8", background: "#dbeafe", fontSize: 12, padding: "2px 6px", fontWeight: "bold" }} title="הארך ביום אחד">📅 +יום</button>
+                      </>
+                    )}
+                    <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
+                    {b.drive_link && (
+                      <button onClick={() => setViewPhotos(b)} style={s.btnIcon} title="צפה בתמונות">
+                        🖼️
+                        {b.drive_link.split(",").filter(Boolean).length > 1 && (
+                          <small style={{ fontSize: 10, fontWeight: "bold", marginRight: 2 }}>{b.drive_link.split(",").filter(Boolean).length}</small>
+                        )}
+                      </button>
+                    )}
+                    {b.status === "active" && (
+                      <>
+                        <label
+                          htmlFor={`file-upload-mobile-${b.id}`}
+                          style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
+                          title="העלה צילום רכב"
+                        >
+                          {photoUploading && photoUploadId === b.id ? "⏳" : "📸"}
+                        </label>
+                        <input
+                          id={`file-upload-mobile-${b.id}`}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          disabled={photoUploading && photoUploadId === b.id}
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              setPhotoUploadId(b.id);
+                              handlePhotoUpload(b.id, e.target.files[0]);
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                        <button onClick={() => setConfirm({ action: "cancel", item: b })} style={s.btnIcon} title="בטל הזמנה">🚫</button>
+                      </>
+                    )}
+                    {canDeleteBookings && (
+                      <button onClick={() => setConfirm({ action: "delete", item: b })} style={s.btnIcon} title="מחק">🗑️</button>
+                    )}
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -964,10 +966,10 @@ export default function Bookings() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div style={s.pagination}>
-          {Array.from({ length: totalPages }, (_, i) => i+1).map(p => (
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
             <button key={p} onClick={() => setPage(p)} style={{
-              ...s.pageBtn, background: p===page ? "#1d4ed8" : "#f1f5f9",
-              color: p===page ? "#fff" : "#475569",
+              ...s.pageBtn, background: p === page ? "#1d4ed8" : "#f1f5f9",
+              color: p === page ? "#fff" : "#475569",
             }}>{p}</button>
           ))}
         </div>
@@ -975,14 +977,14 @@ export default function Bookings() {
 
       {/* Create / Edit Modal */}
       <Modal open={!!modal} onClose={() => { setModal(null); setConflictModal(null); setCustomerMatches([]); }}
-        title={modal==="create" ? "הזמנה חדשה" : "עריכת הזמנה"} wide>
+        title={modal === "create" ? "הזמנה חדשה" : "עריכת הזמנה"} wide>
         <div style={{ ...s.formGrid, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-          <div style={{ gridColumn:"1/-1" }}>
+          <div style={{ gridColumn: "1/-1" }}>
             <label style={s.label}>רכב *</label>
-            <select value={form.car_id} onChange={e => setForm(f=>({...f,car_id:e.target.value}))}
-              style={s.input} disabled={modal==="edit"}>
+            <select value={form.car_id} onChange={e => setForm(f => ({ ...f, car_id: e.target.value }))}
+              style={s.input} disabled={modal === "edit"}>
               <option value="">— בחר רכב —</option>
-              {cars.filter(c=>c.is_active).map(c => (
+              {cars.filter(c => c.is_active).map(c => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.plate}) — ₪{c.price_per_day}/יום
                 </option>
@@ -991,9 +993,9 @@ export default function Bookings() {
           </div>
           <div>
             <label style={s.label}>שם לקוח *</label>
-            <div style={{ position:"relative" }}>
+            <div style={{ position: "relative" }}>
               <input value={form.customer_name}
-                onChange={e => setForm(f=>({...f, customer_id:"", customer_name:e.target.value, customer_id_num:""}))}
+                onChange={e => setForm(f => ({ ...f, customer_id: "", customer_name: e.target.value, customer_id_num: "" }))}
                 style={s.input}
                 placeholder="הקלד לפחות 2 תווים לחיפוש לקוח" />
               {modal === "create" && form.customer_name.trim().length >= 2 && (
@@ -1004,7 +1006,7 @@ export default function Bookings() {
                   )}
                   {!customersLoading && customerMatches.map((c) => (
                     <button key={c.id} type="button" style={s.customerItem} onClick={() => pickCustomer(c)}>
-                      <span style={{ fontWeight:700 }}>{c.name}</span>
+                      <span style={{ fontWeight: 700 }}>{c.name}</span>
                       <span style={s.customerMeta}>{[c.id_number, c.phone, c.email].filter(Boolean).join(" · ") || "ללא פרטי קשר"}</span>
                     </button>
                   ))}
@@ -1015,7 +1017,7 @@ export default function Bookings() {
           <div>
             <label style={s.label}>אימייל (לאישור)</label>
             <input type="email" value={form.customer_email}
-              onChange={e => setForm(f=>({...f, customer_email:e.target.value, customer_has_no_email:false}))}
+              onChange={e => setForm(f => ({ ...f, customer_email: e.target.value, customer_has_no_email: false }))}
               style={s.input}
               disabled={form.customer_has_no_email}
               placeholder={form.customer_has_no_email ? "סומן שאין מייל ללקוח" : "name@example.com"} />
@@ -1037,40 +1039,40 @@ export default function Bookings() {
           <div>
             <label style={s.label}>טלפון</label>
             <input value={form.customer_phone}
-              onChange={e => setForm(f=>({...f,customer_phone:e.target.value}))} style={s.input} />
+              onChange={e => setForm(f => ({ ...f, customer_phone: e.target.value }))} style={s.input} />
           </div>
           <div>
             <label style={s.label}>מספר זהות</label>
             <input value={form.customer_id_num}
-              onChange={e => setForm(f=>({...f,customer_id_num:e.target.value}))} style={s.input} />
+              onChange={e => setForm(f => ({ ...f, customer_id_num: e.target.value }))} style={s.input} />
           </div>
           <div>
             <label style={s.label}>מתאריך * <span style={s.timeHint}>שעת איסוף</span></label>
-            <div style={{ display:"flex", gap:6 }}>
+            <div style={{ display: "flex", gap: 6 }}>
               <input type="date" value={form.start_date}
-                onChange={e => setForm(f=>({...f,start_date:e.target.value}))}
-                style={{...s.input, flex:2}} />
+                onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                style={{ ...s.input, flex: 2 }} />
               <input type="time" value={form.start_time}
-                onChange={e => setForm(f=>({...f,start_time:e.target.value}))}
-                style={{...s.input, flex:1}} />
+                onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
+                style={{ ...s.input, flex: 1 }} />
             </div>
           </div>
           <div>
             <label style={s.label}>עד תאריך * <span style={s.timeHint}>שעת החזרה</span></label>
-            <div style={{ display:"flex", gap:6 }}>
+            <div style={{ display: "flex", gap: 6 }}>
               <input type="date" value={form.end_date} min={form.start_date}
-                onChange={e => setForm(f=>({...f,end_date:e.target.value}))}
-                style={{...s.input, flex:2}} />
+                onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
+                style={{ ...s.input, flex: 2 }} />
               <input type="time" value={form.end_time}
-                onChange={e => setForm(f=>({...f,end_time:e.target.value}))}
-                style={{...s.input, flex:1}} />
+                onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))}
+                style={{ ...s.input, flex: 1 }} />
             </div>
             {/* Quick duration buttons */}
-            <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
+            <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
               {[
-                { label:"שבוע",   days:7  },
-                { label:"שבועיים",days:14 },
-                { label:"חודש",   days:30 },
+                { label: "שבוע", days: 7 },
+                { label: "שבועיים", days: 14 },
+                { label: "חודש", days: 30 },
               ].map(({ label, days }) => (
                 <button
                   key={days}
@@ -1086,11 +1088,11 @@ export default function Bookings() {
               ))}
             </div>
           </div>
-          <div style={{ gridColumn:"1/-1" }}>
+          <div style={{ gridColumn: "1/-1" }}>
             <label style={s.label}>הערות</label>
             <textarea value={form.notes} rows={2}
-              onChange={e => setForm(f=>({...f,notes:e.target.value}))}
-              style={{...s.input, resize:"vertical"}} />
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              style={{ ...s.input, resize: "vertical" }} />
           </div>
         </div>
 
@@ -1098,16 +1100,16 @@ export default function Bookings() {
         {previewTotal > 0 && (
           <div style={s.pricePreview}>
             💰 {days} ימים × ₪{previewCar.price_per_day} = <strong>₪{previewTotal.toLocaleString()}</strong>
-            {form.customer_email && <span style={{ marginRight:12 }}>📧 אישור יישלח ללקוח</span>}
+            {form.customer_email && <span style={{ marginRight: 12 }}>📧 אישור יישלח ללקוח</span>}
           </div>
         )}
 
         {formError && <div style={s.errorBox}>{formError}</div>}
 
         <div style={s.modalFooter}>
-          <button onClick={() => { setModal(null); setConflictModal(null); setCustomerMatches([]); }} style={{ ...s.btnSecondary, width:isMobile ? "100%" : "auto" }}>ביטול</button>
-          <button onClick={handleSave} disabled={saving} style={{ ...s.btnPrimary, width:isMobile ? "100%" : "auto" }}>
-            {saving ? "שומר..." : modal==="create" ? "אשר הזמנה" : "שמור שינויים"}
+          <button onClick={() => { setModal(null); setConflictModal(null); setCustomerMatches([]); }} style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}>ביטול</button>
+          <button onClick={handleSave} disabled={saving} style={{ ...s.btnPrimary, width: isMobile ? "100%" : "auto" }}>
+            {saving ? "שומר..." : modal === "create" ? "אשר הזמנה" : "שמור שינויים"}
           </button>
         </div>
       </Modal>
@@ -1128,7 +1130,7 @@ export default function Bookings() {
           <div>
             <div style={s.conflictIntro}>
               <strong>⚠️ הרכב {conflictModal.requestedCarName} תפוס בין {formatDate(conflictModal.requestedStart)} ל-{formatDate(conflictModal.requestedEnd)}.</strong>
-              <div style={{ marginTop:6 }}>
+              <div style={{ marginTop: 6 }}>
                 גרור כרטיסים בין רכבים כדי לפנות מקום:
                 1) אפשר לגרור כל הזמנה קיימת בלוח.
                 2) אפשר גם לגרור את ההזמנה החדשה לרכב חלופי.
@@ -1143,13 +1145,13 @@ export default function Bookings() {
                     <button
                       onClick={() => updateConflictFilters({ modelFilter: [] })}
                       disabled={resolvingConflict}
-                      style={{ marginRight:6, fontSize:10, padding:"1px 6px", borderRadius:4, border:"1px solid #cbd5e1", background:"#f1f5f9", cursor:"pointer", color:"#64748b" }}
+                      style={{ marginRight: 6, fontSize: 10, padding: "1px 6px", borderRadius: 4, border: "1px solid #cbd5e1", background: "#f1f5f9", cursor: "pointer", color: "#64748b" }}
                     >נקה</button>
                   )}
                 </span>
                 <div style={{
-                  border:"1px solid #cbd5e1", borderRadius:8, background:"#fff",
-                  maxHeight:130, overflowY:"auto", padding:"4px 0",
+                  border: "1px solid #cbd5e1", borderRadius: 8, background: "#fff",
+                  maxHeight: 130, overflowY: "auto", padding: "4px 0",
                   opacity: resolvingConflict ? 0.5 : 1,
                   pointerEvents: resolvingConflict ? "none" : "auto",
                 }}>
@@ -1157,8 +1159,8 @@ export default function Bookings() {
                     const checked = conflictModal.modelFilter.includes(model);
                     return (
                       <label key={model} style={{
-                        display:"flex", alignItems:"center", gap:6, padding:"3px 10px",
-                        cursor:"pointer", fontSize:12, color:"#374151",
+                        display: "flex", alignItems: "center", gap: 6, padding: "3px 10px",
+                        cursor: "pointer", fontSize: 12, color: "#374151",
                         background: checked ? "#eff6ff" : "transparent",
                       }}>
                         <input
@@ -1177,10 +1179,10 @@ export default function Bookings() {
                     );
                   })}
                   {conflictModelOptions.length === 0 && (
-                    <div style={{ padding:"4px 10px", fontSize:12, color:"#94a3b8" }}>אין דגמים</div>
+                    <div style={{ padding: "4px 10px", fontSize: 12, color: "#94a3b8" }}>אין דגמים</div>
                   )}
                 </div>
-                <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
                   {conflictModal.modelFilter.length === 0
                     ? "מוצגים כל הדגמים"
                     : `${conflictModal.modelFilter.length} דגמים נבחרו`}
@@ -1223,10 +1225,10 @@ export default function Bookings() {
                 </div>
               </div>
               <div style={s.conflictLegend}>
-                <span><b style={{ color:"#0f172a" }}>אפור:</b> הזמנה קיימת (ניתן לגרירה מהתאריך הראשון שלה)</span>
-                <span><b style={{ color:"#991b1b" }}>אדום:</b> הזמנה שחוסמת כרגע את הרכב המבוקש</span>
-                <span><b style={{ color:"#166534" }}>ירוק:</b> תא פנוי לשחרור</span>
-                <span><b style={{ color:"#1d4ed8" }}>כחול:</b> טווח יעד פעיל לגרירה</span>
+                <span><b style={{ color: "#0f172a" }}>אפור:</b> הזמנה קיימת (ניתן לגרירה מהתאריך הראשון שלה)</span>
+                <span><b style={{ color: "#991b1b" }}>אדום:</b> הזמנה שחוסמת כרגע את הרכב המבוקש</span>
+                <span><b style={{ color: "#166534" }}>ירוק:</b> תא פנוי לשחרור</span>
+                <span><b style={{ color: "#1d4ed8" }}>כחול:</b> טווח יעד פעיל לגרירה</span>
               </div>
             </div>
 
@@ -1413,29 +1415,47 @@ function formatDayWithWeekday(iso) {
 }
 
 const s = {
-  header:     { display:"flex", justifyContent:"space-between", alignItems:"center",
-                marginBottom:20, flexWrap:"wrap", gap:12 },
-  h1:         { fontSize:24, fontWeight:800, margin:0 },
-  searchInput:{ padding:"8px 14px", borderRadius:8, border:"1px solid #e2e8f0",
-                fontSize:14, outline:"none", minWidth:220 },
-  select:     { padding:"8px 14px", borderRadius:8, border:"1px solid #e2e8f0",
-                fontSize:14, cursor:"pointer", background:"#fff" },
-  tableWrap:  { background:"#fff", borderRadius:12, overflow:"auto",
-                boxShadow:"0 1px 4px rgba(0,0,0,0.06)", border:"1px solid #e2e8f0" },
-  table:      { width:"100%", borderCollapse:"collapse" },
-  th:         { padding:"12px 14px", fontSize:12, fontWeight:700, color:"#475569",
-                textAlign:"right", borderBottom:"1px solid #e2e8f0", whiteSpace:"nowrap" },
-  tr:         { borderBottom:"1px solid #f1f5f9", transition:"background 0.1s" },
-  td:         { padding:"12px 14px", fontSize:13, verticalAlign:"middle" },
-  sub:        { fontSize:11, color:"#94a3b8", marginTop:1 },
-  idBadge:    { background:"#f1f5f9", color:"#475569", borderRadius:6,
-                padding:"2px 7px", fontSize:12, fontWeight:700 },
-  btnIcon:    { background:"none", border:"none", cursor:"pointer", fontSize:16,
-                padding:"2px 5px", borderRadius:5 },
-  btnPrimary: { background:"#1d4ed8", color:"#fff", border:"none", borderRadius:8,
-                padding:"8px 18px", fontWeight:700, cursor:"pointer", fontSize:14 },
-  btnSecondary:{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0",
-                 borderRadius:8, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
+  header: {
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    marginBottom: 20, flexWrap: "wrap", gap: 12
+  },
+  h1: { fontSize: 24, fontWeight: 800, margin: 0 },
+  searchInput: {
+    padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0",
+    fontSize: 14, outline: "none", minWidth: 220
+  },
+  select: {
+    padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0",
+    fontSize: 14, cursor: "pointer", background: "#fff"
+  },
+  tableWrap: {
+    background: "#fff", borderRadius: 12, overflow: "auto",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1px solid #e2e8f0"
+  },
+  table: { width: "100%", borderCollapse: "collapse" },
+  th: {
+    padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#475569",
+    textAlign: "right", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap"
+  },
+  tr: { borderBottom: "1px solid #f1f5f9", transition: "background 0.1s" },
+  td: { padding: "12px 14px", fontSize: 13, verticalAlign: "middle" },
+  sub: { fontSize: 11, color: "#94a3b8", marginTop: 1 },
+  idBadge: {
+    background: "#f1f5f9", color: "#475569", borderRadius: 6,
+    padding: "2px 7px", fontSize: 12, fontWeight: 700
+  },
+  btnIcon: {
+    background: "none", border: "none", cursor: "pointer", fontSize: 16,
+    padding: "2px 5px", borderRadius: 5
+  },
+  btnPrimary: {
+    background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8,
+    padding: "8px 18px", fontWeight: 700, cursor: "pointer", fontSize: 14
+  },
+  btnSecondary: {
+    background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0",
+    borderRadius: 8, padding: "8px 18px", fontWeight: 600, cursor: "pointer"
+  },
   customerLinkBtn: {
     background: "transparent",
     border: "none",
@@ -1448,20 +1468,28 @@ const s = {
     textDecoration: "underline",
     textUnderlineOffset: 2,
   },
-  input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e2e8f0",
-                fontSize:14, outline:"none", boxSizing:"border-box" },
-  label:      { display:"block", fontSize:12, fontWeight:600, color:"#475569", marginBottom:5 },
-  checkboxRow:{ display:"flex", alignItems:"center", gap:8, marginTop:8, fontSize:12, color:"#475569" },
-  timeHint:   { fontSize:10, color:"#94a3b8", fontWeight:400, marginRight:4 },
-  formGrid:   { display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 },
-  modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20, flexWrap:"wrap" },
-  errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:8,
-                padding:"10px 14px", fontSize:13, marginTop:8 },
-  pricePreview:{ background:"#eff6ff", color:"#1d4ed8", borderRadius:8,
-                 padding:"10px 14px", fontSize:14, marginBottom:8 },
-  pagination: { display:"flex", gap:6, justifyContent:"center", marginTop:16 },
-  pageBtn:    { width:36, height:36, borderRadius:8, border:"1px solid #e2e8f0",
-                cursor:"pointer", fontWeight:600, fontSize:13 },
+  input: {
+    width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2e8f0",
+    fontSize: 14, outline: "none", boxSizing: "border-box"
+  },
+  label: { display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 5 },
+  checkboxRow: { display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 12, color: "#475569" },
+  timeHint: { fontSize: 10, color: "#94a3b8", fontWeight: 400, marginRight: 4 },
+  formGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 },
+  modalFooter: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20, flexWrap: "wrap" },
+  errorBox: {
+    background: "#fef2f2", color: "#dc2626", borderRadius: 8,
+    padding: "10px 14px", fontSize: 13, marginTop: 8
+  },
+  pricePreview: {
+    background: "#eff6ff", color: "#1d4ed8", borderRadius: 8,
+    padding: "10px 14px", fontSize: 14, marginBottom: 8
+  },
+  pagination: { display: "flex", gap: 6, justifyContent: "center", marginTop: 16 },
+  pageBtn: {
+    width: 36, height: 36, borderRadius: 8, border: "1px solid #e2e8f0",
+    cursor: "pointer", fontWeight: 600, fontSize: 13
+  },
 
   conflictIntro: {
     background: "linear-gradient(90deg, #fff7ed 0%, #fffbeb 100%)",
@@ -1604,65 +1632,83 @@ const s = {
   conflictWorking: { color: "#475569", fontSize: 12, fontWeight: 600 },
 
   // Smart suggestions panel
-  suggestLoading: { marginTop:10, padding:"10px 14px", background:"#fefce8",
-                    border:"1px solid #fde68a", borderRadius:8, color:"#92400e", fontSize:13 },
-  suggestPanel: { marginTop:10, border:"1px solid #e0e7ff", borderRadius:10, overflow:"hidden" },
-  suggestTitle: { background:"#eef2ff", padding:"8px 14px", fontWeight:700,
-                  fontSize:13, color:"#3730a3", borderBottom:"1px solid #e0e7ff" },
-  suggestCard:  { padding:"12px 14px", borderBottom:"1px solid #f1f5f9", background:"#fff" },
-  typeBadge:    { display:"inline-block", borderRadius:999, padding:"2px 8px", fontSize:11,
-                  fontWeight:700, border:"1px solid", marginLeft:6 },
-  carName:      { fontWeight:700, fontSize:14, color:"#0f172a" },
-  carMeta:      { fontSize:11, color:"#64748b" },
-  suggestSummary: { marginTop:5, fontSize:12, color:"#475569" },
-  suggestMeta:  { marginTop:4, fontSize:11, color:"#7c3aed", fontWeight:600 },
-  btnAlt:       { color:"#fff", border:"none", borderRadius:7, padding:"6px 14px",
-                  fontWeight:700, cursor:"pointer", fontSize:12 },
+  suggestLoading: {
+    marginTop: 10, padding: "10px 14px", background: "#fefce8",
+    border: "1px solid #fde68a", borderRadius: 8, color: "#92400e", fontSize: 13
+  },
+  suggestPanel: { marginTop: 10, border: "1px solid #e0e7ff", borderRadius: 10, overflow: "hidden" },
+  suggestTitle: {
+    background: "#eef2ff", padding: "8px 14px", fontWeight: 700,
+    fontSize: 13, color: "#3730a3", borderBottom: "1px solid #e0e7ff"
+  },
+  suggestCard: { padding: "12px 14px", borderBottom: "1px solid #f1f5f9", background: "#fff" },
+  typeBadge: {
+    display: "inline-block", borderRadius: 999, padding: "2px 8px", fontSize: 11,
+    fontWeight: 700, border: "1px solid", marginLeft: 6
+  },
+  carName: { fontWeight: 700, fontSize: 14, color: "#0f172a" },
+  carMeta: { fontSize: 11, color: "#64748b" },
+  suggestSummary: { marginTop: 5, fontSize: 12, color: "#475569" },
+  suggestMeta: { marginTop: 4, fontSize: 11, color: "#7c3aed", fontWeight: 600 },
+  btnAlt: {
+    color: "#fff", border: "none", borderRadius: 7, padding: "6px 14px",
+    fontWeight: 700, cursor: "pointer", fontSize: 12
+  },
   customerDropdown: {
-    position:"absolute", left:0, right:0, top:"calc(100% + 4px)", zIndex:20,
-    background:"#fff", border:"1px solid #e2e8f0", borderRadius:8,
-    boxShadow:"0 8px 20px rgba(15,23,42,0.08)", maxHeight:200, overflowY:"auto",
+    position: "absolute", left: 0, right: 0, top: "calc(100% + 4px)", zIndex: 20,
+    background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8,
+    boxShadow: "0 8px 20px rgba(15,23,42,0.08)", maxHeight: 200, overflowY: "auto",
   },
   customerItem: {
-    width:"100%", textAlign:"right", border:"none", background:"transparent",
-    padding:"8px 10px", cursor:"pointer", display:"flex", flexDirection:"column", gap:2,
+    width: "100%", textAlign: "right", border: "none", background: "transparent",
+    padding: "8px 10px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 2,
   },
-  customerItemMuted: { padding:"8px 10px", fontSize:12, color:"#64748b" },
-  customerMeta: { fontSize:11, color:"#64748b" },
-  cooldownBox:  { padding:"6px 10px", background:"#fff7ed", border:"1px solid #fdba74",
-                  color:"#9a3412", borderRadius:6, fontSize:12, marginBottom:6 },
+  customerItemMuted: { padding: "8px 10px", fontSize: 12, color: "#64748b" },
+  customerMeta: { fontSize: 11, color: "#64748b" },
+  cooldownBox: {
+    padding: "6px 10px", background: "#fff7ed", border: "1px solid #fdba74",
+    color: "#9a3412", borderRadius: 6, fontSize: 12, marginBottom: 6
+  },
   riskBadge: (level) => ({
-    fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:999,
-    background: level==="low" ? "#dcfce7" : level==="medium" ? "#fef9c3" : "#fee2e2",
-    color:      level==="low" ? "#166534" : level==="medium" ? "#854d0e" : "#991b1b",
+    fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 999,
+    background: level === "low" ? "#dcfce7" : level === "medium" ? "#fef9c3" : "#fee2e2",
+    color: level === "low" ? "#166534" : level === "medium" ? "#854d0e" : "#991b1b",
     flexShrink: 0,
   }),
 
   // Date filter bar
-  dateFilterBar: { display:"flex", alignItems:"center", gap:8, flexWrap:"wrap",
-                   marginBottom:14, padding:"8px 12px", background:"#f8fafc",
-                   borderRadius:10, border:"1px solid #e2e8f0" },
-  dateFilterBtn: { padding:"5px 14px", borderRadius:999, border:"1px solid #e2e8f0",
-                   background:"#fff", color:"#475569", fontSize:13, cursor:"pointer",
-                   fontWeight:500 },
-  dateFilterBtnActive: { padding:"5px 14px", borderRadius:999, border:"1px solid #1d4ed8",
-                         background:"#1d4ed8", color:"#fff", fontSize:13, cursor:"pointer",
-                         fontWeight:700 },
-  datePickerInline: { padding:"5px 10px", borderRadius:8, border:"1px solid #cbd5e1",
-                      fontSize:13, outline:"none", background:"#fff" },
-  dateFilterHint: { fontSize:12, color:"#1d4ed8", fontWeight:600, marginRight:4 },
+  dateFilterBar: {
+    display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+    marginBottom: 14, padding: "8px 12px", background: "#f8fafc",
+    borderRadius: 10, border: "1px solid #e2e8f0"
+  },
+  dateFilterBtn: {
+    padding: "5px 14px", borderRadius: 999, border: "1px solid #e2e8f0",
+    background: "#fff", color: "#475569", fontSize: 13, cursor: "pointer",
+    fontWeight: 500
+  },
+  dateFilterBtnActive: {
+    padding: "5px 14px", borderRadius: 999, border: "1px solid #1d4ed8",
+    background: "#1d4ed8", color: "#fff", fontSize: 13, cursor: "pointer",
+    fontWeight: 700
+  },
+  datePickerInline: {
+    padding: "5px 10px", borderRadius: 8, border: "1px solid #cbd5e1",
+    fontSize: 13, outline: "none", background: "#fff"
+  },
+  dateFilterHint: { fontSize: 12, color: "#1d4ed8", fontWeight: 600, marginRight: 4 },
   durationBtn: {
-    padding:"3px 10px", borderRadius:999, border:"1px solid #cbd5e1",
-    background:"#f1f5f9", color:"#334155", fontSize:12, cursor:"pointer",
-    fontWeight:600, whiteSpace:"nowrap",
+    padding: "3px 10px", borderRadius: 999, border: "1px solid #cbd5e1",
+    background: "#f1f5f9", color: "#334155", fontSize: 12, cursor: "pointer",
+    fontWeight: 600, whiteSpace: "nowrap",
   },
-  mobileCardsWrap: { display:"grid", gap:10 },
+  mobileCardsWrap: { display: "grid", gap: 10 },
   mobileCard: {
-    background:"#fff", border:"1px solid #e2e8f0", borderRadius:12,
-    padding:10, boxShadow:"0 1px 3px rgba(0,0,0,0.05)",
+    background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
+    padding: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
   },
-  mobileCardHead: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 },
-  mobileTitle: { fontSize:15, fontWeight:700, color:"#0f172a" },
+  mobileCardHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  mobileTitle: { fontSize: 15, fontWeight: 700, color: "#0f172a" },
   mobileCustomerLinkBtn: {
     background: "transparent",
     border: "none",
@@ -1677,10 +1723,10 @@ const s = {
     textAlign: "right",
     alignSelf: "flex-start",
   },
-  mobileDates: { display:"grid", gridTemplateColumns:"1fr", gap:6, marginTop:8, fontSize:12, color:"#334155" },
-  mobileFooter: { marginTop:8, display:"flex", justifyContent:"space-between", alignItems:"center" },
+  mobileDates: { display: "grid", gridTemplateColumns: "1fr", gap: 6, marginTop: 8, fontSize: 12, color: "#334155" },
+  mobileFooter: { marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" },
   mobileEmpty: {
-    textAlign:"center", background:"#fff", border:"1px solid #e2e8f0",
-    borderRadius:12, padding:24, color:"#94a3b8",
+    textAlign: "center", background: "#fff", border: "1px solid #e2e8f0",
+    borderRadius: 12, padding: 24, color: "#94a3b8",
   },
 };

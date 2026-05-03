@@ -9,7 +9,10 @@ export default function Settings() {
   const [general, setGeneral] = useState({
     default_pickup_time: "08:30",
     default_return_time: "08:00",
-    closure_time: "12:00"
+    closure_time: "12:00",
+    grace_period_hours: "2",
+    notification_emails: "",
+    terms_text: ""
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -191,6 +194,40 @@ export default function Settings() {
               value={general.closure_time} 
               onChange={e => setGeneral({ ...general, closure_time: e.target.value })} 
               style={s.input} 
+            />
+          </div>
+          <div style={s.field}>
+            <label style={s.label}>זמן חסד להחזרה (שעות)</label>
+            <input 
+              type="number" 
+              value={general.grace_period_hours} 
+              onChange={e => setGeneral({ ...general, grace_period_hours: e.target.value })} 
+              style={s.input} 
+              placeholder="למשל: 2"
+            />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <div style={s.field}>
+            <label style={s.label}>אימיילים להתראות (מופרדים בפסיק)</label>
+            <input 
+              value={general.notification_emails} 
+              onChange={e => setGeneral({ ...general, notification_emails: e.target.value })} 
+              style={s.input} 
+              placeholder="admin@example.com, manager@example.com"
+            />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <div style={s.field}>
+            <label style={s.label}>תנאי שימוש (יופיעו באישור ההזמנה)</label>
+            <textarea 
+              value={general.terms_text} 
+              onChange={e => setGeneral({ ...general, terms_text: e.target.value })} 
+              style={{ ...s.input, height: 100, paddingTop: 10, resize: "vertical" }} 
+              placeholder="למשל: יש להחזיר את הרכב נקי ועם מיכל דלק מלא..."
             />
           </div>
         </div>
