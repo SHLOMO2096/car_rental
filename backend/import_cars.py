@@ -68,19 +68,18 @@ def run_import(csv_path):
                 # Check if car exists
                 car = db.query(Car).filter(Car.plate == plate).first()
                 
-                if car:
-                    car.category = category or car.category
-                    car.is_hybrid = is_hybrid
                     car.test_date = test_date
                     car.color = color
                     car.make = make
                     car.name = f"{make} {model}"
+                    car.type = "sedan" # Default for old system
                     count_updated += 1
                 else:
                     car = Car(
                         plate=plate,
                         name=f"{make} {model}",
                         make=make,
+                        type="sedan", # Default for old system
                         year=int(year) if year.isdigit() else 2020,
                         color=color,
                         category=category,
