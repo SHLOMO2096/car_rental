@@ -7,6 +7,19 @@ from app.models.car import Car
 from app.schemas.booking import BookingCreate, BookingUpdate
 
 class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
+    def get_effective_price(self, db: Session, car: Car) -> float:
+        price = car.price_per_day
+        if not price:
+            from app.models.settings import SystemSetting
+            setting = db.query(SystemSetting).filter(SystemSetting.key == "category_hierarchy").first()
+            if setting and setting.value:
+                cat_config = next((c for c in setting.value if c.get("name") == car.category), None)
+                if cat_config:
+                    if car.is_hybrid:
+                        price = float(cat_config.get("hybrid_price") or cat_config.get("base_price") or 0)
+                    else:
+                        price = float(cat_config.get("base_price") or 0)
+        return float(price or 0)
 
     def has_overlap(self, db: Session, car_id: int,
                     start: date, end: date,
@@ -49,7 +62,10 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                        user_id: int, car: Car) -> Booking:
         payload = data.model_dump() if hasattr(data, "model_dump") else dict(data)
         days  = max((payload["end_date"] - payload["start_date"]).days, 1)
-        total = car.price_per_day * days
+        
+        effective_price = self.get_effective_price(db, car)
+        total = effective_price * days
+        
         b = Booking(
             **payload,
             created_by=user_id,
@@ -130,5 +146,26 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         active  = q_base.filter(Booking.status == BookingStatus.active).scalar()
         revenue = q_rev.filter(Booking.status != BookingStatus.cancelled).scalar()
         return {"total": total, "active": active, "revenue": float(revenue or 0)}
+
+    def update(self, db: Session, db_obj: Booking, obj_in: BookingUpdate | dict) -> Booking:
+        if isinstance(obj_in, dict):
+            update_data = obj_in
+        else:
+            update_data = obj_in.model_dump(exclude_unset=True)
+
+        recalc = False
+        if "start_date" in update_data or "end_date" in update_data or "car_id" in update_data:
+            recalc = True
+
+        res = super().update(db, db_obj=db_obj, obj_in=obj_in)
+
+        if recalc:
+            days = max((res.end_date - res.start_date).days, 1)
+            effective_price = self.get_effective_price(db, res.car)
+            res.total_price = effective_price * days
+            db.commit()
+            db.refresh(res)
+
+        return res
 
 crud_booking = CRUDBooking(Booking)
