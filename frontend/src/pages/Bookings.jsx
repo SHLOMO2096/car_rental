@@ -850,14 +850,35 @@ export default function Bookings() {
                         {b.status === "active" && (
                           <>
                             <label
-                              htmlFor={`file-upload-${b.id}`}
+                              htmlFor={`file-upload-camera-${b.id}`}
                               style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
-                              title="העלה צילומי רכב (ניתן לבחור כמה)"
+                              title="צלם תמונה מהמצלמה"
                             >
-                              📸
+                              📷
                             </label>
                             <input
-                              id={`file-upload-${b.id}`}
+                              id={`file-upload-camera-${b.id}`}
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              style={{ display: "none" }}
+                              onChange={(e) => {
+                                if (e.target.files?.length > 0) {
+                                  handlePhotoUpload(b.id, e.target.files);
+                                  e.target.value = "";
+                                }
+                              }}
+                            />
+
+                            <label
+                              htmlFor={`file-upload-gallery-${b.id}`}
+                              style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
+                              title="העלה תמונות מהגלריה"
+                            >
+                              🖼️
+                            </label>
+                            <input
+                              id={`file-upload-gallery-${b.id}`}
                               type="file"
                               accept="image/*"
                               multiple
@@ -955,14 +976,35 @@ export default function Bookings() {
                     {b.status === "active" && (
                       <>
                         <label
-                          htmlFor={`file-upload-mobile-${b.id}`}
+                          htmlFor={`file-upload-camera-mobile-${b.id}`}
                           style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
-                          title="העלה צילומי רכב"
+                          title="צלם תמונה"
                         >
-                          📸
+                          📷
                         </label>
                         <input
-                          id={`file-upload-mobile-${b.id}`}
+                          id={`file-upload-camera-mobile-${b.id}`}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            if (e.target.files?.length > 0) {
+                              handlePhotoUpload(b.id, e.target.files);
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+
+                        <label
+                          htmlFor={`file-upload-gallery-mobile-${b.id}`}
+                          style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
+                          title="בחר מהגלריה"
+                        >
+                          🖼️
+                        </label>
+                        <input
+                          id={`file-upload-gallery-mobile-${b.id}`}
                           type="file"
                           accept="image/*"
                           multiple
