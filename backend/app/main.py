@@ -7,7 +7,8 @@ import app.models.car     # noqa
 import app.models.booking # noqa
 import app.models.customer # noqa
 import app.models.audit_log # noqa
-from app.routers import auth, cars, bookings, reports, suggestions, customers
+import app.models.settings  # noqa
+from app.routers import auth, cars, bookings, reports, suggestions, customers, settings as settings_router
 
 # יצירת טבלאות (בפרודקשן — השתמש ב-Alembic)
 Base.metadata.create_all(bind=engine)
@@ -33,6 +34,7 @@ app.include_router(bookings.router,    prefix="/api/bookings",    tags=["Booking
 app.include_router(customers.router,   prefix="/api/customers",   tags=["Customers"])
 app.include_router(reports.router,     prefix="/api/reports",     tags=["Reports"])
 app.include_router(suggestions.router, prefix="/api/suggestions", tags=["Suggestions"])
+app.include_router(settings_router.router, prefix="/api/settings", tags=["Settings"])
 
 @app.get("/health")
 def health():

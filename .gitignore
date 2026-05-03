@@ -17,3 +17,6 @@ frontend/dist/
 # Local deployment notes
 deploy.log
 
+# Google Drive
+backend/scripts/credentials.json
+backend/scripts/token.txt

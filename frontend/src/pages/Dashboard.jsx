@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { reportsAPI } from "../api/reports";
 import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
+import { settingsAPI } from "../api/settings";
 import Confirm from "../components/ui/Confirm";
 import { toast } from "../store/toast";
 import { getUserFacingErrorMessage } from "../api/errors";
@@ -65,14 +66,30 @@ export function Dashboard() {
   const [selectedModels, setSelectedModels] = useState([]);
   const [rangeStart, setRangeStart] = useState(toISO(addDays(todayBase, -2)));
   const [rangeEnd, setRangeEnd]     = useState(toISO(addDays(todayBase, 4)));
+  const [quickFilterOptions, setQuickFilterOptions] = useState([]);
+  const [selectedQuickFilter, setSelectedQuickFilter] = useState(null);
 
   const modelOptions = useMemo(
     () => [...new Set(cars.filter(c => c.is_active).map(c => c.name))].sort((a, b) => a.localeCompare(b, "he")),
     [cars]
   );
   const filteredCars = useMemo(
-    () => cars.filter(c => c.is_active && (selectedModels.length === 0 || selectedModels.includes(c.name))),
-    [cars, selectedModels]
+    () => cars.filter(c => {
+      if (!c.is_active) return false;
+      
+      // Multi-model filter
+      const matchesModel = selectedModels.length === 0 || selectedModels.includes(c.name);
+      if (!matchesModel) return false;
+
+      // Quick filter
+      if (selectedQuickFilter) {
+        if (selectedQuickFilter.max_price && c.price_per_day > selectedQuickFilter.max_price) return false;
+        if (selectedQuickFilter.type && c.type !== selectedQuickFilter.type) return false;
+      }
+
+      return true;
+    }),
+    [cars, selectedModels, selectedQuickFilter]
   );
   const visibleDays = Math.max(diffDays(rangeStart, rangeEnd) + 1, 1);
 
@@ -84,6 +101,7 @@ export function Dashboard() {
 
   useEffect(() => {
     carsAPI.list().then(setCars).catch(() => setCars([]));
+    settingsAPI.get("quick_filters").then(res => setQuickFilterOptions(res.value || [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -200,6 +218,26 @@ export function Dashboard() {
             <button onClick={() => shiftRange(-7)} style={chipStyle}>◀ 7 ימים</button>
             <button onClick={() => shiftRange(7)} style={chipStyle}>7 ימים ▶</button>
           </div>
+
+          {/* Quick Category Filters */}
+          <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", width:isMobile ? "100%" : "auto", marginTop:isMobile ? 10 : 0 }}>
+            <span style={fieldLabel}>קטגוריה</span>
+            <button 
+              onClick={() => setSelectedQuickFilter(null)} 
+              style={!selectedQuickFilter ? activeChip : chipStyle}
+            >
+              הכל
+            </button>
+            {quickFilterOptions.map(f => (
+              <button 
+                key={f.label} 
+                onClick={() => setSelectedQuickFilter(selectedQuickFilter?.label === f.label ? null : f)} 
+                style={selectedQuickFilter?.label === f.label ? activeChip : chipStyle}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div style={{ marginTop:10, fontSize:12, color:"#64748b" }}>
@@ -207,6 +245,7 @@ export function Dashboard() {
           {selectedModels.length === 0
             ? <strong> כל הדגמים</strong>
             : <strong> {selectedModels.join(", ")}</strong>}
+          {selectedQuickFilter && <span> (קטגוריה: <strong>{selectedQuickFilter.label}</strong>)</span>}
           {" · "}
           <strong>{filteredCars.length}</strong> רכבים ·
           טווח: <strong>{visibleDays}</strong> ימים

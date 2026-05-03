@@ -47,7 +47,13 @@ def main():
     print("-" * 50)
     print(b64_str)
     print("-" * 50)
-    print("\nCopy the long string above and replace the old one in your .env.production file!")
+    
+    with open("token.txt", "w") as f:
+        f.write(b64_str)
+        
+    print("\n[!] IMPORTANT: I have also saved this string to a file named 'token.txt' in this folder!")
+    print("Please open 'token.txt' and copy the text from there. Copying from the terminal often cuts off characters.")
+    print("Replace the old string in your .env.production file with this exact text!")
 
 if __name__ == '__main__':
     main()

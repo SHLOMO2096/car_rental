@@ -13,6 +13,7 @@ const Customers = lazy(() => import("./pages/Customers"));
 const Bookings = lazy(() => import("./pages/Bookings"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Users = lazy(() => import("./pages/Users"));
+const Settings = lazy(() => import("./pages/Settings"));
 
 const APP_VERSION = __APP_VERSION__;
 const BUILD_TIME = new Date(__BUILD_TIME__).toLocaleString("he-IL");
@@ -50,6 +51,7 @@ function Layout({ children }) {
     { to:"/calendar",  label:"לוח שנה",     icon:"📅" },
     ...(can(Permissions.REPORTS_VIEW) ? [{ to:"/reports", label:"דוחות", icon:"📈" }] : []),
     ...(can(Permissions.USERS_MANAGE) ? [{ to:"/users", label:"משתמשים", icon:"👥" }] : []),
+    ...(can(Permissions.USERS_MANAGE) ? [{ to:"/settings", label:"הגדרות", icon:"⚙️" }] : []),
   ];
 
   return (
@@ -191,6 +193,7 @@ export default function App() {
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/reports"  element={<AdminRoute><Reports /></AdminRoute>} />
                   <Route path="/users"    element={<AdminRoute><Users /></AdminRoute>} />
+                  <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
                   <Route path="*"         element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>
