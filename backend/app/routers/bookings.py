@@ -72,7 +72,7 @@ def create_booking(
     car = db.query(Car).filter(Car.id == data.car_id, Car.is_active == True).first()
     if not car:
         raise HTTPException(404, "רכב לא נמצא")
-    if crud_booking.has_overlap(db, data.car_id, data.start_date, data.end_date):
+    if crud_booking.has_overlap(db, data.car_id, data.start_date, data.end_date, data.pickup_time, data.return_time):
         raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
 
     customer = None
@@ -155,7 +155,7 @@ def update_booking(
         new_car = db.query(Car).filter(Car.id == data.car_id, Car.is_active == True).first()
         if not new_car:
             raise HTTPException(404, "רכב יעד לא נמצא או אינו פעיל")
-        if crud_booking.has_overlap(db, data.car_id, b.start_date, b.end_date, exclude_id=b.id):
+        if crud_booking.has_overlap(db, data.car_id, b.start_date, b.end_date, b.pickup_time, b.return_time, exclude_id=b.id):
             raise HTTPException(409, "הרכב היעד כבר מושכר בתאריכים אלו")
 
     # ── ולידציה: שינוי תאריכים ────────────────────────────────────────────────
@@ -166,7 +166,7 @@ def update_booking(
             raise HTTPException(422, "לא ניתן לעדכן הזמנה לתאריך סיום בעבר")
         if new_end < new_start:
             raise HTTPException(422, "תאריך סיום חייב להיות אחרי תאריך התחלה")
-        if crud_booking.has_overlap(db, new_car_id, new_start, new_end, exclude_id=b.id):
+        if crud_booking.has_overlap(db, new_car_id, new_start, new_end, data.pickup_time or b.pickup_time, data.return_time or b.return_time, exclude_id=b.id):
             raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
 
     if data.customer_id is not None:

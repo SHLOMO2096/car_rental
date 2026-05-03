@@ -9,7 +9,9 @@ from app.schemas.booking import BookingCreate, BookingUpdate
 class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
 
     def has_overlap(self, db: Session, car_id: int,
-                    start: date, end: date, exclude_id: int | None = None) -> bool:
+                    start: date, end: date,
+                    pickup_time: str | None = None, return_time: str | None = None,
+                    exclude_id: int | None = None) -> bool:
         q = db.query(Booking).filter(
             Booking.car_id    == car_id,
             Booking.status    == BookingStatus.active,
@@ -18,7 +20,30 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         )
         if exclude_id:
             q = q.filter(Booking.id != exclude_id)
-        return q.first() is not None
+            
+        overlapping = q.all()
+        if not overlapping:
+            return False
+            
+        new_pt = pickup_time or "08:30"
+        new_rt = return_time or "08:00"
+        
+        for b in overlapping:
+            b_pt = b.pickup_time or "08:30"
+            b_rt = b.return_time or "08:00"
+            
+            # If they just touch exactly on the boundary dates, check the times:
+            # If the new booking starts exactly when the old one ends:
+            if b.end_date == start and b_rt <= new_pt:
+                continue
+                
+            # If the new booking ends exactly when the old one starts:
+            if b.start_date == end and b_pt >= new_rt:
+                continue
+                
+            return True
+            
+        return False
 
     def create_booking(self, db: Session, data: BookingCreate | dict,
                        user_id: int, car: Car) -> Booking:

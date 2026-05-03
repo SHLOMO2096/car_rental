@@ -327,7 +327,8 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
     dates.forEach(d => {
       const ds = toISO(d);
       if (ds >= b.start_date && ds <= b.end_date) {
-        occ[`${ds}:${b.car_id}`] = b;
+        if (!occ[`${ds}:${b.car_id}`]) occ[`${ds}:${b.car_id}`] = [];
+        occ[`${ds}:${b.car_id}`].push(b);
       }
     });
   });
@@ -371,8 +372,22 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
 
     // Check for conflicts in target car
     const conflicts = bookingDates.filter(d => {
-      const cell = occ[`${d}:${targetCar.id}`];
-      return cell && cell.id !== dragBooking.id;
+      const cells = occ[`${d}:${targetCar.id}`];
+      if (!cells || cells.length === 0) return false;
+      return cells.some(cell => {
+          if (cell.id === dragBooking.id) return false;
+          if (cell.end_date === dragBooking.start_date && d === cell.end_date) {
+              const cellRet = cell.return_time || "08:00";
+              const dragPick = dragBooking.pickup_time || "08:30";
+              if (cellRet <= dragPick) return false;
+          }
+          if (cell.start_date === dragBooking.end_date && d === cell.start_date) {
+              const cellPick = cell.pickup_time || "08:30";
+              const dragRet = dragBooking.return_time || "08:00";
+              if (cellPick >= dragRet) return false;
+          }
+          return true;
+      });
     });
 
     if (conflicts.length > 0) {
@@ -549,10 +564,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
                                                padding:"1px 4px" }}>היום</span>}
                   </td>
                   {activeCars.map(car => {
-                    const b  = occ[`${ds}:${car.id}`];
+                    const cellBookings = occ[`${ds}:${car.id}`] || [];
                     const isDropColumn = dragBooking && dragOverCarId === car.id && car.id !== dragBooking?.car_id;
 
-                    if (!b) {
+                    if (cellBookings.length === 0) {
                       return (
                         <td key={car.id}
                             title={isPastDay ? `לא ניתן להזמין את ${car.name} לתאריך עבר` : (dragBooking ? `שחרר להעברה ל-${car.name}` : `לחץ להזמנת ${car.name} ב-${ds}`)}
@@ -577,6 +592,39 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
                       );
                     }
 
+                    const isConflict = dragBooking && dragOverCarId === car.id && cellBookings.some(cell => {
+                      if (cell.id === dragBooking.id) return false;
+                      if (cell.end_date === dragBooking.start_date && ds === cell.end_date) {
+                          const cellRet = cell.return_time || "08:00";
+                          const dragPick = dragBooking.pickup_time || "08:30";
+                          if (cellRet <= dragPick) return false;
+                      }
+                      if (cell.start_date === dragBooking.end_date && ds === cell.start_date) {
+                          const cellPick = cell.pickup_time || "08:30";
+                          const dragRet = dragBooking.return_time || "08:00";
+                          if (cellPick >= dragRet) return false;
+                      }
+                      return true;
+                    });
+
+                    if (cellBookings.length > 1 && !dragBooking) {
+                        return (
+                            <td key={car.id}
+                                title={cellBookings.map(b => `${b.customer_name} | ${b.pickup_time||"08:30"} - ${b.return_time||"08:00"}`).join("\n---\n")}
+                                onClick={() => {
+                                  if (dragBooking) return;
+                                  setBookingAction({ booking: cellBookings[0], carName: car.name || `רכב #${car.id}` });
+                                }}
+                                onDragOver={e => handleDragOverCell(e, car.id)}
+                                onDrop={e => handleDrop(e, car)}
+                                onDragLeave={() => setDragOverCarId(null)}
+                                style={{ ...gtd, textAlign:"center", background: "#fef08a", color: "#854d0e", cursor: "pointer", fontWeight: "bold" }}>
+                                ◧ מפוצל
+                            </td>
+                        );
+                    }
+
+                    const b = cellBookings[0];
                     const isFirst   = b.start_date === ds;
                     const isLast    = b.end_date   === ds;
                     const isSameDay = isFirst && isLast;
@@ -585,10 +633,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
                     let bg, fg, label;
                     if (isSameDay) {
                       bg = "#e9d5ff"; fg = "#7c3aed";
-                      label = <>⬦ חד-יומי<br/><small>{b.pickup_time||"08:00"}</small></>;
+                      label = <>⬦ חד-יומי<br/><small>{b.pickup_time||"08:30"}</small></>;
                     } else if (isFirst) {
                       bg = "#dbeafe"; fg = "#1d4ed8";
-                      label = <>🚀 יציאה<br/><small>{b.pickup_time||"08:00"}</small></>;
+                      label = <>🚀 יציאה<br/><small>{b.pickup_time||"08:30"}</small></>;
                     } else if (isLast) {
                       bg = "#fef9c3"; fg = "#854d0e";
                       label = <>↩ חזרה<br/><small>{b.return_time||"08:00"}</small></>;
@@ -596,10 +644,6 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile }) {
                       bg = "#fee2e2"; fg = "#b91c1c";
                       label = b.customer_name?.split(" ")[0] ?? "תפוס";
                     }
-
-                    // Check if this cell conflicts with the booking being dragged
-                    const isConflict = dragBooking && dragBooking.id !== b.id &&
-                      dragOverCarId === car.id;
 
                     return (
                       <td key={car.id}
