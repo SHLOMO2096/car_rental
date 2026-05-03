@@ -404,8 +404,92 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
         </div>
       </div>
     </div>
+}
+
+function PhotoMenu({ booking, onView, onUpload, isOpen, onToggle }) {
+  const photoCount = booking.drive_link ? booking.drive_link.split(",").filter(Boolean).length : 0;
+  
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <button 
+        onClick={(e) => { e.stopPropagation(); onToggle(); }} 
+        style={{ 
+          background: photoCount > 0 ? "#eff6ff" : "#f8fafc",
+          color: photoCount > 0 ? "#1d4ed8" : "#475569",
+          border: "1px solid",
+          borderColor: photoCount > 0 ? "#bfdbfe" : "#e2e8f0",
+          padding: "8px 16px",
+          borderRadius: 8,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontSize: 13
+        }}
+        title="ניהול תמונות"
+      >
+        📸 תמונות
+        {photoCount > 0 && <span style={{ fontSize: 11, background: "#1d4ed8", color: "#fff", borderRadius: 99, width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>{photoCount}</span>}
+      </button>
+
+      {isOpen && (
+        <>
+          <div 
+            style={{ position: "fixed", inset: 0, zIndex: 1001 }} 
+            onClick={(e) => { e.stopPropagation(); onToggle(); }} 
+          />
+          <div style={{
+            position: "absolute", bottom: "100%", left: 0, marginBottom: 8,
+            zIndex: 1002, background: "#fff", borderRadius: 12, 
+            boxShadow: "0 10px 40px rgba(0,0,0,0.2)", border: "1px solid #e2e8f0",
+            minWidth: 180, overflow: "hidden"
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 12, color: "#64748b", background: "#f8fafc" }}>
+              פעולות תמונה
+            </div>
+            
+            {photoCount > 0 && (
+              <button 
+                onClick={() => { onView(); onToggle(); }}
+                style={{ 
+                  width: "100%", textAlign: "right", padding: "12px 16px", border: "none", 
+                  background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center",
+                  transition: "background 0.2s"
+                }}
+              >
+                🖼️ צפה בתמונות ({photoCount})
+              </button>
+            )}
+
+            <label style={{ 
+              width: "100%", textAlign: "right", padding: "12px 16px", cursor: "pointer", 
+              fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderTop: photoCount > 0 ? "1px solid #f1f5f9" : "none"
+            }}>
+              📷 צלם מהמצלמה
+              <input 
+                type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+                onChange={(e) => { if (e.target.files?.length > 0) { onUpload(e.target.files); onToggle(); e.target.value = ""; } }}
+              />
+            </label>
+
+            <label style={{ 
+              width: "100%", textAlign: "right", padding: "12px 16px", cursor: "pointer", 
+              fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderTop: "1px solid #f1f5f9"
+            }}>
+              📁 בחר מהגלריה
+              <input 
+                type="file" accept="image/*" multiple style={{ display: "none" }}
+                onChange={(e) => { if (e.target.files?.length > 0) { onUpload(e.target.files); onToggle(); e.target.value = ""; } }}
+              />
+            </label>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
+
 
 // ── Availability Grid ──────────────────────────────────────────────────────────
 function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHeight }) {
