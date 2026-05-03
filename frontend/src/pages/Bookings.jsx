@@ -92,6 +92,7 @@ export default function Bookings() {
   const [customerMatches, setCustomerMatches] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(false);
   const isMobile = useIsMobile(900);
+  const [viewPhotos, setViewPhotos] = useState(null);
 
   function askActionConfirm({ message, messageList = null, confirmLabel = "אישור", confirmColor = "#1d4ed8" }) {
     return new Promise((resolve) => {
@@ -513,7 +514,7 @@ export default function Bookings() {
      finally { setConfirm(null); }
    }
 
-   async function compressImage(file, maxDimension = 1600, quality = 0.8) {
+   async function compressImage(file, maxDimension = 2048, quality = 0.9) {
      return new Promise((resolve) => {
        const reader = new FileReader();
        reader.onload = (event) => {
@@ -743,9 +744,14 @@ export default function Bookings() {
                     <td style={s.td}>
                       <div style={{ display:"flex", gap:5 }}>
                         <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
-                        {(b.drive_link || "").split(",").filter(Boolean).map((link, idx, arr) => (
-                          <a key={idx} href={link} target="_blank" rel="noreferrer" style={{ ...s.btnIcon, textDecoration: "none" }} title={`צפה בצילום ${arr.length > 1 ? idx+1 : ''}`}>🖼️<small style={{ fontSize: 9 }}>{arr.length > 1 ? idx+1 : ''}</small></a>
-                        ))}
+                        {b.drive_link && (
+                          <button onClick={() => setViewPhotos(b)} style={s.btnIcon} title="צפה בתמונות">
+                            🖼️
+                            {b.drive_link.split(",").filter(Boolean).length > 1 && (
+                              <small style={{ fontSize: 10, fontWeight: "bold", marginRight: 2 }}>{b.drive_link.split(",").filter(Boolean).length}</small>
+                            )}
+                          </button>
+                        )}
                         {b.status === "active" && (
                           <>
                             <label
@@ -829,9 +835,14 @@ export default function Bookings() {
                    <span style={{ fontWeight:700, color:"#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
                    <div style={{ display:"flex", gap:8 }}>
                      <button onClick={() => openEdit(b)} style={s.btnIcon} title="ערוך">✏️</button>
-                     {(b.drive_link || "").split(",").filter(Boolean).map((link, idx, arr) => (
-                       <a key={idx} href={link} target="_blank" rel="noreferrer" style={{ ...s.btnIcon, textDecoration: "none" }} title={`צפה בצילום ${arr.length > 1 ? idx+1 : ''}`}>🖼️<small style={{ fontSize: 9 }}>{arr.length > 1 ? idx+1 : ''}</small></a>
-                     ))}
+                     {b.drive_link && (
+                       <button onClick={() => setViewPhotos(b)} style={s.btnIcon} title="צפה בתמונות">
+                         🖼️
+                         {b.drive_link.split(",").filter(Boolean).length > 1 && (
+                           <small style={{ fontSize: 10, fontWeight: "bold", marginRight: 2 }}>{b.drive_link.split(",").filter(Boolean).length}</small>
+                         )}
+                       </button>
+                     )}
                      {b.status === "active" && (
                        <>
                          <label
@@ -1288,6 +1299,26 @@ export default function Bookings() {
         confirmColor={actionConfirm?.confirmColor || "#1d4ed8"}
         onConfirm={() => closeActionConfirm(true)}
         onCancel={() => closeActionConfirm(false)} />
+      <Modal open={!!viewPhotos} onClose={() => setViewPhotos(null)} title={`תמונות הזמנה #${viewPhotos?.id}`}>
+        {viewPhotos && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ marginBottom: 10, color: "#64748b", fontSize: 14 }}>
+              נמצאו {(viewPhotos.drive_link || "").split(",").filter(Boolean).length} תמונות ב-Google Drive:
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {(viewPhotos.drive_link || "").split(",").filter(Boolean).map((link, idx) => (
+                <a key={idx} href={link} target="_blank" rel="noreferrer" style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", padding: "16px",
+                  background: "#f1f5f9", borderRadius: 8, textDecoration: "none", color: "#1d4ed8", fontWeight: "bold"
+                }}>
+                  📸 צפה בתמונה {idx + 1}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
+
     </div>
   );
 }

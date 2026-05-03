@@ -93,6 +93,7 @@ export default function Customers() {
   const [bulkEditorKey, setBulkEditorKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const isMobile = useIsMobile(900);
+  const [viewPhotos, setViewPhotos] = useState(null);
   const canSendBulkEmail = useAuthStore((s) => s.can(Permissions.CUSTOMERS_BULK_EMAIL));
 
   const load = useCallback(async (q = "") => {
@@ -467,13 +468,12 @@ export default function Customers() {
                       <td style={s.td}>{b.total_price ? `₪${Math.round(b.total_price).toLocaleString()}` : "—"}</td>
                       <td style={s.td}>
                         {b.drive_link ? (
-                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                            {b.drive_link.split(",").filter(Boolean).map((link, idx, arr) => (
-                              <a key={idx} href={link} target="_blank" rel="noreferrer" style={{ ...s.btnPhoto, padding: "2px 6px", fontSize: 11 }}>
-                                📸 צפה {arr.length > 1 ? idx+1 : ''}
-                              </a>
-                            ))}
-                          </div>
+                          <button onClick={() => setViewPhotos(b)} style={{ ...s.btnPhoto, padding: "4px 8px" }} title="צפה בתמונות">
+                            🖼️ צפה
+                            {b.drive_link.split(",").filter(Boolean).length > 1 && (
+                              <small style={{ fontSize: 10, fontWeight: "bold", marginRight: 4 }}>({b.drive_link.split(",").filter(Boolean).length})</small>
+                            )}
+                          </button>
                         ) : "—"}
                       </td>
                     </tr>
@@ -628,6 +628,25 @@ export default function Customers() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(null)}
       />
+      <Modal open={!!viewPhotos} onClose={() => setViewPhotos(null)} title={`תמונות הזמנה #${viewPhotos?.id}`}>
+        {viewPhotos && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ marginBottom: 10, color: "#64748b", fontSize: 14 }}>
+              נמצאו {(viewPhotos.drive_link || "").split(",").filter(Boolean).length} תמונות ב-Google Drive:
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {(viewPhotos.drive_link || "").split(",").filter(Boolean).map((link, idx) => (
+                <a key={idx} href={link} target="_blank" rel="noreferrer" style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", padding: "16px",
+                  background: "#f1f5f9", borderRadius: 8, textDecoration: "none", color: "#1d4ed8", fontWeight: "bold"
+                }}>
+                  📸 צפה בתמונה {idx + 1}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
