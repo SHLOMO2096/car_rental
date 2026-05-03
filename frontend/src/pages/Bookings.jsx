@@ -84,8 +84,7 @@ export default function Bookings() {
   const [page, setPage] = useState(1);
   const [dateFilter, setDateFilter] = useState("all"); // "all" | "today" | "tomorrow" | "custom"
   const [customDate, setCustomDate] = useState("");
-  const [photoUploadId, setPhotoUploadId] = useState(null); // Track which booking is uploading
-  const [photoUploading, setPhotoUploading] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState([]); // Array of { id, bookingId, status: 'pending'|'compressing'|'uploading'|'done'|'error' }
   const PER_PAGE = 15;
   const canDeleteBookings = useAuthStore(s => s.can(Permissions.BOOKINGS_DELETE));
   const [conflictModal, setConflictModal] = useState(null);
@@ -565,23 +564,48 @@ export default function Bookings() {
     });
   }
 
-  async function handlePhotoUpload(bookingId, file) {
-    if (!file) return;
-    setPhotoUploading(true);
-    try {
-      const compressed = await compressImage(file);
-      const result = await bookingsAPI.uploadPhoto(bookingId, compressed);
-      toast.success(`✓ צילום הועלה בהצלחה ל-Google Drive`);
-      if (result.link) {
-        // Open the link if available
-        window.open(result.link, "_blank");
+  async function handlePhotoUpload(bookingId, files) {
+    if (!files || files.length === 0) return;
+    
+    const fileList = Array.from(files);
+    
+    // Add each file to the queue
+    const newUploads = fileList.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      bookingId,
+      fileName: file.name,
+      status: "compressing"
+    }));
+    
+    setUploadQueue(prev => [...prev, ...newUploads]);
+
+    // Process each file in parallel
+    fileList.forEach(async (file, index) => {
+      const uploadId = newUploads[index].id;
+      
+      try {
+        const compressed = await compressImage(file);
+        
+        setUploadQueue(prev => prev.map(u => u.id === uploadId ? { ...u, status: "uploading" } : u));
+        
+        await bookingsAPI.uploadPhoto(bookingId, compressed);
+        
+        setUploadQueue(prev => prev.map(u => u.id === uploadId ? { ...u, status: "done" } : u));
+        
+        // Remove from queue after 3 seconds if done
+        setTimeout(() => {
+          setUploadQueue(prev => prev.filter(u => u.id !== uploadId));
+        }, 3000);
+
+        // Silent success, maybe just a small log or notification if first photo
+        if (index === 0 && fileList.length === 1) {
+           toast.success(`צילום הועלה בהצלחה להזמנה #${bookingId}`);
+        }
+      } catch (e) {
+        setUploadQueue(prev => prev.map(u => u.id === uploadId ? { ...u, status: "error", error: getUserFacingErrorMessage(e) } : u));
+        toast.error(`נכשל העלאת תמונה: ${getUserFacingErrorMessage(e)}`);
       }
-    } catch (e) {
-      toast.error(getUserFacingErrorMessage(e));
-    } finally {
-      setPhotoUploading(false);
-      setPhotoUploadId(null);
-    }
+    });
   }
 
   async function handleQuickComplete(b) {
@@ -828,20 +852,19 @@ export default function Bookings() {
                             <label
                               htmlFor={`file-upload-${b.id}`}
                               style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
-                              title="העלה צילום רכב"
+                              title="העלה צילומי רכב (ניתן לבחור כמה)"
                             >
-                              {photoUploading && photoUploadId === b.id ? "⏳" : "📸"}
+                              📸
                             </label>
                             <input
                               id={`file-upload-${b.id}`}
                               type="file"
                               accept="image/*"
+                              multiple
                               style={{ display: "none" }}
-                              disabled={photoUploading && photoUploadId === b.id}
                               onChange={(e) => {
-                                if (e.target.files?.[0]) {
-                                  setPhotoUploadId(b.id);
-                                  handlePhotoUpload(b.id, e.target.files[0]);
+                                if (e.target.files?.length > 0) {
+                                  handlePhotoUpload(b.id, e.target.files);
                                   e.target.value = "";
                                 }
                               }}
@@ -934,20 +957,19 @@ export default function Bookings() {
                         <label
                           htmlFor={`file-upload-mobile-${b.id}`}
                           style={{ ...s.btnIcon, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", margin: 0 }}
-                          title="העלה צילום רכב"
+                          title="העלה צילומי רכב"
                         >
-                          {photoUploading && photoUploadId === b.id ? "⏳" : "📸"}
+                          📸
                         </label>
                         <input
                           id={`file-upload-mobile-${b.id}`}
                           type="file"
                           accept="image/*"
+                          multiple
                           style={{ display: "none" }}
-                          disabled={photoUploading && photoUploadId === b.id}
                           onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              setPhotoUploadId(b.id);
-                              handlePhotoUpload(b.id, e.target.files[0]);
+                            if (e.target.files?.length > 0) {
+                              handlePhotoUpload(b.id, e.target.files);
                               e.target.value = "";
                             }
                           }}
@@ -1451,6 +1473,38 @@ export default function Bookings() {
         )}
       </Modal>
 
+      {/* Floating Upload Queue Status */}
+      {uploadQueue.length > 0 && (
+        <div style={{
+          position: "fixed", bottom: 20, left: 20, zIndex: 10000,
+          background: "#1e293b", color: "#fff", padding: "12px 20px",
+          borderRadius: 12, boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+          display: "flex", flexDirection: "column", gap: 8, minWidth: 200,
+          maxWidth: 300, border: "1px solid #334155"
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 13, borderBottom: "1px solid #334155", paddingBottom: 6, display: "flex", justifyContent: "space-between" }}>
+            <span>📤 העלאת תמונות ({uploadQueue.filter(u => u.status !== "done").length})</span>
+            <button onClick={() => setUploadQueue([])} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 11 }}>נקה הכל</button>
+          </div>
+          <div style={{ maxHeight: 150, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+            {uploadQueue.map(u => (
+              <div key={u.id} style={{ fontSize: 11, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>
+                  #{u.bookingId} - {u.fileName}
+                </span>
+                <span style={{ 
+                  color: u.status === "done" ? "#22c55e" : (u.status === "error" ? "#ef4444" : "#3b82f6"),
+                  fontWeight: 600 
+                }}>
+                  {u.status === "compressing" ? "דוחס..." : 
+                   u.status === "uploading" ? "מעלה..." : 
+                   u.status === "done" ? "✓ הושלם" : "✘ שגיאה"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
