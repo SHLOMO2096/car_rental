@@ -177,7 +177,7 @@ export default function Bookings() {
   }, [bookings, location.pathname, location.state, navigate]);
 
   useEffect(() => {
-    if (modal !== "create") return;
+    if (modal !== "create" || form.customer_id) return;
     const q = form.customer_name.trim();
     if (q.length < 2) {
       setCustomerMatches([]);
