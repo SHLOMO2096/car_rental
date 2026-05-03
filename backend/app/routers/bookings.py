@@ -307,6 +307,19 @@ async def upload_booking_photo(
             booking.drive_link = f"{booking.drive_link},{new_link}"
         else:
             booking.drive_link = new_link
+
+    # Auto-complete older active bookings for the same car
+    if booking.car_id:
+        from app.models.booking import Booking, BookingStatus
+        previous_active = db.query(Booking).filter(
+            Booking.car_id == booking.car_id,
+            Booking.status == BookingStatus.active,
+            Booking.id != booking.id
+        ).all()
+        for prev in previous_active:
+            if prev.start_date <= booking.start_date:
+                prev.status = BookingStatus.completed
+
     db.commit()
 
     log_audit_event(
