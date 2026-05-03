@@ -6,7 +6,12 @@ import Modal from "../ui/Modal";
  */
 export function ImageGallery({ photos, initialIndex = 0, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const urls = photos ? photos.split(",").filter(Boolean) : [];
+  const [loading, setLoading] = useState(true);
+  const urls = photos ? photos.split(",").map(u => u.trim()).filter(Boolean) : [];
+
+  useEffect(() => {
+    setLoading(true);
+  }, [currentIndex]);
 
   if (urls.length === 0) return null;
 
@@ -16,59 +21,66 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
   return (
     <div 
       style={{ 
-        position: "fixed", inset: 0, zIndex: 30000, background: "rgba(0,0,0,0.9)", 
+        position: "fixed", inset: 0, zIndex: 30000, background: "rgba(0,0,0,0.95)", 
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         touchAction: "none"
       }}
       onClick={onClose}
     >
       {/* Header / Controls */}
-      <div style={{ position: "absolute", top: 20, right: 20, display: "flex", gap: 15, zIndex: 30001 }}>
-        <button 
-          onClick={(e) => { e.stopPropagation(); window.open(urls[currentIndex], "_blank"); }}
-          style={{ background: "rgba(255,255,255,0.2)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 15px", cursor: "pointer", fontWeight: 700 }}
-        >
-          📂 פתח מקור
-        </button>
-        <button 
-          onClick={onClose} 
-          style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", width: 40, height: 40, fontSize: 20, cursor: "pointer" }}
-        >
-          ✕
-        </button>
+      <div style={{ position: "absolute", top: 20, right: 20, left: 20, display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 30001 }}>
+        <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, background: "rgba(255,255,255,0.1)", padding: "6px 12px", borderRadius: 20 }}>
+          תמונה {currentIndex + 1} / {urls.length}
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); window.open(urls[currentIndex], "_blank"); }}
+            style={{ background: "rgba(255,255,255,0.2)", color: "#fff", border: "none", borderRadius: 8, padding: "8px 15px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}
+          >
+            📂 פתח מקור
+          </button>
+          <button 
+            onClick={onClose} 
+            style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", width: 36, height: 36, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Main Image Container */}
-      <div style={{ width: "100%", height: "80%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", padding: 20, boxSizing: "border-box" }}>
         {urls.length > 1 && (
           <button 
             onClick={prev} 
-            style={{ position: "absolute", left: 20, background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", borderRadius: "50%", width: 50, height: 50, fontSize: 24, cursor: "pointer", zIndex: 30002 }}
+            style={{ position: "absolute", left: 10, background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", borderRadius: "50%", width: 44, height: 44, fontSize: 20, cursor: "pointer", zIndex: 30002, backdropFilter: "blur(4px)" }}
           >
             ❮
           </button>
         )}
         
+        {loading && <div style={{ position: "absolute", color: "#fff", fontSize: 14 }}>טוען תמונה...</div>}
+        
         <img 
           src={urls[currentIndex]} 
           alt={`Photo ${currentIndex + 1}`} 
-          style={{ maxWidth: "95%", maxHeight: "100%", borderRadius: 8, boxShadow: "0 10px 40px rgba(0,0,0,0.5)", transition: "transform 0.3s" }}
+          onLoad={() => setLoading(false)}
+          style={{ 
+            maxWidth: "100%", maxHeight: "100%", objectFit: "contain",
+            borderRadius: 8, boxShadow: "0 10px 40px rgba(0,0,0,0.5)", 
+            display: loading ? "none" : "block"
+          }}
           onClick={(e) => e.stopPropagation()}
         />
 
         {urls.length > 1 && (
           <button 
             onClick={next} 
-            style={{ position: "absolute", right: 20, background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", borderRadius: "50%", width: 50, height: 50, fontSize: 24, cursor: "pointer", zIndex: 30002 }}
+            style={{ position: "absolute", right: 10, background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", borderRadius: "50%", width: 44, height: 44, fontSize: 20, cursor: "pointer", zIndex: 30002, backdropFilter: "blur(4px)" }}
           >
             ❯
           </button>
         )}
-      </div>
-
-      {/* Footer Info */}
-      <div style={{ marginTop: 20, color: "#fff", fontSize: 16, fontWeight: 700, background: "rgba(0,0,0,0.5)", padding: "5px 20px", borderRadius: 99 }}>
-        תמונה {currentIndex + 1} מתוך {urls.length}
       </div>
     </div>
   );
