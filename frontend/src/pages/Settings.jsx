@@ -77,7 +77,7 @@ export default function Settings() {
   if (loading) return <div style={{ padding: 20 }}>טוען...</div>;
 
   return (
-    <div dir="rtl">
+    <div dir="rtl" style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
       <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 24 }}>הגדרות מערכת</h1>
 
       <div style={s.card}>
@@ -165,6 +165,10 @@ export default function Settings() {
             </div>
           ))}
         </div>
+        <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+          <button onClick={addGroupPrice} style={s.btnAdd}>+ הוסף קבוצה</button>
+        </div>
+      </div>
 
       <div style={{ ...s.card, marginTop: 24 }}>
         <h2 style={s.cardTitle}>הגדרות כלליות</h2>
@@ -233,7 +237,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", marginBottom: 40 }}>
         <button onClick={save} disabled={saving} style={{ ...s.btnSave, padding: "12px 32px", fontSize: 16 }}>
           {saving ? "שומר..." : "💾 שמור הכל"}
         </button>
@@ -243,16 +247,16 @@ export default function Settings() {
 }
 
 const s = {
-  card: { background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0" },
-  cardTitle: { margin: "0 0 10px", fontSize: 18, fontWeight: 700 },
+  card: { background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" },
+  cardTitle: { margin: "0 0 10px", fontSize: 18, fontWeight: 700, color: "#1e293b" },
   filterRow: { 
     display: "flex", gap: 12, padding: 16, background: "#f8fafc", 
     borderRadius: 8, border: "1px solid #e2e8f0", flexWrap: "wrap", alignItems: "flex-end" 
   },
   field: { display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 140 },
   label: { fontSize: 12, fontWeight: 600, color: "#475569" },
-  input: { padding: "8px 12px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 14 },
-  btnRemove: { background: "#fee2e2", color: "#dc2626", border: "none", padding: "8px 12px", borderRadius: 6, cursor: "pointer" },
+  input: { padding: "8px 12px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 14, outline: "none" },
+  btnRemove: { background: "#fee2e2", color: "#dc2626", border: "none", padding: "8px 12px", borderRadius: 6, cursor: "pointer", transition: "background 0.2s" },
   btnAdd: { background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "8px 16px", borderRadius: 6, cursor: "pointer", fontWeight: 600 },
-  btnSave: { background: "#1d4ed8", color: "#fff", border: "none", padding: "8px 20px", borderRadius: 6, cursor: "pointer", fontWeight: 700 },
+  btnSave: { background: "#1d4ed8", color: "#fff", border: "none", padding: "8px 20px", borderRadius: 6, cursor: "pointer", fontWeight: 700, transition: "opacity 0.2s" },
 };
