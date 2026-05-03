@@ -80,6 +80,11 @@ def create_booking(
         customer = db.query(Customer).filter(Customer.id == data.customer_id).first()
         if not customer:
             raise HTTPException(404, "לקוח לא נמצא")
+        # Auto-update customer email if provided and different
+        if data.customer_email and customer.email != str(data.customer_email):
+            customer.email = str(data.customer_email)
+            db.commit()
+            db.refresh(customer)
     else:
         customer = crud_customer.upsert_contact(
             db,
@@ -173,6 +178,11 @@ def update_booking(
         exists = db.query(Customer).filter(Customer.id == data.customer_id).first()
         if not exists:
             raise HTTPException(404, "לקוח לא נמצא")
+        # Auto-update customer email if provided and different
+        if data.customer_email and exists.email != str(data.customer_email):
+            exists.email = str(data.customer_email)
+            db.commit()
+            db.refresh(exists)
 
     before_state = {
         "id": b.id,
