@@ -292,6 +292,7 @@ export default function Bookings() {
         viewStart,
         viewEnd,
         modelFilter: [],
+        categoryFilter: [],
         bookings: activeBookings,
         blockers,
       });
@@ -660,8 +661,8 @@ export default function Bookings() {
 
   const conflictVisibleCars = conflictModal
     ? cars.filter((c) => c.is_active && (
-      !conflictModal.modelFilter || conflictModal.modelFilter.length === 0 ||
-      conflictModal.modelFilter.includes(c.name)
+      (!conflictModal.modelFilter || conflictModal.modelFilter.length === 0 || conflictModal.modelFilter.includes(c.name)) &&
+      (!conflictModal.categoryFilter || conflictModal.categoryFilter.length === 0 || conflictModal.categoryFilter.includes(c.category || ""))
     ))
     : [];
 
@@ -1160,6 +1161,35 @@ export default function Bookings() {
             <div style={s.conflictFilters}>
               <label style={s.conflictFilterField}>
                 <span style={s.conflictFilterLabel}>
+                  קטגוריה
+                  {conflictModal.categoryFilter.length > 0 && (
+                    <button
+                      onClick={() => updateConflictFilters({ categoryFilter: [] })}
+                      disabled={resolvingConflict}
+                      style={s.conflictClearBtn}
+                    >נקה</button>
+                  )}
+                </span>
+                <div style={s.conflictFilterScroll}>
+                  {categories.map((cat) => {
+                    const checked = conflictModal.categoryFilter.includes(cat.name);
+                    return (
+                      <label key={cat.name} style={{ ...s.conflictFilterItem, background: checked ? "#eff6ff" : "transparent" }}>
+                        <input type="checkbox" checked={checked}
+                          onChange={() => {
+                            const next = checked ? conflictModal.categoryFilter.filter(c => c !== cat.name) : [...conflictModal.categoryFilter, cat.name];
+                            updateConflictFilters({ categoryFilter: next });
+                          }}
+                        />
+                        {cat.name}
+                      </label>
+                    );
+                  })}
+                </div>
+              </label>
+
+              <label style={s.conflictFilterField}>
+                <span style={s.conflictFilterLabel}>
                   דגם
                   {conflictModal.modelFilter.length > 0 && (
                     <button
@@ -1528,6 +1558,15 @@ const s = {
   },
   conflictFilterField: { display: "flex", flexDirection: "column", gap: 4 },
   conflictFilterLabel: { fontSize: 12, color: "#475569", fontWeight: 600 },
+  conflictClearBtn: { marginRight: 6, fontSize: 10, padding: "1px 6px", borderRadius: 4, border: "1px solid #cbd5e1", background: "#f1f5f9", cursor: "pointer", color: "#64748b" },
+  conflictFilterScroll: {
+    border: "1px solid #cbd5e1", borderRadius: 8, background: "#fff",
+    maxHeight: 130, overflowY: "auto", padding: "4px 0",
+  },
+  conflictFilterItem: {
+    display: "flex", alignItems: "center", gap: 6, padding: "3px 10px",
+    cursor: "pointer", fontSize: 12, color: "#374151",
+  },
   conflictFilterInput: {
     border: "1px solid #cbd5e1",
     borderRadius: 8,

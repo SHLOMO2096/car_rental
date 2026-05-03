@@ -64,10 +64,12 @@ export function Dashboard() {
   const todayISO = toISO(todayBase);
 
   const [selectedModels, setSelectedModels] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [rangeStart, setRangeStart] = useState(toISO(addDays(todayBase, -2)));
   const [rangeEnd, setRangeEnd]     = useState(toISO(addDays(todayBase, 4)));
   const [quickFilterOptions, setQuickFilterOptions] = useState([]);
   const [selectedQuickFilter, setSelectedQuickFilter] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   const modelOptions = useMemo(
     () => [...new Set(cars.filter(c => c.is_active).map(c => c.name))].sort((a, b) => a.localeCompare(b, "he")),
@@ -77,6 +79,10 @@ export function Dashboard() {
     () => cars.filter(c => {
       if (!c.is_active) return false;
       
+      // Multi-category filter
+      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(c.category || "");
+      if (!matchesCategory) return false;
+
       // Multi-model filter
       const matchesModel = selectedModels.length === 0 || selectedModels.includes(c.name);
       if (!matchesModel) return false;
@@ -103,6 +109,7 @@ export function Dashboard() {
   useEffect(() => {
     carsAPI.list().then(setCars).catch(() => setCars([]));
     settingsAPI.get("quick_filters").then(res => setQuickFilterOptions(res.value || [])).catch(() => {});
+    settingsAPI.get("category_hierarchy").then(res => setCategories(res.value || [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -145,57 +152,41 @@ export function Dashboard() {
       <div style={{ ...cardStyle, padding:isMobile ? 12 : 16, marginBottom:20 }}>
         <div style={{ display:"flex", gap:12, alignItems:"flex-start", flexWrap:"wrap" }}>
 
+          {/* Multi-category filter */}
+          <div style={{ ...fieldWrap, minWidth: isMobile ? "100%" : 180 }}>
+            <span style={fieldLabel}>סינון קטגוריות</span>
+            <div style={multiSelectBox}>
+              <label style={multiSelectItem(selectedCategories.length === 0)}>
+                <input type="checkbox" checked={selectedCategories.length === 0} onChange={() => setSelectedCategories([])} />
+                כל הקטגוריות
+              </label>
+              <div style={separator} />
+              {categories.map(cat => (
+                <label key={cat.name} style={multiSelectItem(selectedCategories.includes(cat.name))}>
+                  <input type="checkbox" checked={selectedCategories.includes(cat.name)} 
+                    onChange={() => setSelectedCategories(prev => prev.includes(cat.name) ? prev.filter(c => c !== cat.name) : [...prev, cat.name])} />
+                  {cat.name}
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Multi-model filter */}
           <div style={{ ...fieldWrap, minWidth: isMobile ? "100%" : 220 }}>
             <span style={fieldLabel}>סינון דגמים</span>
-            <div style={{
-              border:"1px solid #cbd5e1", borderRadius:8, background:"#fff",
-              padding:"6px 10px", maxHeight:130, overflowY:"auto",
-              display:"flex", flexDirection:"column", gap:4,
-            }}>
-              {/* All models option */}
-              <label style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer",
-                              fontSize:13, fontWeight: selectedModels.length===0 ? 700 : 400,
-                              color: selectedModels.length===0 ? "#1d4ed8" : "#374151",
-                              padding:"2px 0" }}>
-                <input
-                  type="checkbox"
-                  checked={selectedModels.length === 0}
-                  onChange={() => setSelectedModels([])}
-                  style={{ accentColor:"#1d4ed8" }}
-                />
+            <div style={multiSelectBox}>
+              <label style={multiSelectItem(selectedModels.length === 0)}>
+                <input type="checkbox" checked={selectedModels.length === 0} onChange={() => setSelectedModels([])} />
                 כל הדגמים
               </label>
-              <div style={{ borderTop:"1px solid #f1f5f9", margin:"2px 0" }} />
+              <div style={separator} />
               {modelOptions.map(model => (
-                <label key={model} style={{ display:"flex", alignItems:"center", gap:6,
-                                           cursor:"pointer", fontSize:13,
-                                           fontWeight: selectedModels.includes(model) ? 700 : 400,
-                                           color: selectedModels.includes(model) ? "#1d4ed8" : "#374151",
-                                           padding:"2px 0" }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedModels.includes(model)}
-                    onChange={() => toggleModel(model)}
-                    style={{ accentColor:"#1d4ed8" }}
-                  />
+                <label key={model} style={multiSelectItem(selectedModels.includes(model))}>
+                  <input type="checkbox" checked={selectedModels.includes(model)} onChange={() => toggleModel(model)} />
                   {model}
                 </label>
               ))}
             </div>
-            {selectedModels.length > 0 && (
-              <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:4 }}>
-                {selectedModels.map(m => (
-                  <span key={m} style={{ background:"#dbeafe", color:"#1d4ed8", borderRadius:999,
-                                         padding:"2px 8px", fontSize:11, fontWeight:700,
-                                         display:"flex", alignItems:"center", gap:4 }}>
-                    {m}
-                    <span onClick={() => toggleModel(m)}
-                          style={{ cursor:"pointer", fontWeight:900, fontSize:13, lineHeight:1 }}>×</span>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Date range */}
@@ -243,10 +234,10 @@ export function Dashboard() {
 
         <div style={{ marginTop:10, fontSize:12, color:"#64748b" }}>
           מוצג כעת:
-          {selectedModels.length === 0
-            ? <strong> כל הדגמים</strong>
-            : <strong> {selectedModels.join(", ")}</strong>}
-          {selectedQuickFilter && <span> (קטגוריה: <strong>{selectedQuickFilter.label}</strong>)</span>}
+          {selectedCategories.length === 0 ? "כל הקטגוריות" : selectedCategories.join(", ")}
+          {" · "}
+          {selectedModels.length === 0 ? "כל הדגמים" : selectedModels.join(", ")}
+          {selectedQuickFilter && <span> (סינון מהיר: <strong>{selectedQuickFilter.label}</strong>)</span>}
           {" · "}
           <strong>{filteredCars.length}</strong> רכבים ·
           טווח: <strong>{visibleDays}</strong> ימים
@@ -823,6 +814,18 @@ const gtd = { padding:"7px 8px", borderBottom:"1px solid #f1f5f9", fontSize:12 }
 const miniTag = { fontSize:8, fontWeight:700, color:"#fff", borderRadius:999, padding:"1px 5px" };
 const cardStyle = { background:"#fff", borderRadius:12, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" };
 const cardTitle = { margin:"0 0 16px", fontSize:15, fontWeight:700, color:"#1e293b" };
+const multiSelectBox = {
+  border:"1px solid #cbd5e1", borderRadius:8, background:"#fff",
+  padding:"6px 10px", maxHeight:130, overflowY:"auto",
+  display:"flex", flexDirection:"column", gap:4,
+};
+const multiSelectItem = (isSelected) => ({
+  display:"flex", alignItems:"center", gap:6, cursor:"pointer",
+  fontSize:13, fontWeight: isSelected ? 700 : 400,
+  color: isSelected ? "#1d4ed8" : "#374151",
+  padding:"2px 0"
+});
+const separator = { borderTop:"1px solid #f1f5f9", margin:"2px 0" };
 
 
 // ══════════════════════════════════════════════════════════════════════════════

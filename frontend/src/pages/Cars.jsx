@@ -10,18 +10,7 @@ import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
 
-const CAR_TYPES = [
-  { value: "sedan",     label: "סדאן",      emoji: "🚗" },
-  { value: "crossover", label: "קרוסאובר",  emoji: "🚙" },
-  { value: "suv",       label: "SUV",        emoji: "🏎" },
-  { value: "hatchback", label: "האצ׳בק",    emoji: "🚗" },
-  { value: "mini",      label: "מיני",       emoji: "🚕" },
-  { value: "hybrid",    label: "היברידי",    emoji: "🌿" },
-  { value: "electric",  label: "חשמלי",      emoji: "⚡" },
-  { value: "luxury",    label: "יוקרה",      emoji: "💎" },
-  { value: "van",       label: "ואן",        emoji: "🚐" },
-];
-const typeMap = Object.fromEntries(CAR_TYPES.map(t => [t.value, t]));
+// Removed old CAR_TYPES constant
 
 const EMPTY_FORM = { 
   name:"", category:"", is_hybrid: false, year: new Date().getFullYear(),
@@ -33,7 +22,8 @@ export default function Cars() {
   const [cars, setCars]         = useState([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState("");
-  const [typeFilter, setType]   = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [modelFilter, setModelFilter] = useState("all");
   const [modal, setModal]       = useState(null);   // null | "create" | "edit"
   const [form, setForm]         = useState(EMPTY_FORM);
   const [saving, setSaving]     = useState(false);
@@ -70,10 +60,13 @@ export default function Cars() {
   useEffect(() => { load(); }, [load]);
 
   const filtered = cars.filter(c => {
-    if (typeFilter !== "all" && c.type !== typeFilter) return false;
+    if (categoryFilter !== "all" && (c.category || "") !== categoryFilter) return false;
+    if (modelFilter !== "all" && c.name !== modelFilter) return false;
     if (search && !c.name.includes(search) && !c.plate.includes(search)) return false;
     return true;
   });
+
+  const modelOptions = [...new Set(cars.map(c => c.name))].sort();
 
   function openCreate() {
     setForm(EMPTY_FORM); setEditCar(null); setFormError(""); setModal("create");
@@ -145,9 +138,14 @@ export default function Cars() {
         <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
           <input placeholder="🔍 חיפוש שם / לוחית..." value={search}
             onChange={e => setSearch(e.target.value)} style={s.searchInput} />
-          <select value={typeFilter} onChange={e => setType(e.target.value)} style={s.select}>
-            <option value="all">כל הסוגים</option>
-            {CAR_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={s.select}>
+            <option value="all">כל הקטגוריות</option>
+            {categories.map(cat => <option key={cat.name} value={cat.name}>{cat.name}</option>)}
+            <option value="">ללא קטגוריה</option>
+          </select>
+          <select value={modelFilter} onChange={e => setModelFilter(e.target.value)} style={s.select}>
+            <option value="all">כל הדגמים</option>
+            {modelOptions.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           {canManageCars && (
             <button onClick={openCreate} style={s.btnPrimary}>+ הוסף רכב</button>
