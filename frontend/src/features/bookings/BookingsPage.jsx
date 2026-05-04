@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { bookingsAPI } from "../../api/bookings";
@@ -33,14 +33,11 @@ import { useBookingsNavigationEffects } from "./hooks/useBookingsNavigationEffec
 import { useCustomerAutocomplete } from "./hooks/useCustomerAutocomplete";
 import { useBookingPricePreview } from "./hooks/useBookingPricePreview";
 import { useBookingQuickActions } from "./hooks/useBookingQuickActions";
+import { useBookingsData } from "./hooks/useBookingsData";
 
 export default function BookingsPage() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const [bookings, setBookings] = useState([]);
-  const [cars, setCars] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatus] = useState("all");
@@ -48,8 +45,11 @@ export default function BookingsPage() {
   const [modal, setModal] = useState(null); // null | 'create' | 'edit'
   const [editBooking, setEdit] = useState(null);
 
-  const [generalSettings, setGeneralSettings] = useState(null);
-  const [categories, setCategories] = useState([]);
+  const { bookings, cars, loading, generalSettings, categories, load } = useBookingsData({
+    bookingsAPI,
+    carsAPI,
+    settingsAPI,
+  });
 
   const [form, setForm] = useState(() => makeEmptyForm({}));
   const [saving, setSaving] = useState(false);
@@ -95,42 +95,6 @@ export default function BookingsPage() {
 
   const isMobile = useIsMobile(900);
 
-
-  const load = useCallback(async () => {
-    const [bookingsRes, carsRes, genRes, pricesRes] = await Promise.allSettled([
-      bookingsAPI.list(),
-      carsAPI.list({ active_only: false }),
-      settingsAPI.get("general_settings"),
-      settingsAPI.get("category_hierarchy"),
-    ]);
-
-    if (bookingsRes.status === "fulfilled") {
-      setBookings(bookingsRes.value || []);
-    } else {
-      setBookings([]);
-      toast.error(getUserFacingErrorMessage(bookingsRes.reason), { title: "טעינת הזמנות" });
-    }
-
-    if (carsRes.status === "fulfilled") {
-      setCars(carsRes.value || []);
-    } else {
-      setCars([]);
-      toast.error(getUserFacingErrorMessage(carsRes.reason), { title: "טעינת רכבים" });
-    }
-
-    if (genRes.status === "fulfilled" && genRes.value?.value) {
-      setGeneralSettings(genRes.value.value);
-    }
-    if (pricesRes.status === "fulfilled" && pricesRes.value?.value) {
-      setCategories(pricesRes.value.value);
-    }
-
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   useBookingsNavigationEffects({
     location,
