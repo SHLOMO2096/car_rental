@@ -73,7 +73,7 @@ export default function BookingFormModal({
               style={s.input}
               placeholder="הקלד לפחות 2 תווים לחיפוש לקוח"
             />
-            {isCreate && form.customer_name.trim().length >= 2 && (
+            {isCreate && !form.customer_id && form.customer_name.trim().length >= 2 && (
               <div style={s.customerDropdown}>
                 {customersLoading && <div style={s.customerItemMuted}>מחפש לקוחות...</div>}
                 {!customersLoading && customerMatches.length === 0 && (

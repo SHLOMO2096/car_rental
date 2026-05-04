@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { bookingsAPI } from "../../api/bookings";
@@ -95,12 +95,14 @@ export default function BookingsPage() {
   });
 
   // Customer autocomplete
+  const searchCustomers = useCallback((q, lim) => customersAPI.search(q, lim), []);
+
   const { customerMatches, customersLoading, clearCustomerMatches } = useCustomerAutocomplete({
     modal,
     customerId: form.customer_id,
     customerName: form.customer_name,
     // Keep signature compatible with existing API call (q, limit)
-    searchCustomers: (q, lim) => customersAPI.search(q, lim),
+    searchCustomers,
     limit: 8,
     debounceMs: 180,
     minChars: 2,

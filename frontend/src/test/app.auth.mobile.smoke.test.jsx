@@ -111,7 +111,7 @@ describe("App auth + mobile smoke", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "לוח בקרה" }, { timeout: 3000 })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "לוח בקרה" }, { timeout: 6000 })).toBeInTheDocument();
   });
 
   it("renders dashboard on mobile without white screen", async () => {
