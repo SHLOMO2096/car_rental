@@ -1,3 +1,4 @@
+<!-- Deploy trigger: revert to direct links -->
 # 🚘 מערכת ניהול השכרת רכבים
 
 מערכת production-ready לניהול השכרת רכבים — FastAPI + React + PostgreSQL.
