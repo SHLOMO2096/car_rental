@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
-from datetime import date
+from datetime import date, datetime, timezone
 from app.crud.base import CRUDBase
 from app.models.booking import Booking, BookingStatus
 from app.models.car import Car
@@ -74,11 +74,28 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         db.add(b); db.commit(); db.refresh(b)
         return b
 
+    # ── Soft Delete ────────────────────────────────────────────────────────────
+    def soft_delete(self, db: Session, booking: Booking, user_id: int) -> Booking:
+        booking.deleted_at = datetime.now(timezone.utc)
+        booking.deleted_by = user_id
+        db.commit()
+        db.refresh(booking)
+        return booking
+
+    def get(self, db: Session, id: int) -> Booking | None:
+        """מחזיר הזמנה בלבד אם לא נמחקה (soft delete)."""
+        return (
+            db.query(Booking)
+            .filter(Booking.id == id, Booking.deleted_at == None)  # noqa: E711
+            .first()
+        )
+
     # ── Calendar: הזמנות לטווח תאריכים ────────────────────────────────────────
     def get_range(self, db: Session, start: date, end: date) -> list[Booking]:
         return (
             db.query(Booking)
             .filter(
+                Booking.deleted_at == None,          # noqa: E711
                 Booking.status    != BookingStatus.cancelled,
                 Booking.start_date <= end,
                 Booking.end_date   >= start,

@@ -35,7 +35,7 @@ def list_bookings(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission(Permissions.BOOKINGS_VIEW)),
 ):
-    q = db.query(Booking)
+    q = db.query(Booking).filter(Booking.deleted_at == None)  # noqa: E711
     if status:
         q = q.filter(Booking.status == status)
     if car_id:
@@ -242,20 +242,24 @@ def delete_booking(
     car_name = booking.car.name if booking.car else "לא ידוע"
     actor_email = current_user.email
     actor_role = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
-    crud_booking.delete(db, booking.id)
+    booking_id = booking.id
+
+    # Soft delete — שומרים מי מחק ומתי, לא מוחקים מהמסד
+    crud_booking.soft_delete(db, booking, current_user.id)
+
     log_audit_event(
         db,
         actor_user_id=current_user.id,
         action="booking.delete",
         entity_type="booking",
-        entity_id=str(booking.id),
+        entity_id=str(booking_id),
         before_obj=before_state,
         ip_address=request.client.host if request and request.client else None,
         severity=AuditSeverity.warning,
     )
     bg.add_task(
         send_booking_delete_alert,
-        booking_id=booking.id,
+        booking_id=booking_id,
         customer_name=before_state["customer_name"],
         car_name=car_name,
         start=before_state["start_date"],

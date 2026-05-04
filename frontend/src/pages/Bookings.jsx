@@ -800,6 +800,7 @@ export default function Bookings() {
                       )}
                       {b.customer_phone && <div style={s.sub}>{b.customer_phone}</div>}
                       {b.customer_email && <div style={s.sub}>{b.customer_email}</div>}
+                      <BookingAuditMeta b={b} />
                     </td>
                     <td style={s.td}>
                       <div style={{ fontWeight: 600 }}>{car?.name || "—"}</div>
@@ -938,6 +939,7 @@ export default function Bookings() {
                     )}
                   </div>
                 </div>
+                <BookingAuditMeta b={b} style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #f1f5f9" }} />
               </div>
             );
           })}
@@ -1104,6 +1106,32 @@ export default function Bookings() {
         )}
 
         {formError && <div style={s.errorBox}>{formError}</div>}
+
+        {/* Audit info strip — shown in edit mode */}
+        {modal === "edit" && editBooking && (
+          <div style={{
+            margin: "12px 0 0",
+            padding: "8px 12px",
+            background: "#f8fafc",
+            borderRadius: 8,
+            border: "1px solid #e2e8f0",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "4px 16px",
+            fontSize: 11,
+            color: "#64748b",
+          }}>
+            {editBooking.created_by_name && (
+              <span>🧑‍💼 נוצר ע"י <strong>{editBooking.created_by_name}</strong></span>
+            )}
+            {editBooking.created_at && (
+              <span>🕐 {formatDateTime(editBooking.created_at)}</span>
+            )}
+            {editBooking.updated_at && (
+              <span>✏️ עודכן: {formatDateTime(editBooking.updated_at)}</span>
+            )}
+          </div>
+        )}
 
         <div style={s.modalFooter}>
           <button onClick={() => { setModal(null); setConflictModal(null); setCustomerMatches([]); }} style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}>ביטול</button>
@@ -1465,6 +1493,29 @@ function formatDate(d) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("he-IL");
 }
+function formatDateTime(d) {
+  if (!d) return null;
+  const dt = new Date(d);
+  return dt.toLocaleString("he-IL", {
+    day: "2-digit", month: "2-digit", year: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+/** פס audit קטן – "נוצר ע"י שם · תאריך" */
+function BookingAuditMeta({ b, style = {} }) {
+  const parts = [];
+  if (b.created_by_name) parts.push(`נוצר ע"י ${b.created_by_name}`);
+  const dt = formatDateTime(b.created_at);
+  if (dt) parts.push(dt);
+  if (!parts.length) return null;
+  return (
+    <div style={{ ...s.auditMeta, ...style }}>
+      🕐 {parts.join(" · ")}
+    </div>
+  );
+}
+
 function formatDayWithWeekday(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString("he-IL", { weekday: "short", day: "2-digit", month: "2-digit" });
@@ -1496,6 +1547,10 @@ const s = {
   tr: { borderBottom: "1px solid #f1f5f9", transition: "background 0.1s" },
   td: { padding: "12px 14px", fontSize: 13, verticalAlign: "middle" },
   sub: { fontSize: 11, color: "#94a3b8", marginTop: 1 },
+  auditMeta: {
+    fontSize: 10, color: "#b0bec5", marginTop: 3, lineHeight: 1.4,
+    display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap",
+  },
   idBadge: {
     background: "#f1f5f9", color: "#475569", borderRadius: 6,
     padding: "2px 7px", fontSize: 12, fontWeight: 700

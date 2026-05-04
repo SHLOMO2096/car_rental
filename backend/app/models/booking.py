@@ -31,7 +31,11 @@ class Booking(Base):
     email_sent      = Column(Boolean, default=False)   # האם נשלח אימייל אישור
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
     updated_at      = Column(DateTime(timezone=True), onupdate=func.now())
+    # ── Soft Delete ────────────────────────────────────────────────────────────
+    deleted_at      = Column(DateTime(timezone=True), nullable=True)
+    deleted_by      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     car          = relationship("Car", back_populates="bookings")
     customer     = relationship("Customer", back_populates="bookings")
     agent        = relationship("User", foreign_keys=[created_by])
+    deleted_by_user = relationship("User", foreign_keys=[deleted_by])

@@ -1,7 +1,7 @@
 # ══════════════════════════════════════════════════════════════════════════════
-from pydantic import BaseModel, EmailStr, model_validator
+from pydantic import BaseModel, EmailStr, model_validator, computed_field
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, Any
 from app.models.booking import BookingStatus
 from app.schemas.car import CarOut
 
@@ -60,9 +60,28 @@ class BookingOut(BaseModel):
     notes:           Optional[str] = None
     drive_link:      Optional[str] = None
     email_sent:      bool
+    # ── Audit fields ──────────────────────────────────────────────────────────
+    created_by:      Optional[int]      = None
+    created_by_name: Optional[str]      = None   # שם היוצר (מה-relation)
     created_at:      datetime
+    updated_at:      Optional[datetime] = None
+    deleted_at:      Optional[datetime] = None
+    deleted_by:      Optional[int]      = None
+    deleted_by_name: Optional[str]      = None   # שם המוחק (מה-relation)
+    # ── Relations ─────────────────────────────────────────────────────────────
     car:             Optional[CarOut] = None
     model_config = {"from_attributes": True}
+
+    @classmethod
+    def model_validate(cls, obj: Any, **kwargs):
+        instance = super().model_validate(obj, **kwargs)
+        # מלא created_by_name מה-agent relation אם קיים
+        if hasattr(obj, "agent") and obj.agent:
+            instance.created_by_name = obj.agent.full_name
+        # מלא deleted_by_name מה-deleted_by_user relation אם קיים
+        if hasattr(obj, "deleted_by_user") and obj.deleted_by_user:
+            instance.deleted_by_name = obj.deleted_by_user.full_name
+        return instance
 
 
 # Ensure nested schemas are fully resolved in Pydantic v2.
