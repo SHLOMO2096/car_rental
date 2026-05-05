@@ -1,6 +1,8 @@
 services:
   db:
     image: postgres:16-alpine
+    networks:
+      - car_rental_default
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -18,6 +20,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    networks:
+      - car_rental_default
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       SECRET_KEY: ${SECRET_KEY}
@@ -44,12 +48,16 @@ services:
       dockerfile: Dockerfile.prod
       args:
         VITE_API_URL: /api
+    networks:
+      - car_rental_default
     depends_on:
       - backend
     restart: always
 
   nginx:
     image: nginx:alpine
+    networks:
+      - car_rental_default
     ports:
       - "80:80"
       - "443:443"
@@ -63,3 +71,10 @@ services:
 
 volumes:
   pg_data:
+
+networks:
+  # Shared external network so other projects/containers (e.g. y_car_accounting, evolution_api)
+  # can reach this stack's services by DNS name (e.g. db:5432, backend:8000, y_car_accounting:5000).
+  car_rental_default:
+    external: true
+
