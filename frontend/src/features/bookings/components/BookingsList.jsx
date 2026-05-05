@@ -23,6 +23,37 @@ export default function BookingsList({
   onQuickComplete,
   onQuickExtend,
 }) {
+  const actionsToolbar = {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+    padding: "4px 6px",
+    borderRadius: 999,
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+  };
+
+  const actionChip = (variant) => {
+    const base = {
+      border: "1px solid",
+      borderRadius: 999,
+      padding: "6px 10px",
+      fontSize: 12,
+      fontWeight: 800,
+      cursor: "pointer",
+      lineHeight: 1,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      background: "#fff",
+      whiteSpace: "nowrap",
+    };
+    if (variant === "success") return { ...base, color: "#166534", background: "#dcfce7", borderColor: "#bbf7d0" };
+    if (variant === "info") return { ...base, color: "#1d4ed8", background: "#dbeafe", borderColor: "#bfdbfe" };
+    return { ...base, color: "#475569", background: "#fff", borderColor: "#e2e8f0" };
+  };
+
   if (!isMobile) {
     return (
       <div style={s.tableWrap}>
@@ -97,40 +128,41 @@ export default function BookingsList({
                     )}
                   </td>
                   <td style={s.td}>
-                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                    <div style={actionsToolbar}>
                       {overdue && (
                         <>
                           <button
                             onClick={() => onQuickComplete(b)}
-                            style={{
-                              ...s.btnIcon,
-                              color: "#166534",
-                              background: "#dcfce7",
-                              fontSize: 12,
-                              padding: "2px 6px",
-                              fontWeight: "bold",
-                            }}
+                            style={actionChip("success")}
                             title="סמן כהושלמה"
                           >
                             ✅ סיום
                           </button>
                           <button
                             onClick={() => onQuickExtend(b)}
-                            style={{
-                              ...s.btnIcon,
-                              color: "#1d4ed8",
-                              background: "#dbeafe",
-                              fontSize: 12,
-                              padding: "2px 6px",
-                              fontWeight: "bold",
-                            }}
+                            style={actionChip("info")}
                             title="הארך ביום אחד"
                           >
                             📅 +יום
                           </button>
                         </>
                       )}
-                      <button onClick={() => onOpenEdit(b)} style={s.btnIcon} title="ערוך">
+                      <button
+                        onClick={() => onOpenEdit(b)}
+                        style={{
+                          ...s.btnIcon,
+                          width: 34,
+                          height: 34,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "#fff",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 10,
+                        }}
+                        title="ערוך"
+                        aria-label={`ערוך הזמנה #${b.id}`}
+                      >
                         ✏️
                       </button>
                       {b.status === "active" && (
@@ -141,10 +173,27 @@ export default function BookingsList({
                           onContinuousCamera={() => onContinuousCamera(b.id)}
                           isOpen={activePhotoMenu === b.id}
                           onToggle={() => onTogglePhotoMenu(activePhotoMenu === b.id ? null : b.id)}
+                          variant="compact"
                         />
                       )}
                       {canDeleteBookings && (
-                        <button onClick={() => onRequestDelete(b)} style={s.btnIcon} title="מחק">
+                        <button
+                          onClick={() => onRequestDelete(b)}
+                          style={{
+                            ...s.btnIcon,
+                            width: 34,
+                            height: 34,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "#fff",
+                            border: "1px solid #fecaca",
+                            borderRadius: 10,
+                            color: "#dc2626",
+                          }}
+                          title="מחק"
+                          aria-label={`מחק הזמנה #${b.id}`}
+                        >
                           🗑️
                         </button>
                       )}
@@ -221,33 +270,19 @@ export default function BookingsList({
 
             <div style={s.mobileFooter}>
               <span style={{ fontWeight: 700, color: "#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={actionsToolbar}>
                 {overdue && (
                   <>
                     <button
                       onClick={() => onQuickComplete(b)}
-                      style={{
-                        ...s.btnIcon,
-                        color: "#166534",
-                        background: "#dcfce7",
-                        fontSize: 12,
-                        padding: "2px 6px",
-                        fontWeight: "bold",
-                      }}
+                      style={actionChip("success")}
                       title="סמן כהושלמה"
                     >
                       ✅ סיום
                     </button>
                     <button
                       onClick={() => onQuickExtend(b)}
-                      style={{
-                        ...s.btnIcon,
-                        color: "#1d4ed8",
-                        background: "#dbeafe",
-                        fontSize: 12,
-                        padding: "2px 6px",
-                        fontWeight: "bold",
-                      }}
+                      style={actionChip("info")}
                       title="הארך ביום אחד"
                     >
                       📅 +יום
@@ -255,7 +290,22 @@ export default function BookingsList({
                   </>
                 )}
 
-                <button onClick={() => onOpenEdit(b)} style={s.btnIcon} title="ערוך">
+                <button
+                  onClick={() => onOpenEdit(b)}
+                  style={{
+                    ...s.btnIcon,
+                    width: 34,
+                    height: 34,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#fff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 10,
+                  }}
+                  title="ערוך"
+                  aria-label={`ערוך הזמנה #${b.id}`}
+                >
                   ✏️
                 </button>
 
@@ -267,11 +317,28 @@ export default function BookingsList({
                     onContinuousCamera={() => onContinuousCamera(b.id)}
                     isOpen={activePhotoMenu === b.id}
                     onToggle={() => onTogglePhotoMenu(activePhotoMenu === b.id ? null : b.id)}
+                    variant="compact"
                   />
                 )}
 
                 {canDeleteBookings && (
-                  <button onClick={() => onRequestDelete(b)} style={s.btnIcon} title="מחק">
+                  <button
+                    onClick={() => onRequestDelete(b)}
+                    style={{
+                      ...s.btnIcon,
+                      width: 34,
+                      height: 34,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "#fff",
+                      border: "1px solid #fecaca",
+                      borderRadius: 10,
+                      color: "#dc2626",
+                    }}
+                    title="מחק"
+                    aria-label={`מחק הזמנה #${b.id}`}
+                  >
                     🗑️
                   </button>
                 )}

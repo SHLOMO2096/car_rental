@@ -1,4 +1,5 @@
 import { todayISO, tomorrowISO } from "./dates";
+import { DEFAULT_GENERAL_SETTINGS } from "../../../config/defaultSettings";
 
 export function makeEmptyForm(defaults = {}) {
   return {
@@ -10,9 +11,9 @@ export function makeEmptyForm(defaults = {}) {
     customer_phone: "",
     customer_id_num: "",
     start_date: todayISO(),
-    start_time: defaults.default_pickup_time || "08:00",
+    start_time: defaults.default_pickup_time || DEFAULT_GENERAL_SETTINGS.default_pickup_time,
     end_date: tomorrowISO(),
-    end_time: defaults.default_return_time || "08:00",
+    end_time: defaults.default_return_time || DEFAULT_GENERAL_SETTINGS.default_return_time,
     notes: "",
   };
 }
