@@ -2,17 +2,11 @@ import { useEffect, useState } from "react";
 import { settingsAPI } from "../api/settings";
 import { toast } from "../store/toast";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { DEFAULT_GENERAL_SETTINGS } from "../config/defaultSettings";
 
 export default function Settings() {
   const [categories, setCategories] = useState([]);
-  const [general, setGeneral] = useState({
-    default_pickup_time: "08:30",
-    default_return_time: "08:00",
-    closure_time: "12:00",
-    grace_period_hours: "2",
-    notification_emails: "",
-    terms_text: ""
-  });
+  const [general, setGeneral] = useState(() => ({ ...DEFAULT_GENERAL_SETTINGS }));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const isMobile = useIsMobile(640);

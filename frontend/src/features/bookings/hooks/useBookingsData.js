@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { getUserFacingErrorMessage } from "../../../api/errors";
 import { toast } from "../../../store/toast";
+import { DEFAULT_GENERAL_SETTINGS } from "../../../config/defaultSettings";
 
 /**
  * טוען את כל נתוני המסך של Bookings: הזמנות, רכבים והגדרות.
@@ -12,7 +13,7 @@ export function useBookingsData({ bookingsAPI, carsAPI, settingsAPI }) {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [generalSettings, setGeneralSettings] = useState(null);
+  const [generalSettings, setGeneralSettings] = useState(() => ({ ...DEFAULT_GENERAL_SETTINGS }));
   const [categories, setCategories] = useState([]);
 
   const load = useCallback(async () => {
@@ -37,8 +38,19 @@ export function useBookingsData({ bookingsAPI, carsAPI, settingsAPI }) {
       toast.error(getUserFacingErrorMessage(carsRes.reason), { title: "טעינת רכבים" });
     }
 
-    if (genRes.status === "fulfilled" && genRes.value?.value) {
-      setGeneralSettings(genRes.value.value);
+    if (genRes.status === "fulfilled") {
+      if (genRes.value?.value) {
+        // Merge so missing keys keep sane defaults.
+        setGeneralSettings({ ...DEFAULT_GENERAL_SETTINGS, ...genRes.value.value });
+      } else {
+        setGeneralSettings({ ...DEFAULT_GENERAL_SETTINGS });
+      }
+    } else {
+      // If the setting doesn't exist yet (404) we still want the UI defaults.
+      setGeneralSettings({ ...DEFAULT_GENERAL_SETTINGS });
+      if (genRes.reason?.status && genRes.reason.status !== 404) {
+        toast.error(getUserFacingErrorMessage(genRes.reason), { title: "טעינת הגדרות" });
+      }
     }
     if (pricesRes.status === "fulfilled" && pricesRes.value?.value) {
       setCategories(pricesRes.value.value);

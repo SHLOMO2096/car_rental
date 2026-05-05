@@ -200,34 +200,67 @@ export function CameraCaptureModal({ bookingId, onClose, onCapture }) {
 /**
  * PhotoMenu - Unified menu for photo actions.
  */
-export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpen, onToggle }) {
+export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpen, onToggle, variant = "default" }) {
   const photoCount = booking.drive_link ? booking.drive_link.split(",").filter(Boolean).length : 0;
-  
-  const btnStyle = {
-    background: photoCount > 0 ? "#eff6ff" : "#f8fafc",
-    color: photoCount > 0 ? "#1d4ed8" : "#475569",
-    border: "1px solid",
-    borderColor: photoCount > 0 ? "#bfdbfe" : "#e2e8f0",
-    padding: "8px 16px",
-    borderRadius: 8,
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    fontWeight: 700,
-    cursor: "pointer",
-    fontSize: 13,
-    position: "relative"
-  };
+
+  const btnStyle =
+    variant === "compact"
+      ? {
+          background: photoCount > 0 ? "#eff6ff" : "#f8fafc",
+          color: photoCount > 0 ? "#1d4ed8" : "#475569",
+          border: "1px solid",
+          borderColor: photoCount > 0 ? "#bfdbfe" : "#e2e8f0",
+          width: 34,
+          height: 34,
+          padding: 0,
+          borderRadius: 10,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontWeight: 800,
+          cursor: "pointer",
+          fontSize: 15,
+          position: "relative",
+        }
+      : {
+          background: photoCount > 0 ? "#eff6ff" : "#f8fafc",
+          color: photoCount > 0 ? "#1d4ed8" : "#475569",
+          border: "1px solid",
+          borderColor: photoCount > 0 ? "#bfdbfe" : "#e2e8f0",
+          padding: "8px 16px",
+          borderRadius: 8,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontSize: 13,
+          position: "relative",
+        };
 
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
       <button onClick={(e) => { e.stopPropagation(); onToggle(); }} style={btnStyle} title="ניהול תמונות">
-        📸 תמונות
+        {variant === "compact" ? "📸" : "📸 תמונות"}
         {photoCount > 0 && (
-          <span style={{ 
-            fontSize: 11, background: "#1d4ed8", color: "#fff", borderRadius: 99, 
-            width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center" 
-          }}>
+          <span
+            style={{
+              fontSize: 11,
+              background: "#1d4ed8",
+              color: "#fff",
+              borderRadius: 99,
+              minWidth: 18,
+              height: 18,
+              padding: "0 5px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: variant === "compact" ? "absolute" : "static",
+              top: variant === "compact" ? -6 : undefined,
+              left: variant === "compact" ? -6 : undefined,
+              boxShadow: variant === "compact" ? "0 6px 18px rgba(29,78,216,0.25)" : undefined,
+            }}
+          >
             {photoCount}
           </span>
         )}
