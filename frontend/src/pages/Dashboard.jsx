@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════════
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
@@ -221,6 +221,7 @@ export function Dashboard() {
         endDate={rangeEnd} 
         navigate={navigate} 
         isMobile={isMobile}
+        isFiltered={selectedModels.length > 0 || selectedCategories.length > 0}
       />
 
       {/* Focus Mode Overlay */}
@@ -245,6 +246,7 @@ export function Dashboard() {
               endDate={rangeEnd} 
               navigate={navigate} 
               isMobile={isMobile}
+              isFiltered={selectedModels.length > 0 || selectedCategories.length > 0}
               fullHeight={true}
             />
           </div>
@@ -360,9 +362,19 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
 
 
 // ── Availability Grid ──────────────────────────────────────────────────────────
-function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHeight }) {
+function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFiltered, fullHeight }) {
   const [bookings, setBookings]     = useState([]);
   const [loadingGrid, setLoadingGrid] = useState(false);
+
+  // Floating horizontal scroll
+  const gridScrollRef = useRef(null);
+  const hScrollRef = useRef(null);
+  const [scrollWidth, setScrollWidth] = useState(0);
+  const syncingScroll = useRef(false);
+
+  // Header hover tooltip
+  const [hoveredCar, setHoveredCar] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   // ── Drag state ──────────────────────────────────────────────────────────────
   const [dragBooking, setDragBooking]   = useState(null);   // booking being dragged
@@ -381,9 +393,46 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
   const startBase = fromISO(startDate);
   const daysCount = Math.max(diffDays(startDate, endDate) + 1, 1);
 
-  // Reduce column widths by ~25% (dashboard density improvement)
-  const CAR_COL_WIDTH = isMobile ? 58 : 46;
+  // Column widths: slightly wider for readability, and widen further when filtering columns.
+  // Max sizes match the pre-density values roughly (desktop 62, mobile 78).
+  const CAR_COL_WIDTH_BASE = isMobile ? 68 : 54;
+  const CAR_COL_WIDTH_MAX = isMobile ? 78 : 62;
+  const CAR_COL_WIDTH = isFiltered ? CAR_COL_WIDTH_MAX : CAR_COL_WIDTH_BASE;
   const DATE_COL_WIDTH = 74; // keep readable
+
+  useEffect(() => {
+    const update = () => {
+      const el = gridScrollRef.current;
+      if (!el) return;
+      setScrollWidth(el.scrollWidth);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [cars.length, startDate, endDate, CAR_COL_WIDTH, fullHeight]);
+
+  function syncScroll(from, to) {
+    if (syncingScroll.current) return;
+    if (!from || !to) return;
+    syncingScroll.current = true;
+    to.scrollLeft = from.scrollLeft;
+    // allow the browser to settle
+    window.requestAnimationFrame(() => {
+      syncingScroll.current = false;
+    });
+  }
+
+  function clampTooltipPos(x, y) {
+    const width = 260;
+    const height = 120;
+    const pad = 12;
+    const maxX = Math.max(pad, window.innerWidth - width - pad);
+    const maxY = Math.max(pad, window.innerHeight - height - pad);
+    return {
+      x: Math.min(Math.max(pad, x), maxX),
+      y: Math.min(Math.max(pad, y), maxY),
+    };
+  }
 
   useEffect(() => {
     setLoadingGrid(true);
@@ -655,16 +704,20 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
         {loadingGrid && <span style={{ marginRight:"auto", color:"#94a3b8" }}>מרענן...</span>}
       </div>
 
-      {/* Grid table */}
-      <div style={{ overflowX:"auto", overflowY:"auto", maxHeight: fullHeight ? "none" : (isMobile ? 380 : 480) }}>
-        <table style={{ borderCollapse:"collapse", fontSize:11, tableLayout:"fixed", width:"max-content" }}>
+       {/* Grid table */}
+       <div
+         ref={gridScrollRef}
+         onScroll={(e) => syncScroll(e.currentTarget, hScrollRef.current)}
+         style={{ overflowX:"auto", overflowY:"auto", maxHeight: fullHeight ? "none" : (isMobile ? 380 : 480) }}
+       >
+         <table style={{ borderCollapse:"collapse", fontSize:11, tableLayout:"fixed", width:"max-content" }}>
           <thead>
             <tr>
               {/* Corner cell — sticky top + right (RTL freeze pane) */}
               <th style={{ ...gth, position:"sticky", top:0, right:0, zIndex:3,
                            background:"#f1f5f9", width:DATE_COL_WIDTH, minWidth:DATE_COL_WIDTH, maxWidth:DATE_COL_WIDTH,
                            borderLeft:"2px solid #cbd5e1" }}>תאריך</th>
-              {activeCars.map(car => {
+               {activeCars.map(car => {
                 const tc = getModelTheme(car.name);
                 const isDragTarget = dragBooking && dragOverCarId === car.id && car.id !== dragBooking.car_id;
                 return (
@@ -672,7 +725,19 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
                                             position:"sticky", top:0, zIndex:2,
                                             background: isDragTarget ? "#bfdbfe" : tc.bg,
                                             borderBottom:`3px solid ${isDragTarget ? "#2563eb" : tc.border}`,
-                                            transition:"background 0.15s" }}>
+                                            transition:"background 0.15s" }}
+                      onMouseEnter={(e) => {
+                        const p = clampTooltipPos(e.clientX + 14, e.clientY + 14);
+                        setHoveredCar(car);
+                        setTooltipPos(p);
+                      }}
+                      onMouseMove={(e) => {
+                        if (!hoveredCar || hoveredCar?.id !== car.id) return;
+                        const p = clampTooltipPos(e.clientX + 14, e.clientY + 14);
+                        setTooltipPos(p);
+                      }}
+                      onMouseLeave={() => setHoveredCar(null)}
+                    >
                     <div style={{ fontWeight:700, color: isDragTarget ? "#1d4ed8" : tc.text, overflow:"hidden", textOverflow:"ellipsis" }}>{car.name}</div>
                     <div style={{ color: isDragTarget ? "#2563eb" : tc.border, fontWeight:500, fontSize:9, marginTop:2, overflow:"hidden", textOverflow:"ellipsis" }}>
                       {[`#${car.id}`, car.plate, car.make, car.group ? `קב׳ ${car.group}` : null].filter(Boolean).join(" · ")}
@@ -860,8 +925,57 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
               );
             })}
           </tbody>
-        </table>
-      </div>
+         </table>
+
+         {/* Floating horizontal scrollbar (stays visible while scrolling vertically) */}
+         <div
+           ref={hScrollRef}
+           onScroll={(e) => syncScroll(e.currentTarget, gridScrollRef.current)}
+           style={{
+             position: "sticky",
+             bottom: 0,
+             height: 16,
+             overflowX: "auto",
+             overflowY: "hidden",
+             background: "rgba(248,250,252,0.92)",
+             borderTop: "1px solid #e2e8f0",
+             backdropFilter: "blur(4px)",
+           }}
+         >
+           <div style={{ width: Math.max(scrollWidth, 1), height: 1 }} />
+         </div>
+       </div>
+
+       {/* Car details tooltip */}
+       {hoveredCar && (
+         <div
+           dir="rtl"
+           style={{
+             position: "fixed",
+             left: tooltipPos.x,
+             top: tooltipPos.y,
+             zIndex: 10000,
+             background: "#fff",
+             border: "1px solid #e2e8f0",
+             boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+             borderRadius: 10,
+             padding: "10px 12px",
+             minWidth: 240,
+             pointerEvents: "none",
+           }}
+         >
+           <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", marginBottom: 6 }}>
+             🚗 {hoveredCar.name}
+           </div>
+           <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.55 }}>
+             <div><strong>מס׳:</strong> #{hoveredCar.id}</div>
+             {hoveredCar.plate && <div><strong>לוחית:</strong> {hoveredCar.plate}</div>}
+             {hoveredCar.make && <div><strong>יצרן:</strong> {hoveredCar.make}</div>}
+             {hoveredCar.group && <div><strong>קבוצה:</strong> {hoveredCar.group}</div>}
+             {hoveredCar.category && <div><strong>קטגוריה:</strong> {hoveredCar.category}</div>}
+           </div>
+         </div>
+       )}
     </div>
       {viewPhotos && (
         <ImageGallery 
