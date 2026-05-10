@@ -5,8 +5,11 @@ from app.db.session import engine, Base
 import app.models  # noqa: F401
 from app.routers import auth, cars, bookings, reports, suggestions, customers, settings as settings_router, attendance, payroll
 
-# יצירת טבלאות (בפרודקשן — השתמש ב-Alembic)
-Base.metadata.create_all(bind=engine)
+# יצירת טבלאות רק ב-DEV.
+# בפרודקשן חייבים לנהל סכימה רק דרך Alembic, אחרת נוצרים מצבים שבהם
+# הטבלאות קיימות אבל Alembic לא מסומן כ-applied (ואז מתקבלים DuplicateTable).
+if settings.DEBUG:
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.APP_NAME,
