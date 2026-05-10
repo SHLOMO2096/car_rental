@@ -423,8 +423,8 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
   }
 
   function clampTooltipPos(x, y) {
-    const width = 260;
-    const height = 120;
+    const width = 220;
+    const height = 100;
     const pad = 12;
     const maxX = Math.max(pad, window.innerWidth - width - pad);
     const maxY = Math.max(pad, window.innerHeight - height - pad);
@@ -926,24 +926,22 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
             })}
           </tbody>
          </table>
+       </div>
 
-         {/* Floating horizontal scrollbar (stays visible while scrolling vertically) */}
-         <div
-           ref={hScrollRef}
-           onScroll={(e) => syncScroll(e.currentTarget, gridScrollRef.current)}
-           style={{
-             position: "sticky",
-             bottom: 0,
-             height: 16,
-             overflowX: "auto",
-             overflowY: "hidden",
-             background: "rgba(248,250,252,0.92)",
-             borderTop: "1px solid #e2e8f0",
-             backdropFilter: "blur(4px)",
-           }}
-         >
-           <div style={{ width: Math.max(scrollWidth, 1), height: 1 }} />
-         </div>
+       {/* Floating horizontal scrollbar (always visible; no need to scroll to the grid bottom) */}
+       <div
+         ref={hScrollRef}
+         onScroll={(e) => syncScroll(e.currentTarget, gridScrollRef.current)}
+         style={{
+           height: 14,
+           overflowX: "auto",
+           overflowY: "hidden",
+           background: "rgba(248,250,252,0.92)",
+           borderTop: "1px solid #e2e8f0",
+           backdropFilter: "blur(4px)",
+         }}
+       >
+         <div style={{ width: Math.max(scrollWidth, 1), height: 1 }} />
        </div>
 
        {/* Car details tooltip */}
@@ -958,16 +956,17 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
              background: "#fff",
              border: "1px solid #e2e8f0",
              boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
-             borderRadius: 10,
-             padding: "10px 12px",
-             minWidth: 240,
+             borderRadius: 8,
+             padding: "8px 10px",
+             minWidth: 200,
+             maxWidth: 240,
              pointerEvents: "none",
            }}
          >
-           <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", marginBottom: 6 }}>
+           <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", marginBottom: 5 }}>
              🚗 {hoveredCar.name}
            </div>
-           <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.55 }}>
+           <div style={{ fontSize: 11, color: "#334155", lineHeight: 1.45 }}>
              <div><strong>מס׳:</strong> #{hoveredCar.id}</div>
              {hoveredCar.plate && <div><strong>לוחית:</strong> {hoveredCar.plate}</div>}
              {hoveredCar.make && <div><strong>יצרן:</strong> {hoveredCar.make}</div>}
