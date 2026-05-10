@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:16-alpine
     networks:
+      - car_rental_internal
       - car_rental_default
     environment:
       POSTGRES_USER: postgres
@@ -20,7 +21,7 @@ services:
   redis:
     image: redis:7-alpine
     networks:
-      - car_rental_default
+      - car_rental_internal
     ports:
       - "6379:6379"
     healthcheck:
@@ -34,7 +35,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     networks:
-      - car_rental_default
+      - car_rental_internal
     ports:
       - "8000:8000"
     env_file: ./backend/.env
@@ -57,7 +58,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     networks:
-      - car_rental_default
+      - car_rental_internal
     ports:
       - "5173:5173"
     environment:
@@ -73,6 +74,10 @@ volumes:
   pg_data:
 
 networks:
+  # Private network for this stack (prevents cross-project DNS alias collisions).
+  car_rental_internal:
+    driver: bridge
+
   # Shared external network so other projects/containers (e.g. y_car_accounting, evolution_api)
   # can reach this stack's services by DNS name (e.g. db:5432).
   car_rental_default:
