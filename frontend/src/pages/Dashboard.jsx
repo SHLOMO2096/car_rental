@@ -708,7 +708,9 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
        <div
          ref={gridScrollRef}
          onScroll={(e) => syncScroll(e.currentTarget, hScrollRef.current)}
-         style={{ overflowX:"auto", overflowY:"auto", maxHeight: fullHeight ? "none" : (isMobile ? 380 : 480) }}
+         // Hide the grid's native horizontal scrollbar so we don't end up with two scrollbars
+         // (use the floating scrollbar below for horizontal scrolling).
+         style={{ overflowX:"hidden", overflowY:"auto", maxHeight: fullHeight ? "none" : (isMobile ? 380 : 480) }}
        >
          <table style={{ borderCollapse:"collapse", fontSize:11, tableLayout:"fixed", width:"max-content" }}>
           <thead>
