@@ -15,6 +15,7 @@ const Cars = lazy(() => import("./pages/Cars"));
 const Customers = lazy(() => import("./pages/Customers"));
 const Bookings = lazy(() => import("./pages/Bookings"));
 const Reports = lazy(() => import("./pages/Reports"));
+const Attendance = lazy(() => import("./pages/Attendance"));
 const Users = lazy(() => import("./pages/Users"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Payroll = lazy(() => import("./pages/Payroll"));
@@ -58,6 +59,7 @@ function Layout({ children }) {
     ...(can(Permissions.CUSTOMERS_VIEW) ? [{ to:"/customers", label:"לקוחות", icon:"👤" }] : []),
     { to:"/bookings",  label:"הזמנות",      icon:"📋" },
     { to:"/calendar",  label:"לוח שנה",     icon:"📅" },
+    ...(can(Permissions.ATTENDANCE_VIEW) ? [{ to:"/attendance", label:"נוכחות", icon:"🕒" }] : []),
     ...(can(Permissions.REPORTS_VIEW) ? [{ to:"/reports", label:"סטטיסטיקות", icon:"📈" }] : []),
     ...(can(Permissions.PAYROLL_VIEW) ? [{ to:"/payroll", label:"שכר עובדים", icon:"💵" }] : []),
     ...(can(Permissions.USERS_MANAGE) ? [{ to:"/users", label:"משתמשים", icon:"👥" }] : []),
@@ -307,6 +309,7 @@ export default function App() {
                   <Route path="/customers" element={<Customers />} />
                   <Route path="/bookings" element={<Bookings />} />
                   <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/attendance" element={<Attendance />} />
                   <Route path="/reports"  element={<AdminRoute><Reports /></AdminRoute>} />
                   <Route path="/payroll" element={<AdminRoute><Payroll /></AdminRoute>} />
                   <Route path="/users"    element={<AdminRoute><Users /></AdminRoute>} />
