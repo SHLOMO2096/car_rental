@@ -4,6 +4,9 @@ import { useAuthStore } from "./store/auth";
 import ToastHost        from "./components/ui/ToastHost";
 import { Permissions } from "./permissions";
 import { useIsMobile } from "./hooks/useIsMobile";
+import Modal from "./components/ui/Modal";
+import { attendanceAPI } from "./api/attendance";
+import { toast } from "./store/toast";
 
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
@@ -14,6 +17,7 @@ const Bookings = lazy(() => import("./pages/Bookings"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Users = lazy(() => import("./pages/Users"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Payroll = lazy(() => import("./pages/Payroll"));
 
 const APP_VERSION = __APP_VERSION__;
 const BUILD_TIME = new Date(__BUILD_TIME__).toLocaleString("he-IL");
@@ -38,6 +42,11 @@ function Layout({ children }) {
   const nav = useNavigate();
   const isMobile = useIsMobile(900);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutAttendancePrompt, setLogoutAttendancePrompt] = useState({
+    open: false,
+    busy: false,
+    status: null,
+  });
 
   useEffect(() => {
     if (!isMobile) setMenuOpen(false);
@@ -50,9 +59,27 @@ function Layout({ children }) {
     { to:"/bookings",  label:"הזמנות",      icon:"📋" },
     { to:"/calendar",  label:"לוח שנה",     icon:"📅" },
     ...(can(Permissions.REPORTS_VIEW) ? [{ to:"/reports", label:"סטטיסטיקות", icon:"📈" }] : []),
+    ...(can(Permissions.PAYROLL_VIEW) ? [{ to:"/payroll", label:"שכר עובדים", icon:"💵" }] : []),
     ...(can(Permissions.USERS_MANAGE) ? [{ to:"/users", label:"משתמשים", icon:"👥" }] : []),
     ...(can(Permissions.USERS_MANAGE) ? [{ to:"/settings", label:"הגדרות", icon:"⚙️" }] : []),
   ];
+
+  async function handleLogoutClick() {
+    // If the user has an active shift, ask what they want to do.
+    // Requirement: logout does NOT automatically end shift.
+    try {
+      const status = await attendanceAPI.myStatus();
+      if (status?.open_shift) {
+        setLogoutAttendancePrompt({ open: true, busy: false, status });
+        return;
+      }
+    } catch {
+      // If attendance status check fails, fallback to a normal logout.
+    }
+
+    logout();
+    nav("/login");
+  }
 
   return (
     <div dir="rtl" style={{ display:"flex", minHeight:"100vh",
@@ -120,7 +147,7 @@ function Layout({ children }) {
               </div>
             </div>
           </div>
-          <button onClick={() => { logout(); nav("/login"); }} style={{
+          <button onClick={handleLogoutClick} style={{
             width:"100%", background:"rgba(239,68,68,0.12)",
             border:"1px solid rgba(239,68,68,0.25)", color:"#fca5a5",
             borderRadius:7, padding:"7px 0", fontSize:13, cursor:"pointer", fontWeight:600,
@@ -155,6 +182,95 @@ function Layout({ children }) {
         )}
         {children}
       </main>
+
+      <Modal
+        open={logoutAttendancePrompt.open}
+        onClose={() => {
+          if (logoutAttendancePrompt.busy) return;
+          setLogoutAttendancePrompt({ open: false, busy: false, status: null });
+        }}
+        title="משמרת פעילה"
+        maxWidth={520}
+      >
+        <div style={{ color: "#334155", fontSize: 14, lineHeight: 1.7 }}>
+          <div style={{ marginBottom: 10 }}>
+            יש לך משמרת פעילה. יציאה מהחשבון לא מסיימת משמרת אוטומטית.
+          </div>
+
+          {!!logoutAttendancePrompt.status?.open_shift?.shift_start_at && (
+            <div style={{ marginBottom: 10, fontSize: 13, color: "#475569" }}>
+              התחלה: {new Date(logoutAttendancePrompt.status.open_shift.shift_start_at).toLocaleString("he-IL")}
+            </div>
+          )}
+
+          <div style={{ marginBottom: 18, fontSize: 13, color: "#475569" }}>
+            מכשירים פתוחים: {logoutAttendancePrompt.status?.open_device_sessions?.length || 0}
+          </div>
+
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <button
+              onClick={() => setLogoutAttendancePrompt({ open: false, busy: false, status: null })}
+              disabled={logoutAttendancePrompt.busy}
+              style={{
+                background: "#f1f5f9",
+                color: "#475569",
+                border: "1px solid #e2e8f0",
+                borderRadius: 8,
+                padding: "9px 16px",
+                fontWeight: 700,
+                cursor: logoutAttendancePrompt.busy ? "not-allowed" : "pointer",
+              }}
+            >
+              ביטול
+            </button>
+
+            <button
+              onClick={() => {
+                logout();
+                nav("/login");
+              }}
+              disabled={logoutAttendancePrompt.busy}
+              style={{
+                background: "#fff",
+                color: "#0f172a",
+                border: "1px solid #cbd5e1",
+                borderRadius: 8,
+                padding: "9px 16px",
+                fontWeight: 800,
+                cursor: logoutAttendancePrompt.busy ? "not-allowed" : "pointer",
+              }}
+            >
+              יציאה בלבד
+            </button>
+
+            <button
+              onClick={async () => {
+                try {
+                  setLogoutAttendancePrompt((s) => ({ ...s, busy: true }));
+                  await attendanceAPI.endShift();
+                  logout();
+                  nav("/login");
+                } catch (e) {
+                  toast.error(e?.detail || "לא הצלחנו לסיים משמרת");
+                  setLogoutAttendancePrompt((s) => ({ ...s, busy: false }));
+                }
+              }}
+              disabled={logoutAttendancePrompt.busy}
+              style={{
+                background: "rgba(239,68,68,0.12)",
+                color: "#dc2626",
+                border: "1px solid rgba(239,68,68,0.35)",
+                borderRadius: 8,
+                padding: "9px 16px",
+                fontWeight: 900,
+                cursor: logoutAttendancePrompt.busy ? "not-allowed" : "pointer",
+              }}
+            >
+              {logoutAttendancePrompt.busy ? "מסיים משמרת..." : "סיים משמרת ויציאה"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -192,6 +308,7 @@ export default function App() {
                   <Route path="/bookings" element={<Bookings />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/reports"  element={<AdminRoute><Reports /></AdminRoute>} />
+                  <Route path="/payroll" element={<AdminRoute><Payroll /></AdminRoute>} />
                   <Route path="/users"    element={<AdminRoute><Users /></AdminRoute>} />
                   <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
                   <Route path="*"         element={<Navigate to="/" replace />} />

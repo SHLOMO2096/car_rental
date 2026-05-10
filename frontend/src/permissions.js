@@ -9,6 +9,14 @@ export const Permissions = {
   BOOKINGS_DELETE: "bookings:delete",
   SUGGESTIONS_VIEW: "suggestions:view",
   SUGGESTIONS_APPLY: "suggestions:apply",
+
+  ATTENDANCE_CLOCK: "attendance:clock",
+  ATTENDANCE_VIEW: "attendance:view",
+  ATTENDANCE_VIEW_ALL: "attendance:view_all",
+  ATTENDANCE_MANAGE: "attendance:manage",
+
+  PAYROLL_VIEW: "payroll:view",
+  PAYROLL_MANAGE: "payroll:manage",
 };
 
 const ROLE_PERMISSIONS = {
@@ -23,6 +31,14 @@ const ROLE_PERMISSIONS = {
     Permissions.BOOKINGS_DELETE,
     Permissions.SUGGESTIONS_VIEW,
     Permissions.SUGGESTIONS_APPLY,
+
+    Permissions.ATTENDANCE_CLOCK,
+    Permissions.ATTENDANCE_VIEW,
+    Permissions.ATTENDANCE_VIEW_ALL,
+    Permissions.ATTENDANCE_MANAGE,
+
+    Permissions.PAYROLL_VIEW,
+    Permissions.PAYROLL_MANAGE,
   ]),
   agent: new Set([
     Permissions.CUSTOMERS_VIEW,
@@ -30,6 +46,9 @@ const ROLE_PERMISSIONS = {
     Permissions.BOOKINGS_DELETE,
     Permissions.SUGGESTIONS_VIEW,
     Permissions.SUGGESTIONS_APPLY,
+
+    Permissions.ATTENDANCE_CLOCK,
+    Permissions.ATTENDANCE_VIEW,
   ]),
 };
 

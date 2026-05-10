@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import App from "../App";
 import { carsAPI } from "../api/cars";
+import { useDragScroll } from "../hooks/useDragScroll";
 import { useAuthStore } from "../store/auth";
 
 vi.mock("../api/auth", () => ({
@@ -165,6 +166,84 @@ describe("App auth + mobile smoke", () => {
 
     expect(await screen.findByText("כניסה למערכת")).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toBe("/login"));
+  });
+});
+
+function mockScrollable(el, { scrollWidth = 1000, clientWidth = 200 } = {}) {
+  Object.defineProperty(el, "scrollWidth", { value: scrollWidth, configurable: true });
+  Object.defineProperty(el, "clientWidth", { value: clientWidth, configurable: true });
+}
+
+function ScrollerWithHook({ onChildClick } = {}) {
+  const drag = useDragScroll({ axis: "x" });
+  return (
+    <div
+      data-testid="scroller"
+      {...drag.bind}
+      style={{
+        ...drag.style,
+        overflowX: "auto",
+        width: 200,
+        border: "1px solid #000",
+      }}
+    >
+      <button type="button" onClick={onChildClick}>
+        child
+      </button>
+      <input aria-label="name" defaultValue="x" />
+      <div style={{ width: 800, height: 1 }} />
+    </div>
+  );
+}
+
+describe("useDragScroll", () => {
+  it("updates scrollLeft on horizontal pointer drag", () => {
+    render(<ScrollerWithHook onChildClick={() => {}} />);
+    const scroller = screen.getByTestId("scroller");
+    mockScrollable(scroller);
+
+    scroller.scrollLeft = 100;
+    fireEvent.pointerDown(scroller, { pointerId: 1, clientX: 100, clientY: 10, button: 0, isPrimary: true });
+    fireEvent.pointerMove(scroller, { pointerId: 1, clientX: 40, clientY: 10, isPrimary: true });
+    fireEvent.pointerUp(scroller, { pointerId: 1, clientX: 40, clientY: 10, isPrimary: true });
+
+    // Dragging left should increase scrollLeft.
+    expect(scroller.scrollLeft).toBe(160);
+  });
+
+  it("suppresses click only if an actual drag occurred", () => {
+    const onChildClick = vi.fn();
+    render(<ScrollerWithHook onChildClick={onChildClick} />);
+    const scroller = screen.getByTestId("scroller");
+    mockScrollable(scroller);
+    const btn = screen.getByRole("button", { name: "child" });
+
+    // No drag: click should pass.
+    fireEvent.click(btn);
+    expect(onChildClick).toHaveBeenCalledTimes(1);
+
+    // Drag: click should be suppressed.
+    scroller.scrollLeft = 0;
+    fireEvent.pointerDown(scroller, { pointerId: 2, clientX: 100, clientY: 10, button: 0, isPrimary: true });
+    fireEvent.pointerMove(scroller, { pointerId: 2, clientX: 20, clientY: 10, isPrimary: true });
+    fireEvent.pointerUp(scroller, { pointerId: 2, clientX: 20, clientY: 10, isPrimary: true });
+    fireEvent.click(btn);
+
+    expect(onChildClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not start drag-scroll from inputs", () => {
+    render(<ScrollerWithHook onChildClick={() => {}} />);
+    const scroller = screen.getByTestId("scroller");
+    mockScrollable(scroller);
+    const input = screen.getByLabelText("name");
+
+    scroller.scrollLeft = 100;
+    fireEvent.pointerDown(input, { pointerId: 3, clientX: 100, clientY: 10, button: 0, isPrimary: true });
+    fireEvent.pointerMove(scroller, { pointerId: 3, clientX: 20, clientY: 10, isPrimary: true });
+    fireEvent.pointerUp(scroller, { pointerId: 3, clientX: 20, clientY: 10, isPrimary: true });
+
+    expect(scroller.scrollLeft).toBe(100);
   });
 });
 

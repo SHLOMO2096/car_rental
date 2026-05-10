@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { authAPI } from "../api/auth";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useDragScroll } from "../hooks/useDragScroll";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 
-const EMPTY_FORM = { email:"", full_name:"", password:"", role:"agent" };
+const EMPTY_FORM = { email:"", full_name:"", password:"", role:"agent", hourly_rate:"" };
 
 export default function Users() {
   const [users, setUsers]       = useState([]);
@@ -14,13 +15,20 @@ export default function Users() {
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState("");
   const isMobile = useIsMobile(900);
+  const dragScroll = useDragScroll({ enabled: !isMobile });
 
   const load = () => authAPI.listUsers().then(setUsers);
   useEffect(() => { load(); }, []);
 
   function openCreate() { setForm(EMPTY_FORM); setEdit(null); setFormError(""); setModal(true); }
   function openEdit(u) {
-    setForm({ email:u.email, full_name:u.full_name, password:"", role:u.role });
+    setForm({
+      email: u.email,
+      full_name: u.full_name,
+      password: "",
+      role: u.role,
+      hourly_rate: (u.hourly_rate ?? ""),
+    });
     setEdit(u); setFormError(""); setModal(true);
   }
 
@@ -31,10 +39,19 @@ export default function Users() {
     setSaving(true); setFormError("");
     try {
       if (editUser) {
-        const data = { full_name: form.full_name, role: form.role };
+        const rate = form.hourly_rate === "" ? null : Number(form.hourly_rate);
+        const data = {
+          full_name: form.full_name,
+          role: form.role,
+          hourly_rate: Number.isNaN(rate) ? null : rate,
+        };
         await authAPI.updateUser(editUser.id, data);
       } else {
-        await authAPI.createUser(form);
+        const rate = form.hourly_rate === "" ? null : Number(form.hourly_rate);
+        await authAPI.createUser({
+          ...form,
+          hourly_rate: Number.isNaN(rate) ? null : rate,
+        });
       }
       await load(); setModal(false);
     } catch (e) {
@@ -55,7 +72,7 @@ export default function Users() {
       </div>
 
       {!isMobile ? (
-        <div style={s.tableWrap}>
+        <div {...dragScroll.bind} style={{ ...s.tableWrap, ...dragScroll.style }}>
           <table style={{ width:"100%", borderCollapse:"collapse" }}>
             <thead>
               <tr style={{ background:"#f8fafc" }}>
@@ -138,6 +155,18 @@ export default function Users() {
               <option value="agent">סוכן</option>
               <option value="admin">מנהל</option>
             </select>
+          </div>
+
+          <div>
+            <label style={s.label}>שכר שעתי (₪)</label>
+            <input
+              type="number"
+              step="0.5"
+              min="0"
+              value={form.hourly_rate}
+              onChange={e => setForm(f=>({...f,hourly_rate:e.target.value}))}
+              style={s.input}
+            />
           </div>
           {formError && <div style={s.errorBox}>{formError}</div>}
           <div style={s.modalFooter}>

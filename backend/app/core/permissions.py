@@ -22,6 +22,14 @@ class Permissions:
     SUGGESTIONS_APPLY = "suggestions:apply"
     AUDIT_VIEW = "audit:view"
 
+    ATTENDANCE_CLOCK = "attendance:clock"
+    ATTENDANCE_VIEW = "attendance:view"
+    ATTENDANCE_VIEW_ALL = "attendance:view_all"
+    ATTENDANCE_MANAGE = "attendance:manage"
+
+    PAYROLL_VIEW = "payroll:view"
+    PAYROLL_MANAGE = "payroll:manage"
+
 
 ROLE_PERMISSIONS = {
     UserRole.agent: {
@@ -36,6 +44,9 @@ ROLE_PERMISSIONS = {
         # Reports/analytics are manager-only (admins)
         Permissions.SUGGESTIONS_VIEW,
         Permissions.SUGGESTIONS_APPLY,   # agent can apply within scope
+
+        Permissions.ATTENDANCE_CLOCK,
+        Permissions.ATTENDANCE_VIEW,
     },
     UserRole.admin: {
         Permissions.BOOKINGS_VIEW,
@@ -54,6 +65,14 @@ ROLE_PERMISSIONS = {
         Permissions.SUGGESTIONS_VIEW,
         Permissions.SUGGESTIONS_APPLY,
         Permissions.AUDIT_VIEW,
+
+        Permissions.ATTENDANCE_CLOCK,
+        Permissions.ATTENDANCE_VIEW,
+        Permissions.ATTENDANCE_VIEW_ALL,
+        Permissions.ATTENDANCE_MANAGE,
+
+        Permissions.PAYROLL_VIEW,
+        Permissions.PAYROLL_MANAGE,
     },
 }
 

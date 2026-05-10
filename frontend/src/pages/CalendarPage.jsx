@@ -4,6 +4,7 @@ import { bookingsAPI } from "../api/bookings";
 import { carsAPI } from "../api/cars";
 import { getJewishDayMeta } from "../utils/jewishCalendar";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useDragScroll } from "../hooks/useDragScroll";
 
 const TYPE_COLORS = {
   sedan:"#3b82f6", crossover:"#8b5cf6", suv:"#10b981", hatchback:"#f59e0b",
@@ -62,6 +63,7 @@ export function CalendarPage() {
   const [cars, setCars]         = useState({});
   const [showHebrew, setShowHebrew] = useState(true);
   const isMobile = useIsMobile(640);
+  const dragScroll = useDragScroll({ enabled: !!isMobile });
 
   const firstDay    = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -143,7 +145,14 @@ export function CalendarPage() {
       )}
 
       {/* Scroll wrapper for mobile */}
-      <div style={{ overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch" }}>
+      <div
+        {...dragScroll.bind}
+        style={{
+          ...dragScroll.style,
+          overflowX: isMobile ? "auto" : "visible",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
         <div style={{ minWidth: isMobile ? 420 : undefined }}>
 
       {/* Days header */}

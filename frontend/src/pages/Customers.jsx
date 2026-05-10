@@ -9,6 +9,7 @@ import { Permissions } from "../permissions";
 import { useAuthStore } from "../store/auth";
 import { toast } from "../store/toast";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useDragScroll } from "../hooks/useDragScroll";
 
 const EMPTY_FORM = { name: "", address: "", phone: "", email: "", id_number: "" };
 const EMPTY_EMAIL_FORM = { subject: "", body: "" };
@@ -93,6 +94,8 @@ export default function Customers() {
   const [bulkEditorKey, setBulkEditorKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const isMobile = useIsMobile(900);
+  const customersTableDrag = useDragScroll({ enabled: !isMobile });
+  const modalTableDrag = useDragScroll();
   const [viewPhotos, setViewPhotos] = useState(null);
   const canSendBulkEmail = useAuthStore((s) => s.can(Permissions.CUSTOMERS_BULK_EMAIL));
 
@@ -394,7 +397,7 @@ export default function Customers() {
       <div style={s.counter}>{customers.length} לקוחות מוצגים</div>
 
       {!isMobile ? (
-        <div style={s.tableWrap}>
+            <div {...modalTableDrag.bind} style={{ ...s.historyTableWrap, ...modalTableDrag.style }}>
           <table style={s.table}>
             <thead>
               <tr style={{ background: "#f8fafc" }}>

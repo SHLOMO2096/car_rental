@@ -5,6 +5,7 @@ import { statusMap } from "../constants";
 import { s } from "../styles";
 import { formatDate } from "../utils/dates";
 import BookingAuditMeta from "./BookingAuditMeta";
+import { useDragScroll } from "../../../hooks/useDragScroll";
 
 export default function BookingsList({
   bookings,
@@ -23,6 +24,7 @@ export default function BookingsList({
   onQuickComplete,
   onQuickExtend,
 }) {
+  const dragScroll = useDragScroll({ enabled: !isMobile });
   const actionsToolbar = {
     display: "flex",
     alignItems: "center",
@@ -56,7 +58,7 @@ export default function BookingsList({
 
   if (!isMobile) {
     return (
-      <div style={s.tableWrap}>
+      <div {...dragScroll.bind} style={{ ...s.tableWrap, ...dragScroll.style }}>
         <table style={s.table}>
           <thead>
             <tr style={{ background: "#f8fafc" }}>

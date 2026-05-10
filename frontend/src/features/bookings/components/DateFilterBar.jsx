@@ -1,4 +1,5 @@
 import { s } from "../styles";
+import { useDragScroll } from "../../../hooks/useDragScroll";
 
 export default function DateFilterBar({
   dateFilter,
@@ -8,8 +9,17 @@ export default function DateFilterBar({
   activeDateStr,
   isMobile,
 }) {
+  const dragScroll = useDragScroll({ enabled: !!isMobile });
   return (
-    <div style={{ ...s.dateFilterBar, overflowX: isMobile ? "auto" : "visible", flexWrap: isMobile ? "nowrap" : "wrap" }}>
+    <div
+      {...dragScroll.bind}
+      style={{
+        ...s.dateFilterBar,
+        ...dragScroll.style,
+        overflowX: isMobile ? "auto" : "visible",
+        flexWrap: isMobile ? "nowrap" : "wrap",
+      }}
+    >
       {[
         { key: "all", label: "כל התאריכים" },
         { key: "today", label: "היום" },

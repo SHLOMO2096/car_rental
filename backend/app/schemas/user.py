@@ -8,11 +8,13 @@ class UserCreate(BaseModel):
     full_name: str
     password:  str
     role:      UserRole = UserRole.agent
+    hourly_rate: float | None = None
 
 class UserUpdate(BaseModel):
     full_name: str | None = None
     role:      UserRole | None = None
     is_active: bool | None = None
+    hourly_rate: float | None = None
 
 class UserOut(BaseModel):
     id:         int
@@ -20,6 +22,7 @@ class UserOut(BaseModel):
     full_name:  str
     role:       UserRole
     is_active:  bool
+    hourly_rate: float | None = None
     created_at: datetime
     model_config = {"from_attributes": True}
 

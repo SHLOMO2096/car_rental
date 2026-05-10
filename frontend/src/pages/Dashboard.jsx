@@ -8,6 +8,7 @@ import Confirm from "../components/ui/Confirm";
 import { toast } from "../store/toast";
 import { getUserFacingErrorMessage } from "../api/errors";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useDragScroll } from "../hooks/useDragScroll";
 import { getJewishDayMeta } from "../utils/jewishCalendar";
 import { PhotoMenu, CameraCaptureModal, ImageGallery } from "../components/photos/PhotoManagement";
 
@@ -371,6 +372,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
   const hScrollRef = useRef(null);
   const [scrollWidth, setScrollWidth] = useState(0);
   const syncingScroll = useRef(false);
+  const hScrollDrag = useDragScroll({ axis: "x" });
 
   // Header hover tooltip
   const [hoveredCar, setHoveredCar] = useState(null);
@@ -934,8 +936,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
        <div
          ref={hScrollRef}
          onScroll={(e) => syncScroll(e.currentTarget, gridScrollRef.current)}
+         {...hScrollDrag.bind}
          style={{
            height: 14,
+           ...hScrollDrag.style,
            overflowX: "auto",
            overflowY: "hidden",
            background: "rgba(248,250,252,0.92)",

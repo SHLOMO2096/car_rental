@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime, Float
 from sqlalchemy.sql import func
 from app.db.session import Base
 
@@ -16,5 +16,9 @@ class User(Base):
     hashed_pw  = Column(String(255), nullable=False)
     role       = Column(Enum(UserRole), default=UserRole.agent, nullable=False)
     is_active  = Column(Boolean, default=True, nullable=False)
+
+    # Payroll: hourly wage (NIS per hour). If null/0 -> payroll report can still show hours but pay=0.
+    hourly_rate = Column(Float, nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

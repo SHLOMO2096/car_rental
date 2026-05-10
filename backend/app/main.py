@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.session import engine, Base
 import app.models  # noqa: F401
-from app.routers import auth, cars, bookings, reports, suggestions, customers, settings as settings_router
+from app.routers import auth, cars, bookings, reports, suggestions, customers, settings as settings_router, attendance, payroll
 
 # יצירת טבלאות (בפרודקשן — השתמש ב-Alembic)
 Base.metadata.create_all(bind=engine)
@@ -30,6 +30,8 @@ app.include_router(customers.router,   prefix="/api/customers",   tags=["Custome
 app.include_router(reports.router,     prefix="/api/reports",     tags=["Reports"])
 app.include_router(suggestions.router, prefix="/api/suggestions", tags=["Suggestions"])
 app.include_router(settings_router.router, prefix="/api/settings", tags=["Settings"])
+app.include_router(attendance.router,   prefix="/api/attendance",  tags=["Attendance"])
+app.include_router(payroll.router,      prefix="/api/payroll",     tags=["Payroll"])
 
 @app.get("/health")
 def health():
