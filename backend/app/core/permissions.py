@@ -33,7 +33,7 @@ ROLE_PERMISSIONS = {
         Permissions.CARS_VIEW,
         Permissions.CUSTOMERS_VIEW,
         Permissions.CUSTOMERS_MANAGE,
-        Permissions.REPORTS_VIEW,        # agent sees own reports in dashboard
+        # Reports/analytics are manager-only (admins)
         Permissions.SUGGESTIONS_VIEW,
         Permissions.SUGGESTIONS_APPLY,   # agent can apply within scope
     },

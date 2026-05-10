@@ -507,9 +507,15 @@ class TestReports:
 
 
 class TestRBAC:
-    def test_agent_can_access_reports(self, client, agent_headers):
+    def test_agent_cannot_access_reports(self, client, agent_headers):
         r = client.get("/api/reports/summary", headers=agent_headers)
+        assert r.status_code == 403
+
+    def test_agent_can_access_dashboard_kpis(self, client, agent_headers):
+        r = client.get("/api/bookings/kpi", headers=agent_headers)
         assert r.status_code == 200
+        data = r.json()
+        assert "total" in data and "active" in data
 
     def test_agent_cannot_manage_users(self, client, agent_headers):
         r = client.get("/api/auth/users", headers=agent_headers)

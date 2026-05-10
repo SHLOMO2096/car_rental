@@ -53,6 +53,15 @@ def calendar(
     return crud_booking.get_range(db, start, end)
 
 
+@router.get("/kpi")
+def kpi(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permissions.BOOKINGS_VIEW)),
+):
+    """Minimal dashboard KPIs: total bookings + active bookings."""
+    return crud_booking.kpi_counts(db)
+
+
 @router.get("/{booking_id}", response_model=BookingOut)
 def get_booking(
     booking: Booking = Depends(require_booking_scope_or_admin),

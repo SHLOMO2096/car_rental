@@ -27,6 +27,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                     exclude_id: int | None = None) -> bool:
         q = db.query(Booking).filter(
             Booking.car_id    == car_id,
+            Booking.deleted_at == None,  # noqa: E711
             Booking.status    == BookingStatus.active,
             Booking.start_date <= end,
             Booking.end_date   >= start,
@@ -114,6 +115,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             )
             .join(Car, Booking.car_id == Car.id)
             .filter(
+                Booking.deleted_at == None,          # noqa: E711
                 extract("year", Booking.start_date) == year,
                 Booking.status != BookingStatus.cancelled,
             )
@@ -135,7 +137,10 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                 func.sum(Booking.total_price).label("revenue"),
             )
             .join(Car)
-            .filter(Booking.status != BookingStatus.cancelled)
+            .filter(
+                Booking.deleted_at == None,  # noqa: E711
+                Booking.status != BookingStatus.cancelled,
+            )
         )
         if user_id is not None:
             q = q.filter(Booking.created_by == user_id)
@@ -151,8 +156,8 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                  "bookings": r.bookings, "revenue": float(r.revenue or 0)} for r in rows]
 
     def summary(self, db: Session, user_id: int | None = None, model: str | None = None) -> dict:
-        q_base = db.query(func.count(Booking.id)).select_from(Booking)
-        q_rev  = db.query(func.sum(Booking.total_price)).select_from(Booking)
+        q_base = db.query(func.count(Booking.id)).select_from(Booking).filter(Booking.deleted_at == None)  # noqa: E711
+        q_rev  = db.query(func.sum(Booking.total_price)).select_from(Booking).filter(Booking.deleted_at == None)  # noqa: E711
         if user_id is not None:
             q_base = q_base.filter(Booking.created_by == user_id)
             q_rev  = q_rev.filter(Booking.created_by == user_id)
@@ -163,6 +168,14 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         active  = q_base.filter(Booking.status == BookingStatus.active).scalar()
         revenue = q_rev.filter(Booking.status != BookingStatus.cancelled).scalar()
         return {"total": total, "active": active, "revenue": float(revenue or 0)}
+
+    # ── Dashboard KPIs (non-admin safe) ────────────────────────────────────────
+    def kpi_counts(self, db: Session) -> dict:
+        """Lightweight counts used by the main dashboard (total + active only)."""
+        q = db.query(func.count(Booking.id)).filter(Booking.deleted_at == None)  # noqa: E711
+        total = int(q.scalar() or 0)
+        active = int(q.filter(Booking.status == BookingStatus.active).scalar() or 0)
+        return {"total": total, "active": active}
 
     def update(self, db: Session, db_obj: Booking, obj_in: BookingUpdate | dict) -> Booking:
         if isinstance(obj_in, dict):

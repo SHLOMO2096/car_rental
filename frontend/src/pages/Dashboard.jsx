@@ -1,20 +1,16 @@
 // ══════════════════════════════════════════════════════════════════════════════
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { reportsAPI } from "../api/reports";
 import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
 import { settingsAPI } from "../api/settings";
-import Modal from "../components/ui/Modal";
 import Confirm from "../components/ui/Confirm";
 import { toast } from "../store/toast";
 import { getUserFacingErrorMessage } from "../api/errors";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { getJewishDayMeta } from "../utils/jewishCalendar";
 import { PhotoMenu, CameraCaptureModal, ImageGallery } from "../components/photos/PhotoManagement";
 
-const MONTH_NAMES = ["ינו","פבר","מרץ","אפר","מאי","יונ","יול","אוג","ספט","אוק","נוב","דצמ"];
 const DAY_NAMES   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
 const MODEL_COLOR_PALETTE = [
   { bg:"#dbeafe", border:"#3b82f6", text:"#1d4ed8" },
@@ -56,19 +52,16 @@ function fmtDay(d) {
 export function Dashboard() {
   const navigate = useNavigate();
   const isMobile = useIsMobile(900);
-  const [summary, setSummary]   = useState(null);
-  const [monthly, setMonthly]   = useState([]);
-  const [topCars, setTopCars]   = useState([]);
+  const [kpis, setKpis]   = useState(null);
   const [cars, setCars]         = useState([]);
-  const year = new Date().getFullYear();
   const todayBase = new Date();
   todayBase.setHours(0,0,0,0);
-  const todayISO = toISO(todayBase);
 
   const [selectedModels, setSelectedModels] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [rangeStart, setRangeStart] = useState(toISO(addDays(todayBase, -2)));
-  const [rangeEnd, setRangeEnd]     = useState(toISO(addDays(todayBase, 4)));
+  // Default: 14 days visible (keep a small look-back like the previous behavior)
+  const [rangeEnd, setRangeEnd]     = useState(toISO(addDays(todayBase, 11)));
   const [categories, setCategories] = useState([]);
   const [focusMode, setFocusMode]   = useState(false);
 
@@ -106,18 +99,11 @@ export function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // For API: pass first selected model or undefined (summary API takes single model)
-    const modelParam = selectedModels.length === 1 ? selectedModels[0] : undefined;
-    reportsAPI.summary(modelParam)
-      .then(setSummary)
-      .catch(() => setSummary({ total: 0, active: 0, revenue: 0 }));
-    reportsAPI.monthly(year, modelParam)
-      .then(rows => setMonthly(rows.map(r => ({ ...r, name: MONTH_NAMES[r.month - 1] }))))
-      .catch(() => setMonthly([]));
-    reportsAPI.topCars(5, modelParam)
-      .then(setTopCars)
-      .catch(() => setTopCars([]));
-  }, [year, selectedModels]);
+    // Dashboard shows only minimal KPIs for everyone (analytics are in Reports module, admin-only).
+    bookingsAPI.kpi()
+      .then(setKpis)
+      .catch(() => setKpis({ total: 0, active: 0 }));
+  }, []);
 
   function setStartAndKeepRange(nextStart) {
     setRangeStart(nextStart);
@@ -268,10 +254,8 @@ export function Dashboard() {
       {/* ── Stats cards (below the grid) ── */}
       <div style={{ display:"grid", gridTemplateColumns:isMobile ? "repeat(2,1fr)" : "repeat(auto-fit,minmax(180px,1fr))", gap:12, margin:"20px 0" }}>
         {[
-          { label:"סה״כ הזמנות",  value: summary?.total   ?? "—", color:"#3b82f6", icon:"📋" },
-          { label:"הזמנות פעילות",value: summary?.active  ?? "—", color:"#22c55e", icon:"✅" },
-          { label:"הכנסות השנה",  value: summary ? `₪${Math.round(summary.revenue).toLocaleString()}` : "—", color:"#f59e0b", icon:"💰" },
-          { label:"רכבים מוצגים",  value: filteredCars.length, color:"#8b5cf6", icon:"🚗" },
+          { label:"סה״כ הזמנות",   value: kpis?.total  ?? "—", color:"#3b82f6", icon:"📋" },
+          { label:"הזמנות פעילות", value: kpis?.active ?? "—", color:"#22c55e", icon:"✅" },
         ].map(s => (
           <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:isMobile ? "14px 16px" : "20px 24px",
                border:`1px solid ${s.color}30`, display:"flex", gap:12, alignItems:"center",
@@ -283,42 +267,6 @@ export function Dashboard() {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* ── Charts row ── */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile ? "1fr" : "2fr 1fr", gap:20, marginTop:4 }}>
-        <div style={{ ...cardStyle, padding:isMobile ? 12 : 20 }}>
-          <h3 style={cardTitle}>הכנסות חודשיות {year}</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={monthly}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize:12 }} />
-              <YAxis tick={{ fontSize:12 }} tickFormatter={v => `₪${(v/1000).toFixed(0)}K`} />
-              <Tooltip formatter={v => [`₪${v.toLocaleString()}`, "הכנסה"]} />
-              <Bar dataKey="revenue" fill="#3b82f6" radius={[4,4,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div style={{ ...cardStyle, padding:isMobile ? 12 : 20 }}>
-          <h3 style={cardTitle}>רכבים מובילים</h3>
-          {topCars.length === 0 && <div style={{ color:"#94a3b8", fontSize:13 }}>אין נתונים להצגה</div>}
-          {topCars.map((c, i) => (
-            <div key={c.car_id} style={{ display:"flex", alignItems:"center", gap:10,
-                 padding:"8px 0", borderBottom:"1px solid #f1f5f9" }}>
-              <span style={{ width:24, height:24, background:"#3b82f6", color:"#fff",
-                   borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
-                   fontSize:12, fontWeight:700 }}>{i+1}</span>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:600 }}>{c.name} <span style={{ color:"#64748b", fontWeight:700 }}>#{c.car_id}</span></div>
-                <div style={{ fontSize:11, color:"#64748b" }}>{c.bookings} הזמנות</div>
-              </div>
-              <div style={{ fontSize:13, fontWeight:700, color:"#22c55e" }}>
-                ₪{Math.round(c.revenue).toLocaleString()}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
     </div>
@@ -432,6 +380,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
   const todayStr  = toISO(todayBase);
   const startBase = fromISO(startDate);
   const daysCount = Math.max(diffDays(startDate, endDate) + 1, 1);
+
+  // Reduce column widths by ~25% (dashboard density improvement)
+  const CAR_COL_WIDTH = isMobile ? 58 : 46;
+  const DATE_COL_WIDTH = 74; // keep readable
 
   useEffect(() => {
     setLoadingGrid(true);
@@ -705,22 +657,24 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, fullHe
 
       {/* Grid table */}
       <div style={{ overflowX:"auto", overflowY:"auto", maxHeight: fullHeight ? "none" : (isMobile ? 380 : 480) }}>
-        <table style={{ borderCollapse:"collapse", fontSize:11 }}>
+        <table style={{ borderCollapse:"collapse", fontSize:11, tableLayout:"fixed", width:"max-content" }}>
           <thead>
             <tr>
               {/* Corner cell — sticky top + right (RTL freeze pane) */}
               <th style={{ ...gth, position:"sticky", top:0, right:0, zIndex:3,
-                           background:"#f1f5f9", minWidth:74, borderLeft:"2px solid #cbd5e1" }}>תאריך</th>
+                           background:"#f1f5f9", width:DATE_COL_WIDTH, minWidth:DATE_COL_WIDTH, maxWidth:DATE_COL_WIDTH,
+                           borderLeft:"2px solid #cbd5e1" }}>תאריך</th>
               {activeCars.map(car => {
                 const tc = getModelTheme(car.name);
                 const isDragTarget = dragBooking && dragOverCarId === car.id && car.id !== dragBooking.car_id;
                 return (
-                  <th key={car.id} style={{ ...gth, minWidth:isMobile ? 78 : 62, position:"sticky", top:0, zIndex:2,
+                  <th key={car.id} style={{ ...gth, width:CAR_COL_WIDTH, minWidth:CAR_COL_WIDTH, maxWidth:CAR_COL_WIDTH,
+                                            position:"sticky", top:0, zIndex:2,
                                             background: isDragTarget ? "#bfdbfe" : tc.bg,
                                             borderBottom:`3px solid ${isDragTarget ? "#2563eb" : tc.border}`,
                                             transition:"background 0.15s" }}>
-                    <div style={{ fontWeight:700, color: isDragTarget ? "#1d4ed8" : tc.text }}>{car.name}</div>
-                    <div style={{ color: isDragTarget ? "#2563eb" : tc.border, fontWeight:500, fontSize:9, marginTop:2 }}>
+                    <div style={{ fontWeight:700, color: isDragTarget ? "#1d4ed8" : tc.text, overflow:"hidden", textOverflow:"ellipsis" }}>{car.name}</div>
+                    <div style={{ color: isDragTarget ? "#2563eb" : tc.border, fontWeight:500, fontSize:9, marginTop:2, overflow:"hidden", textOverflow:"ellipsis" }}>
                       {[`#${car.id}`, car.plate, car.make, car.group ? `קב׳ ${car.group}` : null].filter(Boolean).join(" · ")}
                     </div>
                   </th>
@@ -977,9 +931,9 @@ const chipStyle = {
   color:"#334155", fontSize:12, fontWeight:600, cursor:"pointer",
 };
 const activeChip = { ...chipStyle, background:"#1d4ed8", color:"#fff", borderColor:"#1d4ed8" };
-const gth = { padding:"8px 10px", fontWeight:700, borderBottom:"2px solid #e2e8f0",
+const gth = { padding:"6px 6px", fontWeight:700, borderBottom:"2px solid #e2e8f0",
               textAlign:"center", fontSize:11, color:"#475569", whiteSpace:"nowrap" };
-const gtd = { padding:"7px 8px", borderBottom:"1px solid #f1f5f9", fontSize:12 };
+const gtd = { padding:"5px 6px", borderBottom:"1px solid #f1f5f9", fontSize:12 };
 const miniTag = { fontSize:8, fontWeight:700, color:"#fff", borderRadius:999, padding:"1px 5px" };
 const cardStyle = { background:"#fff", borderRadius:12, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" };
 const cardTitle = { margin:"0 0 16px", fontSize:15, fontWeight:700, color:"#1e293b" };

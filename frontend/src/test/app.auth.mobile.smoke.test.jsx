@@ -36,6 +36,7 @@ vi.mock("../api/reports", () => ({
 vi.mock("../api/bookings", () => ({
   bookingsAPI: {
     calendar: vi.fn(async () => []),
+    kpi: vi.fn(async () => ({ total: 0, active: 0 })),
     list: vi.fn(async () => []),
     create: vi.fn(),
     update: vi.fn(),
