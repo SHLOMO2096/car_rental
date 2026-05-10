@@ -10,7 +10,14 @@ from app.db.session import get_db
 from app.models.attendance import AttendanceShift
 from app.models.audit_log import AuditSeverity
 from app.models.user import User
-from app.schemas.payroll import PayrollUserOut, PayrollRateUpdate, PayrollReportOut, PayrollRowOut
+from app.schemas.payroll import (
+    PayrollUserOut,
+    PayrollRateUpdate,
+    PayrollReportOut,
+    PayrollRowOut,
+    PayrollShiftOut,
+    PayrollShiftUpdate,
+)
 
 router = APIRouter()
 
@@ -127,4 +134,76 @@ def payroll_report(
         total_hours=total_hours_all,
         total_pay=total_pay_all,
     )
+
+
+# ── Admin: fix shifts retroactively (hours corrections) ───────────────────────
+
+
+@router.get("/shifts", response_model=list[PayrollShiftOut])
+def list_shifts(
+    date_from: Date,
+    date_to: Date,
+    user_id: int,
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(Permissions.PAYROLL_MANAGE)),
+):
+    if date_to < date_from:
+        raise HTTPException(422, detail="date_to חייב להיות אחרי date_from")
+
+    return (
+        db.query(AttendanceShift)
+        .filter(
+            AttendanceShift.user_id == user_id,
+            AttendanceShift.work_date >= date_from,
+            AttendanceShift.work_date <= date_to,
+        )
+        .order_by(AttendanceShift.work_date.asc(), AttendanceShift.shift_start_at.asc())
+        .all()
+    )
+
+
+@router.patch("/shifts/{shift_id}", response_model=PayrollShiftOut)
+def update_shift(
+    shift_id: int,
+    data: PayrollShiftUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permissions.PAYROLL_MANAGE)),
+):
+    shift = db.query(AttendanceShift).filter(AttendanceShift.id == shift_id).first()
+    if not shift:
+        raise HTTPException(404, detail="משמרת לא נמצאה")
+
+    if data.shift_end_at < data.shift_start_at:
+        raise HTTPException(422, detail="שעת סיום חייבת להיות אחרי שעת התחלה")
+
+    before = {
+        "id": shift.id,
+        "user_id": shift.user_id,
+        "work_date": shift.work_date,
+        "shift_start_at": shift.shift_start_at,
+        "shift_end_at": shift.shift_end_at,
+    }
+
+    shift.shift_start_at = data.shift_start_at
+    shift.shift_end_at = data.shift_end_at
+    shift.work_date = data.work_date or data.shift_start_at.date()
+
+    db.commit()
+    db.refresh(shift)
+
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="attendance.shift.adjust",
+        entity_type="attendance_shift",
+        entity_id=str(shift.id),
+        before_obj=before,
+        after_obj=shift,
+        ip_address=request.client.host if request.client else None,
+        severity=AuditSeverity.warning,
+    )
+
+    return shift
+
 

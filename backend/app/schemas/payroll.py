@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 
@@ -32,4 +32,21 @@ class PayrollReportOut(BaseModel):
     rows: list[PayrollRowOut]
     total_hours: float
     total_pay: float
+
+
+class PayrollShiftOut(BaseModel):
+    id: int
+    user_id: int
+    work_date: date
+    shift_start_at: datetime
+    shift_end_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PayrollShiftUpdate(BaseModel):
+    shift_start_at: datetime
+    shift_end_at: datetime
+    work_date: Optional[date] = None
+
 
