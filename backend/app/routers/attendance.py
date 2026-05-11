@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from datetime import date as Date
 from sqlalchemy.orm import Session
 
 from app.core.permissions import Permissions
@@ -6,7 +7,7 @@ from app.core.security import require_permission
 from app.crud.attendance import crud_attendance
 from app.crud.audit_log import log_audit_event
 from app.db.session import get_db
-from app.models.attendance import normalize_device_id
+from app.models.attendance import normalize_device_id, AttendanceShift
 from app.models.audit_log import AuditSeverity
 from app.models.user import User
 from app.schemas.attendance import (
@@ -17,6 +18,8 @@ from app.schemas.attendance import (
     AttendanceStatusOut,
     AttendanceShiftOut,
     AttendanceDeviceSessionOut,
+    AttendanceUserOut,
+    AttendanceShiftUpdate,
 )
 
 router = APIRouter()
@@ -158,4 +161,89 @@ def end_shift(
 
     # After ending shift, status has no open shift.
     return AttendanceStatusOut(open_shift=None, open_device_sessions=[])
+
+
+# ── Admin/Manager: reporting & retroactive shift corrections ──────────────────
+
+
+@router.get("/users", response_model=list[AttendanceUserOut])
+def list_attendance_users(
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(Permissions.ATTENDANCE_VIEW_ALL)),
+):
+    return db.query(User).order_by(User.full_name.asc(), User.id.asc()).all()
+
+
+@router.get("/shifts", response_model=list[AttendanceShiftOut])
+def list_attendance_shifts(
+    date_from: Date,
+    date_to: Date,
+    user_id: int | None = None,
+    limit: int = 2000,
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(Permissions.ATTENDANCE_VIEW_ALL)),
+):
+    if date_to < date_from:
+        raise HTTPException(422, detail="date_to חייב להיות אחרי date_from")
+
+    limit = max(1, min(int(limit or 2000), 5000))
+
+    q = db.query(AttendanceShift).filter(
+        AttendanceShift.work_date >= date_from,
+        AttendanceShift.work_date <= date_to,
+    )
+    if user_id is not None:
+        q = q.filter(AttendanceShift.user_id == user_id)
+
+    return (
+        q.order_by(AttendanceShift.user_id.asc(), AttendanceShift.work_date.asc(), AttendanceShift.shift_start_at.asc())
+        .limit(limit)
+        .all()
+    )
+
+
+@router.patch("/shifts/{shift_id}", response_model=AttendanceShiftOut)
+def update_attendance_shift(
+    shift_id: int,
+    data: AttendanceShiftUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permissions.ATTENDANCE_MANAGE)),
+):
+    shift = db.query(AttendanceShift).filter(AttendanceShift.id == shift_id).first()
+    if not shift:
+        raise HTTPException(404, detail="משמרת לא נמצאה")
+
+    if data.shift_end_at < data.shift_start_at:
+        raise HTTPException(422, detail="שעת סיום חייבת להיות אחרי שעת התחלה")
+
+    before = {
+        "id": shift.id,
+        "user_id": shift.user_id,
+        "work_date": shift.work_date,
+        "shift_start_at": shift.shift_start_at,
+        "shift_end_at": shift.shift_end_at,
+    }
+
+    shift.shift_start_at = data.shift_start_at
+    shift.shift_end_at = data.shift_end_at
+    shift.work_date = data.work_date or data.shift_start_at.date()
+
+    db.commit()
+    db.refresh(shift)
+
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="attendance.shift.adjust",
+        entity_type="attendance_shift",
+        entity_id=str(shift.id),
+        before_obj=before,
+        after_obj=shift,
+        ip_address=request.client.host if request.client else None,
+        severity=AuditSeverity.warning,
+    )
+
+    return shift
+
 

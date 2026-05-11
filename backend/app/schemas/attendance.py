@@ -1,6 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime, date
 from typing import Optional
+
+from app.models.user import UserRole
 
 
 class AttendanceClockInRequest(BaseModel):
@@ -48,4 +50,24 @@ class AttendanceClockOutResponse(BaseModel):
     shift: AttendanceShiftOut
     device_session: AttendanceDeviceSessionOut
     open_device_sessions: list[AttendanceDeviceSessionOut] = []
+
+
+# ── Admin/Manager reporting & retroactive adjustments ─────────────────────────
+
+
+class AttendanceUserOut(BaseModel):
+    id: int
+    email: EmailStr
+    full_name: str
+    role: UserRole
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class AttendanceShiftUpdate(BaseModel):
+    shift_start_at: datetime
+    shift_end_at: datetime
+    work_date: Optional[date] = None
+
 
