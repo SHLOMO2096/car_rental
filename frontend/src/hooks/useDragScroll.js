@@ -90,7 +90,10 @@ export function useDragScroll(options = {}) {
     // Inputs/selects shouldn't start drag-scroll.
     // Buttons/links are allowed: click is suppressed only if an actual drag happened.
     ignoreSelector =
-      'input, textarea, select, option, [contenteditable="true"], [data-drag-scroll-ignore], [draggable="true"]',
+      // NOTE: In dense tables (Bookings/Customers) users often click action buttons.
+      // Starting drag-scroll on buttons can cause clicks to be suppressed due to tiny hand jitter.
+      // So we ignore common interactive controls by default.
+      'input, textarea, select, option, button, a, [role="button"], [contenteditable="true"], [data-drag-scroll-ignore], [draggable="true"]',
     cursor = true,
   } = options;
 
