@@ -5,7 +5,7 @@ import { useDragScroll } from "../hooks/useDragScroll";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 
-const EMPTY_FORM = { email:"", full_name:"", password:"", role:"agent", hourly_rate:"" };
+const EMPTY_FORM = { email:"", full_name:"", password:"", role:"agent" };
 
 export default function Users() {
   const [users, setUsers]       = useState([]);
@@ -27,7 +27,6 @@ export default function Users() {
       full_name: u.full_name,
       password: "",
       role: u.role,
-      hourly_rate: (u.hourly_rate ?? ""),
     });
     setEdit(u); setFormError(""); setModal(true);
   }
@@ -39,18 +38,14 @@ export default function Users() {
     setSaving(true); setFormError("");
     try {
       if (editUser) {
-        const rate = form.hourly_rate === "" ? null : Number(form.hourly_rate);
         const data = {
           full_name: form.full_name,
           role: form.role,
-          hourly_rate: Number.isNaN(rate) ? null : rate,
         };
         await authAPI.updateUser(editUser.id, data);
       } else {
-        const rate = form.hourly_rate === "" ? null : Number(form.hourly_rate);
         await authAPI.createUser({
           ...form,
-          hourly_rate: Number.isNaN(rate) ? null : rate,
         });
       }
       await load(); setModal(false);
@@ -157,17 +152,6 @@ export default function Users() {
             </select>
           </div>
 
-          <div>
-            <label style={s.label}>שכר שעתי (₪)</label>
-            <input
-              type="number"
-              step="0.5"
-              min="0"
-              value={form.hourly_rate}
-              onChange={e => setForm(f=>({...f,hourly_rate:e.target.value}))}
-              style={s.input}
-            />
-          </div>
           {formError && <div style={s.errorBox}>{formError}</div>}
           <div style={s.modalFooter}>
             <button onClick={() => setModal(false)} style={s.btnSecondary}>ביטול</button>

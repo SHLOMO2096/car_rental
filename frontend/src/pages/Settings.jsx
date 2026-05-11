@@ -1,15 +1,25 @@
 import { useEffect, useState } from "react";
 import { settingsAPI } from "../api/settings";
+import { payrollAPI } from "../api/payroll";
 import { toast } from "../store/toast";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { DEFAULT_GENERAL_SETTINGS } from "../config/defaultSettings";
+import { useAuthStore } from "../store/auth";
+import { Permissions } from "../permissions";
 
 export default function Settings() {
+  const can = useAuthStore((s) => s.can);
+  const canManagePayroll = can(Permissions.PAYROLL_MANAGE);
+
   const [categories, setCategories] = useState([]);
   const [general, setGeneral] = useState(() => ({ ...DEFAULT_GENERAL_SETTINGS }));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const isMobile = useIsMobile(640);
+
+  const [payrollUsers, setPayrollUsers] = useState([]);
+  const [payrollLoading, setPayrollLoading] = useState(false);
+  const [savingRateUserId, setSavingRateUserId] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -22,6 +32,34 @@ export default function Settings() {
       .catch(() => toast.error("נכשל בטעינת הגדרות"))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!canManagePayroll) return;
+    setPayrollLoading(true);
+    payrollAPI
+      .listUsers()
+      .then((u) => setPayrollUsers(u || []))
+      .catch(() => toast.error("נכשל בטעינת שכר עובדים"))
+      .finally(() => setPayrollLoading(false));
+  }, [canManagePayroll]);
+
+  async function saveHourlyRate(userId, hourlyRateValue) {
+    const rate = hourlyRateValue === "" ? null : Number(hourlyRateValue);
+    if (rate !== null && (Number.isNaN(rate) || rate < 0)) {
+      toast.error("שכר שעתי לא תקין");
+      return;
+    }
+    setSavingRateUserId(userId);
+    try {
+      const updated = await payrollAPI.updateHourlyRate(userId, rate);
+      setPayrollUsers((prev) => prev.map((x) => (x.id === userId ? updated : x)));
+      toast.success("עודכן שכר שעתי");
+    } catch (e) {
+      toast.error(e?.detail || "לא הצלחנו לעדכן שכר שעתי");
+    } finally {
+      setSavingRateUserId(null);
+    }
+  }
 
   const save = async () => {
     setSaving(true);
@@ -171,6 +209,59 @@ export default function Settings() {
         </div>
       </div>
 
+      {canManagePayroll && (
+        <div style={{ ...s.card, marginTop: 24 }}>
+          <h2 style={s.cardTitle}>שכר שעתי לעובדים</h2>
+          <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+            עריכה נשמרת מיידית (ביציאה מהשדה). השינוי מתועד בלוג הביקורת.
+          </p>
+
+          {payrollLoading ? (
+            <div style={{ color: "#94a3b8", fontSize: 13 }}>טוען עובדים...</div>
+          ) : payrollUsers.length === 0 ? (
+            <div style={{ color: "#94a3b8", fontSize: 13 }}>אין עובדים להצגה.</div>
+          ) : (
+            <div style={s.tableWrap}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "#f8fafc" }}>
+                    {["שם", "אימייל", "פעיל", "שכר שעתי (₪)"].map((h) => (
+                      <th key={h} style={s.th}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {payrollUsers.map((u) => (
+                    <tr key={u.id} style={{ borderTop: "1px solid #e2e8f0", opacity: u.is_active ? 1 : 0.55 }}>
+                      <td style={s.td}><strong>{u.full_name}</strong></td>
+                      <td style={s.td}>{u.email}</td>
+                      <td style={s.td}>{u.is_active ? "כן" : "לא"}</td>
+                      <td style={s.td}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            defaultValue={u.hourly_rate ?? ""}
+                            disabled={savingRateUserId === u.id}
+                            onBlur={(e) => saveHourlyRate(u.id, e.target.value)}
+                            style={{ ...s.input, width: isMobile ? "100%" : 160 }}
+                            placeholder="ריק = ללא חישוב"
+                          />
+                          {savingRateUserId === u.id && (
+                            <span style={{ color: "#64748b", fontSize: 12 }}>שומר...</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", marginBottom: 40 }}>
         <button onClick={save} disabled={saving} style={{ ...s.btnSave, padding: "12px 32px", fontSize: 16 }}>
           {saving ? "שומר..." : "💾 שמור הכל"}
@@ -183,7 +274,10 @@ export default function Settings() {
 const s = {
   card: { background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" },
   cardTitle: { margin: "0 0 10px", fontSize: 18, fontWeight: 700, color: "#1e293b" },
-  filterRow: { 
+  tableWrap: { overflow: "auto", borderRadius: 10, border: "1px solid #e2e8f0" },
+  th: { padding: "12px 12px", textAlign: "right", fontSize: 12, color: "#475569", fontWeight: 900, whiteSpace: "nowrap" },
+  td: { padding: "10px 12px", fontSize: 13, color: "#0f172a", verticalAlign: "top" },
+  filterRow: {
     display: "flex", gap: 12, padding: 16, background: "#f8fafc", 
     borderRadius: 8, border: "1px solid #e2e8f0", flexWrap: "wrap", alignItems: "flex-end" 
   },

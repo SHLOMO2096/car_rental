@@ -38,7 +38,6 @@ def create_user(data: UserCreate, db: Session = Depends(get_db),
         full_name=data.full_name,
         hashed_pw=hash_password(data.password),
         role=data.role,
-        hourly_rate=data.hourly_rate,
     )
     db.add(u); db.commit(); db.refresh(u)
     log_audit_event(
@@ -71,7 +70,6 @@ def update_user(user_id: int, data: UserUpdate,
         "full_name": u.full_name,
         "role": u.role.value if hasattr(u.role, "value") else str(u.role),
         "is_active": u.is_active,
-        "hourly_rate": u.hourly_rate,
     }
     before_role = u.role
     before_active = u.is_active

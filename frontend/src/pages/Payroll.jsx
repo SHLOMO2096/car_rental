@@ -61,7 +61,6 @@ export default function Payroll() {
   const [users, setUsers] = useState([]);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [savingUserId, setSavingUserId] = useState(null);
 
   const [selectedUserId, setSelectedUserId] = useState("all");
 
@@ -190,25 +189,6 @@ export default function Payroll() {
     downloadCsv(filename, csv);
   }
 
-  async function saveRate(userId, hourlyRateValue) {
-    const rate = hourlyRateValue === "" ? null : Number(hourlyRateValue);
-    if (rate !== null && (Number.isNaN(rate) || rate < 0)) {
-      toast.error("שכר שעתי לא תקין");
-      return;
-    }
-
-    setSavingUserId(userId);
-    try {
-      const updated = await payrollAPI.updateHourlyRate(userId, rate);
-      setUsers((prev) => prev.map((x) => (x.id === userId ? updated : x)));
-      toast.success("עודכן שכר שעתי");
-      await refreshReport();
-    } catch (e) {
-      toast.error(e?.detail || "לא הצלחנו לעדכן שכר שעתי");
-    } finally {
-      setSavingUserId(null);
-    }
-  }
 
   if (loading) {
     return <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>טוען נתוני שכר...</div>;
@@ -246,49 +226,6 @@ export default function Payroll() {
         <div style={s.kpiCard}>
           <div style={s.kpiLabel}>סה״כ לתשלום</div>
           <div style={s.kpiValue}>₪{Math.round(report?.total_pay || 0).toLocaleString()}</div>
-        </div>
-      </div>
-
-      <div style={s.card}>
-        <h3 style={s.cardTitle}>שכר שעתי לכל עובד</h3>
-        <div style={s.tableWrap}>
-          <table style={s.table}>
-            <thead>
-              <tr style={{ background: "#f8fafc" }}>
-                {[
-                  "שם", "אימייל", "פעיל", "שכר שעתי (₪)",
-                ].map((h) => (
-                  <th key={h} style={s.th}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} style={{ borderTop: "1px solid #e2e8f0" }}>
-                  <td style={s.td}><strong>{u.full_name}</strong></td>
-                  <td style={s.td} dir="ltr">{u.email}</td>
-                  <td style={s.td}>{u.is_active ? "כן" : "לא"}</td>
-                  <td style={s.td}>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        defaultValue={u.hourly_rate ?? ""}
-                        disabled={savingUserId === u.id}
-                        onBlur={(e) => saveRate(u.id, e.target.value)}
-                        style={{ ...s.input, width: 140 }}
-                      />
-                      {savingUserId === u.id && <span style={{ color: "#64748b", fontSize: 12 }}>שומר...</span>}
-                    </div>
-                    <div style={{ color: "#94a3b8", fontSize: 11, marginTop: 4 }}>
-                      נשמר ב־blur (יציאה מהשדה). אפשר להשאיר ריק כדי לא לחשב תשלום.
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
 
