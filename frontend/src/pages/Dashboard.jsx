@@ -373,6 +373,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
   const [scrollWidth, setScrollWidth] = useState(0);
   const syncingScroll = useRef(false);
   const hScrollDrag = useDragScroll({ axis: "x" });
+  const gridScrollDrag = useDragScroll({ axis: "x", enabled: !isMobile });
 
   // Header hover tooltip
   const [hoveredCar, setHoveredCar] = useState(null);
@@ -633,6 +634,11 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
 
   return (
     <>
+      {/* Hide the grid's native horizontal scrollbar (we keep the floating scrollbar below). */}
+      <style>{`
+        .availability-grid-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        .availability-grid-scroll::-webkit-scrollbar { display: none; height: 0; }
+      `}</style>
       {bookingAction && (
         <BookingActionModal
           booking={bookingAction.booking}
@@ -710,9 +716,15 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
        <div
          ref={gridScrollRef}
          onScroll={(e) => syncScroll(e.currentTarget, hScrollRef.current)}
-         // Hide the grid's native horizontal scrollbar so we don't end up with two scrollbars
-         // (use the floating scrollbar below for horizontal scrolling).
-         style={{ overflowX:"hidden", overflowY:"auto", maxHeight: fullHeight ? "none" : (isMobile ? 380 : 480) }}
+         className="availability-grid-scroll"
+         {...gridScrollDrag.bind}
+         // Allow native horizontal scrolling (touch / trackpad / mouse wheel) + drag-scroll on desktop.
+         style={{
+           overflowX: "auto",
+           overflowY: "auto",
+           maxHeight: fullHeight ? "none" : (isMobile ? 380 : 480),
+           ...gridScrollDrag.style,
+         }}
        >
          <table style={{ borderCollapse:"collapse", fontSize:11, tableLayout:"fixed", width:"max-content" }}>
           <thead>
