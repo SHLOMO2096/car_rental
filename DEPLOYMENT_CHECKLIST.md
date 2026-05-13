@@ -17,9 +17,10 @@
 
 ### Docker & Infra
 - [x] `docker-compose.prod.yml` validates cleanly with `.env.production.example`
-- [x] All required services defined (db, backend, frontend, nginx)
+- [x] All required services defined (db, backend, frontend)
 - [x] Database healthcheck configured
 - [x] Network and volumes configured
+- [x] Traefik labels configured for public routes
 
 ---
 
@@ -39,43 +40,66 @@ DB_PASSWORD=<STRONG_RANDOM_PASSWORD>
 DB_NAME=carrental
 SECRET_KEY=<STRONG_32_BYTE_HEX_SECRET>
 FRONTEND_URL=https://your-actual-domain.co.il
+PUBLIC_HOST=your-actual-domain.co.il
 EMAILS_ENABLED=false
 SECURITY_ALERT_RECIPIENTS=ops@your-domain.co.il
 ```
 
+### 1.5 Shared proxy prerequisites
+```bash
+# Run once on the production server
+docker network create traefik-public || true
+docker network create car_rental_default || true
+```
+
+Make sure the separate `infra-proxy` project is already running on the server and owns ports `80/443`.
+
+Additional must-have production settings:
+
+- `TRAEFIK_DASHBOARD_HOST` in the separate `infra-proxy` project must **not** equal `PUBLIC_HOST` of `car_rental`.
+- If the domain is proxied through Cloudflare, set `SSL/TLS` mode to `Full` or `Full (strict)`.
+- Do **not** use Cloudflare `Flexible`, otherwise the public site can get stuck in redirect loops.
+- If the proxy host logs `client version 1.24 is too old` from Traefik's Docker provider, pin Docker Engine/CLI on the proxy host to `28.5.2` until the compatibility issue is resolved upstream.
+
 ### 2. Build Production Images
 ```powershell
 cd C:\Users\shlomo\PycharmProjects\car_rental
-docker compose -f docker-compose.prod.yml build
+docker compose --env-file .env.production -f docker-compose.prod.yml build
 ```
 
 ### 3. Start Services
 ```powershell
-docker compose -f docker-compose.prod.yml up -d
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 ```
 
 ### 4. Smoke Tests
 ```powershell
-# Health check backend
-curl http://localhost/api/auth/me
+# Public health check דרך Traefik
+curl https://your-actual-domain.co.il/health
+# Expected: {"status":"ok"}
+
+# Important: use GET for /health. HEAD/"curl -I" may return 405 while the app is healthy.
+
+# Backend auth route
+curl https://your-actual-domain.co.il/api/auth/me
 # Expected: 401 (no token provided)
 
 # Login as admin
-curl -X POST http://localhost/api/auth/login `
+curl -X POST https://your-actual-domain.co.il/api/auth/login `
   -H "Content-Type: application/x-www-form-urlencoded" `
   -d "username=admin@example.com&password=AdminPassword123!"
 # Expected: {"access_token": "..."}
 
 # Check dashboard data
-curl -H "Authorization: Bearer <TOKEN>" http://localhost/api/reports/summary
+curl -H "Authorization: Bearer <TOKEN>" https://your-actual-domain.co.il/api/reports/summary
 # Expected: {"total": N, "active": M, "revenue": X}
 
 # List bookings
-curl -H "Authorization: Bearer <TOKEN>" http://localhost/api/bookings/
+curl -H "Authorization: Bearer <TOKEN>" https://your-actual-domain.co.il/api/bookings/
 # Expected: [...]
 
 # Frontend loads
-curl http://localhost/
+curl https://your-actual-domain.co.il/
 # Expected: HTML with index.html
 ```
 
@@ -83,21 +107,27 @@ curl http://localhost/
 If first deployment, backend container should auto-run Alembic migrations on startup.
 Verify in logs:
 ```powershell
-docker compose -f docker-compose.prod.yml logs backend | grep -i "alembic\|migration"
+docker compose --env-file .env.production -f docker-compose.prod.yml logs backend | Select-String -Pattern "alembic|migration"
 ```
 
-### 6. SSL/TLS Setup (Optional, for HTTPS)
-```bash
-# If using Let's Encrypt (requires domain):
-certbot certonly --standalone -d your-domain.co.il
-# Then map /etc/letsencrypt volume in nginx and docker-compose
-```
+### 6. GitHub Actions automatic deployment
+
+Create a GitHub Environment named `production` and add:
+
+- `PROD_HOST`
+- `PROD_USER`
+- `PROD_PORT` (optional)
+- `PROD_SSH_KEY`
+- `SSH_KNOWN_HOSTS` (recommended)
+
+On each push to `main`, `deploy-prod.yml` will rerun backend tests + frontend build, SSH into the server, deploy with Docker Compose, and verify health internally and through Traefik.
 
 ---
 
 ## 🔄 Post-Deployment Verification
 
 - [ ] Frontend loads at `https://your-domain.co.il`
+- [ ] `curl https://your-domain.co.il/health` returns JSON over the public domain
 - [ ] Users can log in
 - [ ] Dashboard displays stats and availability grid
 - [ ] Agents see all bookings (not just their own)
@@ -142,13 +172,13 @@ certbot certonly --standalone -d your-domain.co.il
 If issues arise post-deployment:
 ```powershell
 # Stop all containers
-docker compose -f docker-compose.prod.yml down
+docker compose --env-file .env.production -f docker-compose.prod.yml down
 
 # Restore from backup (if applicable)
 # Volume: pg_data contains PostgreSQL data
 
 # Or downgrade to previous image tag
-docker compose -f docker-compose.prod.yml up -d --remove-orphans
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans
 ```
 
 ---
@@ -160,6 +190,6 @@ docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
 ---
 
-**Last Updated:** 2026-04-28  
-**Status:** ✅ Ready for Production Deployment
+**Last Updated:** 2026-05-12
+**Status:** ✅ Ready for Production Deployment / GitHub Actions Auto-Deploy
 

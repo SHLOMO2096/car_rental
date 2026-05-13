@@ -15,7 +15,7 @@ Backend:   Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
 Frontend:  React 18 + Vite + React Router + Zustand + Recharts
 Auth:      JWT (8 שעות) + bcrypt + הרשאות admin/agent
 Email:     SMTP עם תבניות HTML
-DevOps:    Docker + Nginx + GitHub Actions CI/CD
+DevOps:    Docker + Traefik (shared infra-proxy) + GitHub Actions CI/CD
 ```
 
 ## הרצה מקומית
@@ -163,61 +163,71 @@ python -m pytest tests/test_suggestions_redis_api_integration.py -q
 
 ### 1. דרישות בשרת
 ```bash
-sudo apt update && sudo apt install -y docker.io docker-compose-plugin git certbot
+sudo apt update && sudo apt install -y docker.io docker-compose-plugin git
 sudo usermod -aG docker $USER   # אופציונלי: הרצת docker ללא sudo
 ```
+
+> חשוב: השרת אמור להריץ קודם את פרויקט `infra-proxy` עם Traefik, והוא זה שמחזיק את הפורטים `80/443` לכלל הפרויקטים.
 
 ### 2. שכפול הפרויקט
 ```bash
 git clone https://github.com/your-org/car-rental.git /opt/car-rental
 cd /opt/car-rental
+docker network create traefik-public || true
+docker network create car_rental_default || true
 ```
+
+> אם הריפו פרטי, בצע את השכפול הראשוני הזה ידנית פעם אחת על השרת. לאחר מכן GitHub Actions יבצעו `git fetch` ו־deploy אוטומטי לאותה תיקייה.
 
 ### 3. קובץ סביבה לפרודקשן
 ```bash
-cp .env.production.example .env
+cp .env.production.example .env.production
 ```
-ערוך `.env` ומלא:
+ערוך `.env.production` ומלא:
 - `DB_PASSWORD` — סיסמה חזקה לבסיס הנתונים
 - `SECRET_KEY` — הרץ `openssl rand -hex 32` וקבל ערך
 - `FRONTEND_URL` — הדומיין שלך (למשל `https://rental.mysite.co.il`)
+- `PUBLIC_HOST` — אותו דומיין שבו Traefik יחשוף את הפרויקט
 
-### 4. SSL עם Certbot (לפני הרצת Docker)
+### 3.5 דרישות Traefik / Cloudflare שחייבות להיות מוגדרות
+
+- ב-`infra-proxy` יש להגדיר את `TRAEFIK_DASHBOARD_HOST` על סאב-דומיין נפרד, למשל `traefik.example.com`, **ולא** על `PUBLIC_HOST` של האפליקציה.
+- אם הדומיין עובר דרך Cloudflare, מצב `SSL/TLS` חייב להיות `Full` או `Full (strict)`.
+- אל תשתמש ב-`Flexible`, כי הוא יוצר לולאות redirect מול Traefik שמכריח HTTP → HTTPS.
+- בדיקת health ציבורית צריכה להיות עם `GET` רגיל, למשל `curl https://your-domain.co.il/health`. בקשת `HEAD` (`curl -I`) עלולה להחזיר `405` למרות שהשירות תקין.
+- אם `infra-proxy` מחזיר `404` על כל ה-routes ובלוגים של Traefik מופיע `client version 1.24 is too old`, זו בעיית תאימות Docker provider על השרת של ה-proxy. במקרה כזה יש לקבע את Docker Engine/CLI בשרת ה-proxy לגרסה `28.5.2` ולעצור עדכונים אוטומטיים עד לאימות תאימות מול Traefik.
+
+### 4. הרצה
 ```bash
-sudo certbot certonly --standalone -d your-domain.co.il
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 ```
 
-### 5. עדכן את שם הדומיין ב-nginx.conf
+### 5. יצירת משתמש admin ודאטה ראשוני (פעם אחת בלבד)
 ```bash
-sed -i 's/your-domain.co.il/YOUR_ACTUAL_DOMAIN/g' nginx.conf
+docker compose --env-file .env.production -f docker-compose.prod.yml exec backend python seed.py
 ```
 
-### 6. הרצה
-```bash
-docker compose -f docker-compose.prod.yml up -d --build
-```
-
-### 7. יצירת משתמש admin ודאטה ראשוני (פעם אחת בלבד)
-```bash
-docker compose -f docker-compose.prod.yml exec backend python seed.py
-```
-
-### 8. בדיקה
+### 6. בדיקה
 ```bash
 curl https://your-domain.co.il/health
 # ציפייה: {"status":"ok"}
 ```
 
-### חידוש SSL אוטומטי (crontab)
+בדיקות ציבוריות נוספות:
+
 ```bash
-echo "0 3 * * * certbot renew --quiet && docker compose -f /opt/car-rental/docker-compose.prod.yml restart nginx" | sudo crontab -
+curl https://your-domain.co.il/api/auth/me
+# ציפייה: 401 ללא טוקן
+
+curl https://your-domain.co.il/
+# ציפייה: HTML של ה-frontend
 ```
 
 ### עדכון גרסה עתידי
 ```bash
 cd /opt/car-rental
 git pull
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 ```
 
 ## GitOps לפרודקשן (GitHub Actions)
@@ -234,10 +244,27 @@ docker compose -f docker-compose.prod.yml up -d --build
 - `PROD_USER`
 - `PROD_PORT` (אופציונלי, ברירת מחדל 22)
 - `PROD_SSH_KEY`
+- `SSH_KNOWN_HOSTS` (מומלץ)
+
+### מה קורה אוטומטית ב־deploy
+
+- ה־workflow מריץ שוב backend tests ו־frontend build
+- מתחבר ב־SSH לשרת
+- בודק שהרשתות `traefik-public` ו־`car_rental_default` קיימות
+- עושה checkout ל־commit המדויק של ה־deploy
+- מריץ `docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build --remove-orphans`
+- בודק health גם פנימית דרך ה־backend container וגם חיצונית דרך `https://PUBLIC_HOST/health`
 
 ### מסמך הפעלה מלא
 
 ראה: `docs/gitops-runbook.md`
+
+### Troubleshooting קצר לפרודקשן
+
+- `curl https://your-domain.co.il/health` מחזיר `Moved Permanently` דרך Cloudflare → בדוק שמצב `SSL/TLS` הוא `Full`/`Full (strict)` ולא `Flexible`.
+- `curl -I https://your-domain.co.il/health` מחזיר `405` אבל `curl https://your-domain.co.il/health` מחזיר JSON → זה תקין, כי ה-endpoint מוגדר כ-`GET`.
+- Traefik מחזיר `404` על `/`, `/api`, `/health` → בדוק שה-stack של `infra-proxy` רץ, שהרשת `traefik-public` קיימת, ושבלוגים של Traefik אין שגיאות Docker provider.
+- `www-authenticate: Basic realm="traefik"` על הדומיין הראשי → ה-dashboard של Traefik יושב על אותו host של האפליקציה, ויש להעביר את `TRAEFIK_DASHBOARD_HOST` לסאב-דומיין אחר.
 
 ## הוספת מודול חדש
 
@@ -269,6 +296,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 | `DATABASE_URL`              | חיבור PostgreSQL                   | ✅   |
 | `SECRET_KEY`                | מפתח JWT (32 bytes hex)            | ✅   |
 | `FRONTEND_URL`              | URL ה-frontend לCORS               | ✅   |
+| `PUBLIC_HOST`               | ה-host הציבורי שבו Traefik חושף את הפרויקט | ✅   |
 | `RATE_LIMIT_BACKEND`        | `memory` או `redis`                | ❌   |
 | `RATE_LIMIT_REDIS_URL`      | כתובת Redis (נדרש אם backend=redis) | ❌   |
 | `RATE_LIMIT_REDIS_KEY_PREFIX` | prefix למפתחות rate-limit        | ❌   |

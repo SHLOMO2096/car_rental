@@ -1,5 +1,8 @@
 name: Deploy Production
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -17,6 +20,7 @@ concurrency:
 
 jobs:
   verify:
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -57,6 +61,7 @@ jobs:
         run: npm run build
 
   deploy:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     needs: verify
     environment: production
@@ -86,6 +91,23 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
 
+      - name: Configure SSH known_hosts
+        shell: bash
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_PORT: ${{ secrets.PROD_PORT }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${SSH_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "${PROD_PORT:-22}" -H "$PROD_HOST" >> ~/.ssh/known_hosts
+          fi
+          chmod 644 ~/.ssh/known_hosts
+
       - name: Deploy on VPS
         shell: bash
         env:
@@ -97,51 +119,7 @@ jobs:
         run: |
           set -euo pipefail
           PORT="${PROD_PORT:-22}"
-          ssh -o StrictHostKeyChecking=accept-new -p "$PORT" "${PROD_USER}@${PROD_HOST}" \
-            "TARGET_SHA='$TARGET_SHA' REPO_URL='$REPO_URL' bash -s" <<'ENDSSH'
-          set -euo pipefail
-          REPO_DIR="/opt/car-rental"
-
-          # ── Bootstrap: clone if first deploy ──────────────────────────────
-          if [ ! -d "$REPO_DIR/.git" ]; then
-            echo "First deploy: cloning repository..."
-            sudo mkdir -p "$REPO_DIR"
-            sudo chown -R "$(whoami)":"$(whoami)" "$REPO_DIR"
-            git clone "$REPO_URL" "$REPO_DIR"
-          fi
-
-          cd "$REPO_DIR"
-
-          # ── Checkout exact commit ─────────────────────────────────────────
-          git fetch --all --tags --prune
-          git checkout --force "$TARGET_SHA"
-          git reset --hard "$TARGET_SHA"
-
-          # ── Verify env file exists ────────────────────────────────────────
-          if [ ! -f ".env.production" ]; then
-            echo "ERROR: .env.production not found in $REPO_DIR"
-            echo "Run: cp .env.production.example .env.production && nano .env.production"
-            exit 1
-          fi
-
-          # ── Deploy ────────────────────────────────────────────────────────
-          docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build --remove-orphans
-
-          # ── Health check (wait up to 30s) ─────────────────────────────────
-          echo "Waiting for health check..."
-          for i in $(seq 1 10); do
-            if curl -fsS http://localhost/health > /dev/null 2>&1; then
-              echo "Health check passed on attempt $i"
-              break
-            fi
-            if [ "$i" -eq 10 ]; then
-              echo "Health check failed after 30s"
-              docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=50
-              exit 1
-            fi
-            sleep 3
-          done
-
-          echo "Production deploy completed for $TARGET_SHA"
-          ENDSSH
+          ssh -p "$PORT" "${PROD_USER}@${PROD_HOST}" \
+            "TARGET_SHA='$TARGET_SHA' REPO_URL='$REPO_URL' REPO_DIR='/opt/car-rental' ENV_FILE='.env.production' COMPOSE_FILE='docker-compose.prod.yml' bash -s" \
+            < scripts/deploy_production.sh
 
