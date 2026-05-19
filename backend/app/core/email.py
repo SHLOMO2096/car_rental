@@ -68,16 +68,16 @@ def _base_template(title: str, body: str) -> str:
     header_logo_html = ""
     if get_logo_bytes():
         header_logo_html = (
-            '<div style="margin-bottom:12px">'
-            '<img src="cid:waycar-logo" alt="וואי קאר" style="width:220px;max-width:100%;height:auto;display:block;margin:0 auto" />'
+            '<div style="margin-bottom:8px">'
+            '<img src="cid:waycar-logo" alt="וואי קאר" style="width:190px;max-width:100%;height:auto;display:block;margin:0 auto" />'
             '</div>'
         )
     return f"""
-    <div dir="rtl" style="font-family:Arial,sans-serif;max-width:640px;margin:auto;background:#eef4fb;padding:18px;border-radius:24px">
-      <div style="background:linear-gradient(135deg,#16365e 0%,#234a7d 100%);padding:28px 24px 24px;text-align:center;border-radius:22px 22px 0 0">
+    <div dir="rtl" style="font-family:Arial,sans-serif;max-width:640px;margin:auto;background:#eef4fb;padding:14px;border-radius:24px">
+      <div style="background:linear-gradient(135deg,#16365e 0%,#234a7d 100%);padding:18px 20px 16px;text-align:center;border-radius:22px 22px 0 0">
         {header_logo_html}
-        <div style="color:#ffffff;font-size:26px;font-weight:800;letter-spacing:0.2px;line-height:1.2">וואי קאר השכרת רכב</div>
-        <div style="color:#d6e5f7;font-size:14px;margin-top:8px">חוויה מהירה, נקייה ומדויקת להזמנה שלך</div>
+        <div style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:0.2px;line-height:1.2">וואי קאר השכרת רכב</div>
+        <div style="color:#d6e5f7;font-size:13px;margin-top:6px">חוויה מהירה, נקייה ומדויקת להזמנה שלך</div>
       </div>
       <div style="padding:28px;background:#ffffff;border-radius:0 0 22px 22px;box-shadow:0 10px 28px rgba(15,23,42,0.08)">
         <div style="display:inline-block;background:#e8f1fb;color:#0f3f75;border-radius:999px;padding:9px 16px;font-size:14px;font-weight:700;margin-bottom:18px">{title}</div>
