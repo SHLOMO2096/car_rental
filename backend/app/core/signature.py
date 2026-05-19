@@ -10,7 +10,8 @@ from functools import lru_cache
 class SignatureConfig:
     """Business contact details for email signatures"""
     
-    BUSINESS_NAME = "WayCar"
+    BUSINESS_NAME = "וואי קאר"
+    BRAND_HEADING = "וואי קאר השכרת רכב"
     CONTACT_EMAIL = "way85899@gmail.com"
     CONTACT_PHONE = "0583285899"
     ADDRESS = "אבני נזר 46, מודיעין עילית"
@@ -94,8 +95,8 @@ def get_logo_html(width: int = 150, height: str = "auto") -> str:
     return f'''
     <img 
         src="cid:waycar-logo"
-        alt="WayCar Logo" 
-        style="width:{width}px;height:{height};max-width:100%;margin-bottom:8px;border-radius:4px"
+        alt="{SignatureConfig.BUSINESS_NAME} Logo" 
+        style="width:{width}px;height:{height};max-width:100%;margin:0 auto;display:block"
     />
     '''
 
@@ -113,26 +114,21 @@ def get_business_signature(include_logo: bool = True) -> str:
     logo_html = ""
     if include_logo:
         logo_html = f"""
-        <div style="text-align:center;margin-bottom:12px">
-            {get_logo_html(width=140)}
+        <div style="text-align:center;margin:0 0 8px 0">
+            {get_logo_html(width=170)}
         </div>"""
     
     hours_text = f"""
     <tr style="font-size:12px">
         <td style="padding:2px 0;color:#666">
-            <strong>שעות פעילות:</strong><br />
-            א׳-ה׳: {SignatureConfig.BUSINESS_HOURS['sun_thu']}<br />
-            ו׳: {SignatureConfig.BUSINESS_HOURS['friday']}
+            <strong>שעות פעילות:</strong> א׳-ה׳: {SignatureConfig.BUSINESS_HOURS['sun_thu']} | ו׳: {SignatureConfig.BUSINESS_HOURS['friday']}
         </td>
     </tr>"""
     
     signature = f"""
-    <div style="border-top:2px solid {SignatureConfig.BRAND_COLOR_PRIMARY};padding:16px 0;margin-top:20px;font-family:Arial,sans-serif;direction:rtl;text-align:right;font-size:13px;color:#333">
+    <div style="border-top:2px solid {SignatureConfig.BRAND_COLOR_PRIMARY};padding:12px 0 0 0;margin-top:18px;font-family:Arial,sans-serif;direction:rtl;text-align:right;font-size:13px;color:#333">
         {logo_html}
         <table style="width:100%;border-collapse:collapse;text-align:right">
-            <tr style="font-weight:bold;color:{SignatureConfig.BRAND_COLOR_PRIMARY};font-size:14px">
-                <td style="padding:8px 0">{SignatureConfig.BUSINESS_NAME}</td>
-            </tr>
             <tr style="font-size:12px">
                 <td style="padding:2px 0;color:#666">
                     <strong>טלפון:</strong> 
@@ -155,9 +151,9 @@ def get_business_signature(include_logo: bool = True) -> str:
                 </td>
             </tr>
             {hours_text}
-            <tr style="font-size:11px;padding-top:8px;border-top:1px solid #e0e0e0;color:#999">
+            <tr style="font-size:11px;color:#999">
                 <td style="padding:6px 0">
-                    © {SignatureConfig.BUSINESS_NAME} - כל הזכויות שמורות
+                    {SignatureConfig.BRAND_HEADING}
                 </td>
             </tr>
         </table>

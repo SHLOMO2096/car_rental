@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     SMTP_USER: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     EMAILS_FROM: str = "noreply@carrental.co.il"
-    EMAILS_FROM_NAME: str = "השכרת רכבים"
+    EMAILS_FROM_NAME: str = "וואי קאר"
     EMAILS_ENABLED: bool = False             # False = לא שולח אימיילים
     SECURITY_ALERT_RECIPIENTS: str = ""     # comma-separated recipient list
     CROSS_AGENT_BOOKING_EDIT_ALERTS_ENABLED: bool = True

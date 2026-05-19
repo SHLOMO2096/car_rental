@@ -4,9 +4,25 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 from app.core.config import settings
-from app.core.signature import get_business_signature, get_logo_bytes
+from app.core.signature import SignatureConfig, get_business_signature, get_logo_bytes
 
 logger = logging.getLogger(__name__)
+
+
+def _sender_display_name() -> str:
+    raw = (settings.EMAILS_FROM_NAME or "").strip()
+    if not raw:
+        return SignatureConfig.BUSINESS_NAME
+
+    normalized = raw.replace("ןןאי", "וואי").replace("ווי קאר", "וואי קאר")
+    if normalized.lower() == "waycar":
+        return SignatureConfig.BUSINESS_NAME
+    return normalized
+
+
+def _customer_subject(base: str, booking_id: int | None = None) -> str:
+    booking_suffix = f" #{booking_id}" if booking_id is not None else ""
+    return f"{base}{booking_suffix} | וואי קאר השכרת רכב"
 
 
 def _parse_recipients(raw: str | None) -> list[str]:
@@ -22,7 +38,7 @@ def _send(to: str, subject: str, html: str) -> bool:
     try:
         msg = MIMEMultipart("related")
         msg["Subject"] = subject
-        msg["From"] = f"{settings.EMAILS_FROM_NAME} <{settings.EMAILS_FROM}>"
+        msg["From"] = f"{_sender_display_name()} <{settings.EMAILS_FROM}>"
         msg["To"] = to
 
         alt = MIMEMultipart("alternative")
@@ -52,24 +68,24 @@ def _base_template(title: str, body: str) -> str:
     header_logo_html = ""
     if get_logo_bytes():
         header_logo_html = (
-            '<div style="margin-bottom:10px">'
-            '<img src="cid:waycar-logo" alt="WayCar" style="width:200px;max-width:100%;height:auto;border-radius:6px" />'
+            '<div style="margin-bottom:12px">'
+            '<img src="cid:waycar-logo" alt="וואי קאר" style="width:220px;max-width:100%;height:auto;display:block;margin:0 auto" />'
             '</div>'
         )
     return f"""
-    <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:auto;
-         background:#f8fafc;border-radius:12px;overflow:hidden">
-      <div style="background:#1e3a5f;padding:24px;text-align:center">
+    <div dir="rtl" style="font-family:Arial,sans-serif;max-width:640px;margin:auto;background:#eef4fb;padding:18px;border-radius:24px">
+      <div style="background:linear-gradient(135deg,#16365e 0%,#234a7d 100%);padding:28px 24px 24px;text-align:center;border-radius:22px 22px 0 0">
         {header_logo_html}
-        <h1 style="color:#fff;margin:0;font-size:22px">🚘 {settings.APP_NAME}</h1>
+        <div style="color:#ffffff;font-size:26px;font-weight:800;letter-spacing:0.2px;line-height:1.2">וואי קאר השכרת רכב</div>
+        <div style="color:#d6e5f7;font-size:14px;margin-top:8px">חוויה מהירה, נקייה ומדויקת להזמנה שלך</div>
       </div>
-      <div style="padding:32px;background:#fff">
-        <h2 style="color:#1e293b">{title}</h2>
+      <div style="padding:28px;background:#ffffff;border-radius:0 0 22px 22px;box-shadow:0 10px 28px rgba(15,23,42,0.08)">
+        <div style="display:inline-block;background:#e8f1fb;color:#0f3f75;border-radius:999px;padding:9px 16px;font-size:14px;font-weight:700;margin-bottom:18px">{title}</div>
         {body}
         {signature}
       </div>
-      <div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px;background:#f1f5f9">
-        {settings.APP_NAME} | נשלח אוטומטית — אין להשיב למייל זה
+      <div style="padding:12px 6px 0;text-align:center;color:#7b8ba3;font-size:12px">
+        נשלח אוטומטית מוואי קאר — אין צורך להשיב למייל זה
       </div>
     </div>"""
 
@@ -77,8 +93,8 @@ def _base_template(title: str, body: str) -> str:
 def send_booking_confirmation(to: str, customer_name: str, car_name: str,
                                start: str, end: str, total: float, booking_id: int) -> bool:
     body = f"""
-    <p>שלום <strong>{customer_name}</strong>,</p>
-    <p>הזמנתך אושרה בהצלחה! 🎉</p>
+    <p style="margin:0 0 12px;font-size:16px;color:#1e293b">שלום <strong>{customer_name}</strong>,</p>
+    <p style="margin:0 0 18px;color:#334155;font-size:15px">הזמנתך אושרה בהצלחה ואנחנו כבר מכינים הכול עבורך.</p>
     <table style="width:100%;border-collapse:collapse;margin:16px 0">
       <tr style="background:#f1f5f9">
         <td style="padding:10px;font-weight:bold">מספר הזמנה</td>
@@ -101,31 +117,31 @@ def send_booking_confirmation(to: str, customer_name: str, car_name: str,
         <td style="padding:10px;font-weight:bold;color:#1d4ed8">₪{total:,.0f}</td>
       </tr>
     </table>
-    <p>לשאלות ניתן לפנות אלינו בכל עת.</p>
-    <p>תודה שבחרת ב{settings.APP_NAME}!</p>"""
-    return _send(to, f"אישור הזמנה #{booking_id} — {settings.APP_NAME}",
+    <p style="margin:16px 0 8px;color:#334155">לשאלות ניתן לפנות אלינו בכל עת.</p>
+    <p style="margin:0;color:#0f3f75;font-weight:700">תודה שבחרת בוואי קאר!</p>"""
+    return _send(to, _customer_subject("אישור הזמנה", booking_id),
                  _base_template("אישור הזמנה", body))
 
 
 def send_booking_cancellation(to: str, customer_name: str, car_name: str,
                                booking_id: int) -> bool:
     body = f"""
-    <p>שלום <strong>{customer_name}</strong>,</p>
+    <p style="margin:0 0 12px;font-size:16px;color:#1e293b">שלום <strong>{customer_name}</strong>,</p>
     <p>הזמנתך מספר <strong>#{booking_id}</strong> עבור קטגוריה <strong>{car_name}</strong>
        <span style="color:#ef4444">בוטלה</span>.</p>
     <p>אם לדעתך מדובר בטעות, אנא צור קשר עמנו בהקדם.</p>"""
-    return _send(to, f"ביטול הזמנה #{booking_id} — {settings.APP_NAME}",
+    return _send(to, _customer_subject("ביטול הזמנה", booking_id),
                  _base_template("הזמנה בוטלה", body))
 
 
 def send_booking_reminder(to: str, customer_name: str, car_name: str,
                            start: str, booking_id: int) -> bool:
     body = f"""
-    <p>שלום <strong>{customer_name}</strong>,</p>
+    <p style="margin:0 0 12px;font-size:16px;color:#1e293b">שלום <strong>{customer_name}</strong>,</p>
     <p>תזכורת: מחר (<strong>{start}</strong>) מתחילה ההשכרה שלך — <strong>{car_name}</strong>.</p>
     <p>מספר הזמנה: <strong>#{booking_id}</strong></p>
-    <p>נסיעה טובה! 🚗</p>"""
-    return _send(to, f"תזכורת להזמנה #{booking_id} — {settings.APP_NAME}",
+    <p style="margin:0;color:#0f3f75;font-weight:700">מאחלים לך נסיעה נעימה ובטוחה.</p>"""
+    return _send(to, _customer_subject("תזכורת להזמנה", booking_id),
                  _base_template("תזכורת להזמנה", body))
 
 
