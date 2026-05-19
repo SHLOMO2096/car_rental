@@ -17,7 +17,7 @@ export default function Modal({ open, onClose, title, children, wide = false, ma
     <div dir="rtl" onClick={onClose} style={{
       position:"fixed", inset:0, background:"rgba(0,0,0,0.45)",
       display:"flex", alignItems:"center", justifyContent:"center",
-      zIndex:1000, padding:isMobile ? 8 : 16,
+      zIndex:9999, padding:isMobile ? 8 : 16,
     }}>
       <div onClick={e => e.stopPropagation()} style={{
         background:"#fff", borderRadius:isMobile ? 12 : 16, padding:isMobile ? 16 : 28,

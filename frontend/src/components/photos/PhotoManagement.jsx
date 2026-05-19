@@ -202,6 +202,24 @@ export function CameraCaptureModal({ bookingId, onClose, onCapture }) {
  */
 export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpen, onToggle, variant = "default" }) {
   const photoCount = booking.drive_link ? booking.drive_link.split(",").filter(Boolean).length : 0;
+  const fileInputRef = useRef(null);
+
+  function handleFileChange(e) {
+    if (e.target.files?.length > 0) {
+      onUpload(e.target.files);
+      onToggle();
+      e.target.value = "";
+    }
+  }
+
+  function handlePickFiles(e) {
+    e.stopPropagation();
+    // Close the dropdown first, then open file picker via ref
+    onToggle();
+    // Small delay so the overlay unmounts before the file dialog opens,
+    // preventing the overlay's click handler from firing when the dialog closes.
+    setTimeout(() => fileInputRef.current?.click(), 50);
+  }
 
   const btnStyle =
     variant === "compact"
@@ -240,6 +258,16 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
 
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
+      {/* Hidden file input - rendered outside the dropdown overlay to avoid event conflicts */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+
       <button onClick={(e) => { e.stopPropagation(); onToggle(); }} style={btnStyle} title="ניהול תמונות">
         {variant === "compact" ? "📸" : "📸 תמונות"}
         {photoCount > 0 && (
@@ -304,16 +332,15 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
               📸 צילום רציף
             </button>
 
-            <label style={{ 
-              width: "100%", textAlign: "right", padding: "12px 16px", cursor: "pointer", 
-              fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderTop: "1px solid #f1f5f9"
-            }}>
+            <button
+              onClick={handlePickFiles}
+              style={{
+                width: "100%", textAlign: "right", padding: "12px 16px", border: "none",
+                background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderTop: "1px solid #f1f5f9"
+              }}
+            >
               📁 בחר מהגלריה
-              <input 
-                type="file" accept="image/*" multiple style={{ display: "none" }}
-                onChange={(e) => { if (e.target.files?.length > 0) { onUpload(e.target.files); onToggle(); e.target.value = ""; } }}
-              />
-            </label>
+            </button>
           </div>
         </>
       )}

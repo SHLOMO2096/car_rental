@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 import Confirm from "../components/ui/Confirm";
 import Modal from "../components/ui/Modal";
+import { ImageGallery } from "../components/photos/PhotoManagement";
 import { customersAPI } from "../api/customers";
 import { getUserFacingErrorMessage } from "../api/errors";
 import { Permissions } from "../permissions";
@@ -429,7 +430,7 @@ export default function Customers() {
                       <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}>🗑 מחק</button>
                       {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}>✉️ שלח מייל</button>}
                       {toWhatsAppUrl(c.phone) && (
-                        <a href={toWhatsAppUrl(c.phone)} target="_blank" rel="noreferrer" style={s.btnWhatsApp}>💬 WhatsApp</a>
+                        <button onClick={() => window.location.href = toWhatsAppUrl(c.phone)} style={s.btnWhatsApp}>💬 WhatsApp</button>
                       )}
                     </div>
                   </td>
@@ -460,7 +461,7 @@ export default function Customers() {
                 <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}>🗑 מחק</button>
                 {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}>✉️ מייל</button>}
                 {toWhatsAppUrl(c.phone) && (
-                  <a href={toWhatsAppUrl(c.phone)} target="_blank" rel="noreferrer" style={s.btnWhatsApp}>💬 WhatsApp</a>
+                  <button onClick={() => window.location.href = toWhatsAppUrl(c.phone)} style={s.btnWhatsApp}>💬 WhatsApp</button>
                 )}
               </div>
             </div>
@@ -669,25 +670,8 @@ export default function Customers() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(null)}
       />
-      <Modal open={!!viewPhotos} onClose={() => setViewPhotos(null)} title={`תמונות הזמנה #${viewPhotos?.id}`}>
-        {viewPhotos && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ marginBottom: 10, color: "#64748b", fontSize: 14 }}>
-              נמצאו {(viewPhotos.drive_link || "").split(",").filter(Boolean).length} תמונות ב-Google Drive:
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {(viewPhotos.drive_link || "").split(",").filter(Boolean).map((link, idx) => (
-                <a key={idx} href={link} target="_blank" rel="noreferrer" style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", padding: "16px",
-                  background: "#f1f5f9", borderRadius: 8, textDecoration: "none", color: "#1d4ed8", fontWeight: "bold"
-                }}>
-                  📸 צפה בתמונה {idx + 1}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-      </Modal>
+
+      {viewPhotos && <ImageGallery photos={viewPhotos.drive_link} onClose={() => setViewPhotos(null)} />}
     </div>
   );
 }

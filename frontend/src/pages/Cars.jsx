@@ -24,6 +24,7 @@ export default function Cars() {
   const [search, setSearch]     = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [modelFilter, setModelFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("all"); // "all" | "active" | "inactive"
   const [modal, setModal]       = useState(null);   // null | "create" | "edit"
   const [form, setForm]         = useState(EMPTY_FORM);
   const [saving, setSaving]     = useState(false);
@@ -62,6 +63,8 @@ export default function Cars() {
   const filtered = cars.filter(c => {
     if (categoryFilter !== "all" && (c.category || "") !== categoryFilter) return false;
     if (modelFilter !== "all" && c.name !== modelFilter) return false;
+    if (activeFilter === "active" && !c.is_active) return false;
+    if (activeFilter === "inactive" && c.is_active) return false;
     if (search && !c.name.includes(search) && !c.plate.includes(search)) return false;
     return true;
   });
@@ -153,11 +156,23 @@ export default function Cars() {
         </div>
       </div>
 
-      {/* Summary chips */}
+      {/* Summary / filter chips */}
       <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
-        <Chip label="סה״כ" value={cars.length} color="#3b82f6" />
-        <Chip label="פעילים" value={cars.filter(c=>c.is_active).length} color="#22c55e" />
-        <Chip label="לא פעילים" value={cars.filter(c=>!c.is_active).length} color="#94a3b8" />
+        <FilterChip
+          label="סה״כ" value={cars.length} color="#3b82f6"
+          active={activeFilter === "all"}
+          onClick={() => setActiveFilter("all")}
+        />
+        <FilterChip
+          label="✅ פעילים" value={cars.filter(c=>c.is_active).length} color="#22c55e"
+          active={activeFilter === "active"}
+          onClick={() => setActiveFilter("active")}
+        />
+        <FilterChip
+          label="⏸ לא פעילים" value={cars.filter(c=>!c.is_active).length} color="#94a3b8"
+          active={activeFilter === "inactive"}
+          onClick={() => setActiveFilter("inactive")}
+        />
       </div>
 
       {/* Folders (Grouped by Category) */}
@@ -330,12 +345,22 @@ export default function Cars() {
   );
 }
 
-function Chip({ label, value, color }) {
+function FilterChip({ label, value, color, active, onClick }) {
   return (
-    <div style={{ background:`${color}15`, border:`1px solid ${color}30`,
-                  borderRadius:20, padding:"4px 14px", fontSize:13, color }}>
+    <button
+      onClick={onClick}
+      style={{
+        background: active ? `${color}20` : "#f8fafc",
+        border: active ? `2px solid ${color}` : `1px solid ${color}30`,
+        borderRadius: 20, padding: "5px 16px", fontSize: 13,
+        color: active ? color : "#64748b",
+        cursor: "pointer", fontWeight: active ? 700 : 500,
+        transition: "all 0.15s",
+        outline: "none",
+      }}
+    >
       {label}: <strong>{value}</strong>
-    </div>
+    </button>
   );
 }
 function Field({ label, children }) {

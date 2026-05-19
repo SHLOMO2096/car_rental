@@ -65,6 +65,7 @@ export function Dashboard() {
 
   const [selectedModels, setSelectedModels] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [hybridFilter, setHybridFilter] = useState("all"); // "all" | "hybrid" | "regular"
   const [rangeStart, setRangeStart] = useState(toISO(addDays(todayBase, -2)));
   // Default: 14 days visible (keep a small look-back like the previous behavior)
   const [rangeEnd, setRangeEnd]     = useState(toISO(addDays(todayBase, 11)));
@@ -87,9 +88,13 @@ export function Dashboard() {
       const matchesModel = selectedModels.length === 0 || selectedModels.includes(c.name);
       if (!matchesModel) return false;
 
+      // Hybrid filter
+      if (hybridFilter === "hybrid" && !c.is_hybrid) return false;
+      if (hybridFilter === "regular" && !!c.is_hybrid) return false;
+
       return true;
     }),
-    [cars, selectedModels, selectedCategories]
+    [cars, selectedModels, selectedCategories, hybridFilter]
   );
   const permissionModel = useMemo(
     () => createDashboardPermissionModel({ can, currentUser, isMobile }),
@@ -179,6 +184,25 @@ export function Dashboard() {
             </div>
           </div>
 
+          {/* Hybrid filter */}
+          <div style={{ ...fieldWrap, minWidth: isMobile ? "100%" : 140 }}>
+            <span style={fieldLabel}>סוג הנעה</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {[
+                { value: "all",     label: "🚗 הכל" },
+                { value: "hybrid",  label: "🌿 היברידי בלבד" },
+                { value: "regular", label: "⛽ רגיל בלבד" },
+              ].map(opt => (
+                <label key={opt.value} style={multiSelectItem(hybridFilter === opt.value)}>
+                  <input type="radio" name="hybridFilter" value={opt.value}
+                    checked={hybridFilter === opt.value}
+                    onChange={() => setHybridFilter(opt.value)} />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Date range */}
           <label style={{ ...fieldWrap, minWidth:isMobile ? "100%" : 160 }}>
             <span style={fieldLabel}>מתאריך</span>
@@ -208,6 +232,7 @@ export function Dashboard() {
           {selectedCategories.length === 0 ? "כל הקטגוריות" : selectedCategories.join(", ")}
           {" · "}
           {selectedModels.length === 0 ? "כל הדגמים" : selectedModels.join(", ")}
+          {hybridFilter !== "all" && <>{" · "}{hybridFilter === "hybrid" ? "🌿 היברידי בלבד" : "⛽ רגיל בלבד"}</>}
           {" · "}
           <strong>{filteredCars.length}</strong> רכבים ·
           טווח: <strong>{visibleDays}</strong> ימים
