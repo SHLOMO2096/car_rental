@@ -187,7 +187,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         if "start_date" in update_data or "end_date" in update_data or "car_id" in update_data:
             recalc = True
 
-        res = super().update(db, db_obj=db_obj, obj_in=obj_in)
+        res = super().update(db, db_obj=db_obj, obj_in=update_data)
 
         if recalc:
             days = max((res.end_date - res.start_date).days, 1)

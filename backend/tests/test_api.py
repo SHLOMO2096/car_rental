@@ -1,5 +1,5 @@
 import os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from io import BytesIO
 
 import pytest
@@ -215,6 +215,27 @@ class TestBookings:
             "end_date": tomorrow,
         }, headers=auth_headers)
         assert r.status_code == 422
+
+    def test_create_booking_rejects_same_day_pickup_time_in_the_past(self, client, auth_headers, sample_car):
+        now = datetime.now().replace(second=0, microsecond=0)
+        if now.hour == 0 and now.minute == 0:
+            pytest.skip("cannot build a past same-day time at exactly midnight")
+
+        past_time = (now - timedelta(minutes=1)).strftime("%H:%M")
+        today = date.today().isoformat()
+        tomorrow = (date.today() + timedelta(days=1)).isoformat()
+
+        r = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "בדיקת שעה שעברה",
+            "customer_has_no_email": True,
+            "start_date": today,
+            "end_date": tomorrow,
+            "pickup_time": past_time,
+        }, headers=auth_headers)
+
+        assert r.status_code == 422
+        assert "שעת איסוף" in r.text
 
     def test_create_booking(self, client, auth_headers, sample_car):
         r = client.post("/api/bookings/", json={
@@ -540,7 +561,7 @@ class TestRBAC:
         )
         assert r.status_code == 403
 
-    def test_agent_booking_scope(self, client, db, agent_headers, auth_headers, sample_car):
+    def test_agent_booking_scope(self, client, db, agent_headers, auth_headers, sample_car, agent_user):
         # admin creates booking A
         created_a = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
@@ -568,11 +589,33 @@ class TestRBAC:
         assert "Agent Booking" in names
         assert "Admin Booking" in names
 
-        # agent cannot delete admin booking
-        r_del = client.delete(f"/api/bookings/{created_a.json()['id']}", headers=agent_headers)
-        assert r_del.status_code == 403
+        # agent can edit admin booking with operator note
+        r_edit = client.patch(f"/api/bookings/{created_a.json()['id']}", json={
+            "notes": "נערך על ידי סוכן תורן",
+            "operator_note": "הלקוח ביקש שינוי דרך הטלפון",
+        }, headers=agent_headers)
+        assert r_edit.status_code == 200
+        assert r_edit.json()["notes"] == "נערך על ידי סוכן תורן"
+        assert r_edit.json()["updated_by"] == agent_user.id
 
-        # agent can delete own booking
+        # agent deleting admin booking requires operator note
+        r_del_missing = client.request(
+            "DELETE",
+            f"/api/bookings/{created_a.json()['id']}",
+            headers=agent_headers,
+            json={},
+        )
+        assert r_del_missing.status_code == 422
+
+        r_del = client.request(
+            "DELETE",
+            f"/api/bookings/{created_a.json()['id']}",
+            headers=agent_headers,
+            json={"operator_note": "מחיקה מאושרת עי מנהל משמרת"},
+        )
+        assert r_del.status_code == 204
+
+        # agent can also delete own booking without operator note
         r_own_del = client.delete(f"/api/bookings/{created_b.json()['id']}", headers=agent_headers)
         assert r_own_del.status_code == 204
 
@@ -607,6 +650,127 @@ class TestRBAC:
         assert len(alert_calls) == 1
         assert alert_calls[0]["booking_id"] == booking_id
         assert alert_calls[0]["customer_name"] == "Agent Delete"
+
+    def test_agent_cross_booking_delete_requires_operator_note_and_writes_warning_audit(self, client, db, auth_headers, agent_headers, agent_user, sample_car, monkeypatch):
+        alert_calls = []
+
+        def fake_delete_alert(**kwargs):
+            alert_calls.append(kwargs)
+            return True
+
+        monkeypatch.setattr(bookings_router, "send_booking_delete_alert", fake_delete_alert)
+
+        created = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "Admin Delete Target",
+            "customer_has_no_email": True,
+            "start_date": "2031-02-10",
+            "end_date": "2031-02-12",
+        }, headers=auth_headers)
+        assert created.status_code == 201
+        booking_id = created.json()["id"]
+
+        missing_note = client.request("DELETE", f"/api/bookings/{booking_id}", headers=agent_headers, json={})
+        assert missing_note.status_code == 422
+
+        deleted = client.request(
+            "DELETE",
+            f"/api/bookings/{booking_id}",
+            headers=agent_headers,
+            json={"operator_note": "אושר עי מנהל תור"},
+        )
+        assert deleted.status_code == 204
+
+        audit = db.query(AuditLog).filter(
+            AuditLog.action == "booking.delete",
+            AuditLog.entity_type == "booking",
+            AuditLog.entity_id == str(booking_id),
+        ).order_by(AuditLog.id.desc()).first()
+        assert audit is not None
+        assert audit.severity == "warning"
+        assert '"is_cross_agent_delete": true' in (audit.after_json or "").lower()
+        assert '"operator_note": "אושר עי מנהל תור"' in (audit.after_json or "")
+
+        assert len(alert_calls) == 1
+        assert alert_calls[0]["booking_id"] == booking_id
+        assert alert_calls[0]["operator_note"] == "אושר עי מנהל תור"
+        assert alert_calls[0]["created_by_name"]
+
+    def test_agent_cross_booking_edit_requires_operator_note_and_writes_warning_audit(self, client, db, auth_headers, agent_headers, agent_user, sample_car, monkeypatch):
+        alert_calls = []
+
+        def fake_booking_edit_alert(**kwargs):
+            alert_calls.append(kwargs)
+            return True
+
+        monkeypatch.setattr(bookings_router, "send_booking_edit_alert", fake_booking_edit_alert)
+
+        created = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "Admin Owned Booking",
+            "customer_has_no_email": True,
+            "start_date": "2031-03-10",
+            "end_date": "2031-03-12",
+        }, headers=auth_headers)
+        assert created.status_code == 201
+        booking_id = created.json()["id"]
+
+        missing_note = client.patch(f"/api/bookings/{booking_id}", json={
+            "notes": "נסיון ללא הערת מפעיל",
+        }, headers=agent_headers)
+        assert missing_note.status_code == 422
+
+        edited = client.patch(f"/api/bookings/{booking_id}", json={
+            "notes": "הוזז לבקשת הלקוח",
+            "start_date": "2031-03-11",
+            "end_date": "2031-03-13",
+            "operator_note": "שיחת טלפון עם הלקוח בשעה 10:30",
+        }, headers=agent_headers)
+        assert edited.status_code == 200
+        assert edited.json()["updated_by"] == agent_user.id
+
+        audit = db.query(AuditLog).filter(
+            AuditLog.action == "booking.update",
+            AuditLog.entity_type == "booking",
+            AuditLog.entity_id == str(booking_id),
+        ).order_by(AuditLog.id.desc()).first()
+        assert audit is not None
+        assert audit.severity == "warning"
+        assert '"is_cross_agent_edit": true' in (audit.after_json or "").lower()
+        assert '"operator_note": "שיחת טלפון עם הלקוח בשעה 10:30"' in (audit.after_json or "")
+
+        assert len(alert_calls) == 1
+        assert alert_calls[0]["booking_id"] == booking_id
+        assert "start_date" in alert_calls[0]["changed_fields"]
+
+    def test_booking_audit_history_endpoint_returns_actor_names_and_change_summary(self, client, auth_headers, agent_headers, sample_car):
+        created = client.post("/api/bookings/", json={
+            "car_id": sample_car.id,
+            "customer_name": "Booking Audit Trail",
+            "customer_has_no_email": True,
+            "start_date": "2031-04-10",
+            "end_date": "2031-04-12",
+        }, headers=auth_headers)
+        assert created.status_code == 201
+        booking_id = created.json()["id"]
+
+        edited = client.patch(f"/api/bookings/{booking_id}", json={
+            "notes": "עודכן לצורך בדיקת audit",
+            "operator_note": "שינוי טלפוני",
+        }, headers=agent_headers)
+        assert edited.status_code == 200
+
+        history = client.get(f"/api/bookings/{booking_id}/audit", headers=auth_headers)
+        assert history.status_code == 200
+        rows = history.json()
+        assert len(rows) >= 2
+
+        latest_update = next(row for row in rows if row["action"] == "booking.update")
+        assert latest_update["actor_user_name"] == "Agent"
+        assert latest_update["severity"] == "warning"
+        assert latest_update["after_json"]["is_cross_agent_edit"] is True
+        assert latest_update["after_json"]["operator_note"] == "שינוי טלפוני"
+        assert "notes" in latest_update["after_json"]["changed_fields"]
 
 
 class TestSuggestions:

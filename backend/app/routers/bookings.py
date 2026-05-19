@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════════
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, UploadFile, File, Body
 from sqlalchemy.orm import Session
 from datetime import date as Date
 from app.db.session import get_db
@@ -7,7 +7,8 @@ from app.models.booking import Booking, BookingStatus
 from app.models.car import Car
 from app.models.user import User, UserRole
 from app.models.customer import Customer
-from app.schemas.booking import BookingCreate, BookingUpdate, BookingOut
+from app.schemas.booking import BookingCreate, BookingUpdate, BookingOut, BookingDeleteRequest, ensure_booking_start_not_in_past
+from app.schemas.audit_log import AuditLogOut
 from app.crud.booking import crud_booking
 from app.crud.customer import crud_customer
 from app.core.permissions import Permissions
@@ -19,13 +20,52 @@ from app.core.email import (
     send_booking_confirmation,
     send_booking_cancellation,
     send_booking_delete_alert,
+    send_booking_edit_alert,
     send_missing_customer_email_alert,
 )
-from app.crud.audit_log import log_audit_event
+from app.crud.audit_log import log_audit_event, list_entity_audit_events
 from app.models.audit_log import AuditSeverity
 from app.services.google_drive import get_drive_service
 
 router = APIRouter()
+
+
+SENSITIVE_BOOKING_UPDATE_FIELDS = {
+    "car_id",
+    "customer_name",
+    "customer_email",
+    "customer_phone",
+    "customer_id_num",
+    "start_date",
+    "end_date",
+    "pickup_time",
+    "return_time",
+    "status",
+}
+
+
+def _booking_update_snapshot(booking: Booking) -> dict:
+    return {
+        "id": booking.id,
+        "car_id": booking.car_id,
+        "created_by": booking.created_by,
+        "updated_by": booking.updated_by,
+        "customer_name": booking.customer_name,
+        "customer_email": booking.customer_email,
+        "customer_phone": booking.customer_phone,
+        "customer_id_num": booking.customer_id_num,
+        "start_date": str(booking.start_date),
+        "end_date": str(booking.end_date),
+        "pickup_time": booking.pickup_time,
+        "return_time": booking.return_time,
+        "status": booking.status.value if hasattr(booking.status, "value") else str(booking.status),
+        "total_price": booking.total_price,
+        "notes": booking.notes,
+    }
+
+
+def _changed_booking_fields(before_state: dict, after_state: dict) -> list[str]:
+    return sorted([key for key, before_value in before_state.items() if before_value != after_state.get(key)])
 
 
 @router.get("/", response_model=list[BookingOut])
@@ -60,6 +100,25 @@ def kpi(
 ):
     """Minimal dashboard KPIs: total bookings + active bookings."""
     return crud_booking.kpi_counts(db)
+
+
+@router.get("/{booking_id}/audit", response_model=list[AuditLogOut])
+def get_booking_audit_history(
+    booking_id: int,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission(Permissions.BOOKINGS_VIEW)),
+):
+    booking = crud_booking.get(db, booking_id)
+    if not booking:
+        raise HTTPException(404, "הזמנה לא נמצאה")
+
+    return list_entity_audit_events(
+        db,
+        entity_type="booking",
+        entity_id=str(booking_id),
+        limit=min(max(limit, 1), 100),
+    )
 
 
 @router.get("/{booking_id}", response_model=BookingOut)
@@ -157,12 +216,16 @@ def update_booking(
     b = crud_booking.get(db, booking_id)
     if not b:
         raise HTTPException(404, "הזמנה לא נמצאה")
-    if current_user.role == UserRole.agent and b.created_by != current_user.id:
-        raise HTTPException(403, "אין הרשאה לערוך הזמנה זו")
+
+    is_cross_agent_edit = current_user.role == UserRole.agent and b.created_by not in (None, current_user.id)
+    operator_note = (data.operator_note or "").strip() or None
+    if is_cross_agent_edit and not operator_note:
+        raise HTTPException(422, "יש להזין הערת מפעיל בעת עריכת הזמנה של סוכן אחר")
 
     new_start  = data.start_date or b.start_date
     new_end    = data.end_date   or b.end_date
     new_car_id = data.car_id     or b.car_id
+    new_pickup_time = data.pickup_time or b.pickup_time
 
     # ── ולידציה: שינוי רכב ────────────────────────────────────────────────────
     if data.car_id and data.car_id != b.car_id:
@@ -173,13 +236,17 @@ def update_booking(
             raise HTTPException(409, "הרכב היעד כבר מושכר בתאריכים אלו")
 
     # ── ולידציה: שינוי תאריכים ────────────────────────────────────────────────
-    if data.start_date or data.end_date:
+    if data.start_date or data.end_date or data.pickup_time:
         if data.start_date and data.start_date < Date.today():
             raise HTTPException(422, "לא ניתן לעדכן הזמנה לתאריך התחלה בעבר")
         if data.end_date and data.end_date < Date.today():
             raise HTTPException(422, "לא ניתן לעדכן הזמנה לתאריך סיום בעבר")
         if new_end < new_start:
             raise HTTPException(422, "תאריך סיום חייב להיות אחרי תאריך התחלה")
+        try:
+            ensure_booking_start_not_in_past(new_start, new_pickup_time)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
         if crud_booking.has_overlap(db, new_car_id, new_start, new_end, data.pickup_time or b.pickup_time, data.return_time or b.return_time, exclude_id=b.id):
             raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
 
@@ -193,18 +260,16 @@ def update_booking(
             db.commit()
             db.refresh(exists)
 
-    before_state = {
-        "id": b.id,
-        "car_id": b.car_id,
-        "created_by": b.created_by,
-        "customer_name": b.customer_name,
-        "start_date": str(b.start_date),
-        "end_date": str(b.end_date),
-        "status": b.status.value if hasattr(b.status, "value") else str(b.status),
-        "total_price": b.total_price,
-    }
+    before_state = _booking_update_snapshot(b)
 
-    updated = crud_booking.update(db, b, data)
+    update_payload = data.model_dump(exclude_unset=True)
+    update_payload.pop("operator_note", None)
+    update_payload["updated_by"] = current_user.id
+
+    updated = crud_booking.update(db, b, update_payload)
+    after_state = _booking_update_snapshot(updated)
+    changed_fields = _changed_booking_fields(before_state, after_state)
+    has_sensitive_changes = any(field in SENSITIVE_BOOKING_UPDATE_FIELDS for field in changed_fields)
 
     # שליחת אימייל ביטול אם הסטטוס שונה לבוטל
     if data.status == BookingStatus.cancelled and b.customer_email:
@@ -216,6 +281,25 @@ def update_booking(
             booking_id=b.id,
         )
 
+    if is_cross_agent_edit and has_sensitive_changes:
+        bg.add_task(
+            send_booking_edit_alert,
+            booking_id=updated.id,
+            customer_name=updated.customer_name,
+            actor_email=current_user.email,
+            actor_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
+            created_by_name=updated.agent.full_name if getattr(updated, "agent", None) else None,
+            changed_fields=changed_fields,
+            operator_note=operator_note,
+        )
+
+    audit_after = {
+        **after_state,
+        "changed_fields": changed_fields,
+        "is_cross_agent_edit": is_cross_agent_edit,
+        "operator_note": operator_note,
+    }
+
     log_audit_event(
         db,
         actor_user_id=current_user.id,
@@ -223,9 +307,9 @@ def update_booking(
         entity_type="booking",
         entity_id=str(updated.id),
         before_obj=before_state,
-        after_obj=updated,
+        after_obj=audit_after,
         ip_address=request.client.host if request and request.client else None,
-        severity=AuditSeverity.warning if data.status == BookingStatus.cancelled else AuditSeverity.info,
+        severity=AuditSeverity.warning if data.status == BookingStatus.cancelled or is_cross_agent_edit or has_sensitive_changes else AuditSeverity.info,
     )
     return updated
 
@@ -233,15 +317,26 @@ def update_booking(
 @router.delete("/{booking_id}", status_code=204)
 def delete_booking(
     bg: BackgroundTasks,
-    booking: Booking = Depends(require_booking_scope_or_admin),
+    booking_id: int,
+    data: BookingDeleteRequest | None = Body(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission(Permissions.BOOKINGS_DELETE)),
     request: Request = None,
 ):
+    booking = crud_booking.get(db, booking_id)
+    if not booking:
+        raise HTTPException(404, "הזמנה לא נמצאה")
+
+    is_cross_agent_delete = current_user.role == UserRole.agent and booking.created_by not in (None, current_user.id)
+    operator_note = ((data.operator_note if data else None) or "").strip() or None
+    if is_cross_agent_delete and not operator_note:
+        raise HTTPException(422, "יש להזין הערת מפעיל בעת מחיקת הזמנה של סוכן אחר")
+
     before_state = {
         "id": booking.id,
         "car_id": booking.car_id,
         "created_by": booking.created_by,
+        "updated_by": booking.updated_by,
         "customer_name": booking.customer_name,
         "start_date": str(booking.start_date),
         "end_date": str(booking.end_date),
@@ -263,6 +358,11 @@ def delete_booking(
         entity_type="booking",
         entity_id=str(booking_id),
         before_obj=before_state,
+        after_obj={
+            "deleted_by": current_user.id,
+            "is_cross_agent_delete": is_cross_agent_delete,
+            "operator_note": operator_note,
+        },
         ip_address=request.client.host if request and request.client else None,
         severity=AuditSeverity.warning,
     )
@@ -275,6 +375,8 @@ def delete_booking(
         end=before_state["end_date"],
         actor_email=actor_email,
         actor_role=actor_role,
+        created_by_name=booking.agent.full_name if getattr(booking, "agent", None) else None,
+        operator_note=operator_note,
     )
 
 

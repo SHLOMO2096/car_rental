@@ -5,8 +5,11 @@ import { formatDateTime } from "../utils/dates";
 export default function BookingAuditMeta({ b, style = {} }) {
   const parts = [];
   if (b?.created_by_name) parts.push(`נוצר ע"י ${b.created_by_name}`);
+  if (b?.updated_by_name) parts.push(`עודכן ע"י ${b.updated_by_name}`);
   const dt = formatDateTime(b?.created_at);
   if (dt) parts.push(dt);
+  const updatedDt = formatDateTime(b?.updated_at);
+  if (updatedDt) parts.push(`עדכון ${updatedDt}`);
   if (!parts.length) return null;
 
   return (

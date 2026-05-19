@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     EMAILS_FROM_NAME: str = "השכרת רכבים"
     EMAILS_ENABLED: bool = False             # False = לא שולח אימיילים
     SECURITY_ALERT_RECIPIENTS: str = ""     # comma-separated recipient list
+    CROSS_AGENT_BOOKING_EDIT_ALERTS_ENABLED: bool = True
 
     # ── Google Drive (for car photos) ──────────────────────────────────────────
     GOOGLE_DRIVE_FOLDER_ID: Optional[str] = None  # Folder ID in Google Drive

@@ -1,4 +1,6 @@
 export const Permissions = {
+  BOOKINGS_CREATE: "bookings:create",
+  BOOKINGS_UPDATE: "bookings:update",
   CARS_MANAGE: "cars:manage",
   CARS_DELETE: "cars:delete",
   CUSTOMERS_VIEW: "customers:view",
@@ -21,6 +23,8 @@ export const Permissions = {
 
 const ROLE_PERMISSIONS = {
   admin: new Set([
+    Permissions.BOOKINGS_CREATE,
+    Permissions.BOOKINGS_UPDATE,
     Permissions.CARS_MANAGE,
     Permissions.CARS_DELETE,
     Permissions.CUSTOMERS_VIEW,
@@ -41,6 +45,8 @@ const ROLE_PERMISSIONS = {
     Permissions.PAYROLL_MANAGE,
   ]),
   agent: new Set([
+    Permissions.BOOKINGS_CREATE,
+    Permissions.BOOKINGS_UPDATE,
     Permissions.CUSTOMERS_VIEW,
     Permissions.CUSTOMERS_MANAGE,
     Permissions.BOOKINGS_DELETE,

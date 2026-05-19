@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { makeEmptyForm } from "../utils/form";
+import { getEarliestAllowedPickupTime, makeEmptyForm } from "../utils/form";
 import { todayISO, tomorrowISO } from "../utils/dates";
 
 /**
@@ -12,8 +12,11 @@ export function useBookingsNavigationEffects({ location, navigate, bookings, gen
     const prefill = location.state?.bookingPrefill;
     if (!prefill) return;
 
+    const defaults = makeEmptyForm(generalSettings || {});
+    const nextStartDate = prefill.start_date || todayISO();
+
     setForm({
-      ...makeEmptyForm(generalSettings || {}),
+      ...defaults,
       car_id: prefill.car_id || "",
       customer_id: prefill.customer_id ? String(prefill.customer_id) : "",
       customer_name: prefill.customer_name || "",
@@ -21,7 +24,8 @@ export function useBookingsNavigationEffects({ location, navigate, bookings, gen
       customer_has_no_email: !prefill.customer_email,
       customer_phone: prefill.customer_phone || "",
       customer_id_num: prefill.customer_id_num || "",
-      start_date: prefill.start_date || todayISO(),
+      start_date: nextStartDate,
+      start_time: getEarliestAllowedPickupTime(nextStartDate, new Date(), defaults.start_time),
       end_date: prefill.end_date || tomorrowISO(),
     });
     setEdit(null);

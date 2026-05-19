@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { bookingsAPI } from "../../api/bookings";
@@ -16,12 +16,13 @@ import { getJewishDayMeta, isAfterClosureTime } from "../../utils/jewishCalendar
 
 import { formatDate } from "./utils/dates";
 import { isValidEmail } from "./utils/validation";
-import { buildBookingPayload, makeEmptyForm } from "./utils/form";
+import { buildBookingPayload, isBookingStartInPast, makeEmptyForm } from "./utils/form";
 
 import BookingsHeader from "./components/BookingsHeader";
 import DateFilterBar from "./components/DateFilterBar";
 import Pagination from "./components/Pagination";
 import BookingsList from "./components/BookingsList";
+import BookingDeleteModal from "./components/BookingDeleteModal";
 import BookingFormModal from "./components/BookingFormModal";
 import ConflictResolverModal from "./components/ConflictResolverModal";
 import UploadQueueFloatingPanel from "./components/UploadQueueFloatingPanel";
@@ -54,8 +55,12 @@ export default function BookingsPage() {
   const [form, setForm] = useState(() => makeEmptyForm({}));
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [bookingAuditHistory, setBookingAuditHistory] = useState([]);
+  const [bookingAuditLoading, setBookingAuditLoading] = useState(false);
 
   const [confirm, setConfirm] = useState(null);
+  const [deleteOperatorNote, setDeleteOperatorNote] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const { actionConfirm, askActionConfirm, closeActionConfirm } = useActionConfirm();
 
   const [page, setPage] = useState(1);
@@ -70,6 +75,7 @@ export default function BookingsPage() {
 
   const PER_PAGE = 15;
   const canDeleteBookings = useAuthStore((s) => s.can(Permissions.BOOKINGS_DELETE));
+  const currentUser = useAuthStore((s) => s.user);
 
   const {
     conflictModal,
@@ -143,6 +149,7 @@ export default function BookingsPage() {
     setForm(makeEmptyForm(generalSettings || {}));
     setEdit(null);
     setFormError("");
+    setBookingAuditHistory([]);
     setModal("create");
     clearConflict();
     clearCustomerMatches();
@@ -166,10 +173,37 @@ export default function BookingsPage() {
     });
     setEdit(b);
     setFormError("");
+    setBookingAuditHistory([]);
     setModal("edit");
     clearConflict();
     clearCustomerMatches();
   }
+
+  useEffect(() => {
+    if (modal !== "edit" || !editBooking?.id) {
+      setBookingAuditHistory([]);
+      setBookingAuditLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setBookingAuditLoading(true);
+    bookingsAPI
+      .history(editBooking.id, 12)
+      .then((rows) => {
+        if (!cancelled) setBookingAuditHistory(rows || []);
+      })
+      .catch(() => {
+        if (!cancelled) setBookingAuditHistory([]);
+      })
+      .finally(() => {
+        if (!cancelled) setBookingAuditLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editBooking?.id, modal]);
 
   async function handleSave() {
     if (!form.car_id) return setFormError("יש לבחור רכב");
@@ -186,6 +220,18 @@ export default function BookingsPage() {
     if (!form.start_date) return setFormError("יש לבחור תאריך התחלה");
     if (!form.end_date) return setFormError("יש לבחור תאריך סיום");
     if (form.end_date < form.start_date) return setFormError("תאריך סיום לפני תחילה");
+    if (isBookingStartInPast(form)) {
+      return setFormError("לא ניתן לשמור הזמנה להיום בשעת איסוף שכבר עברה");
+    }
+    if (
+      modal === "edit" &&
+      currentUser?.role === "agent" &&
+      editBooking?.created_by &&
+      editBooking.created_by !== currentUser.id &&
+      !form.operator_note.trim()
+    ) {
+      return setFormError("יש להזין הערת מפעיל בעת עריכת הזמנה שנוצרה על ידי סוכן אחר");
+    }
 
     if (modal === "create") {
       const startMeta = getJewishDayMeta(form.start_date);
@@ -236,13 +282,30 @@ export default function BookingsPage() {
   }
 
   async function handleDelete(b) {
+    const requiresDeleteOperatorNote = Boolean(
+      currentUser?.role === "agent" &&
+      currentUser?.id &&
+      b?.created_by &&
+      b.created_by !== currentUser.id
+    );
+    if (requiresDeleteOperatorNote && !deleteOperatorNote.trim()) {
+      toast.error("יש להזין הערת מפעיל בעת מחיקת הזמנה שנוצרה על ידי סוכן אחר");
+      return;
+    }
+
+    setDeleteLoading(true);
     try {
-      await bookingsAPI.delete(b.id);
+      await bookingsAPI.delete(
+        b.id,
+        requiresDeleteOperatorNote ? { operator_note: deleteOperatorNote.trim() } : undefined,
+      );
       await load();
       toast.success("ההזמנה נמחקה בהצלחה");
     } catch (e) {
       toast.error(getUserFacingErrorMessage(e));
     } finally {
+      setDeleteLoading(false);
+      setDeleteOperatorNote("");
       setConfirm(null);
     }
   }
@@ -328,7 +391,10 @@ export default function BookingsPage() {
         onTogglePhotoMenu={setActivePhotoMenu}
         onOpenEdit={openEdit}
         onOpenCustomerFromBooking={openCustomerFromBooking}
-        onRequestDelete={(b) => setConfirm({ action: "delete", item: b })}
+        onRequestDelete={(b) => {
+          setDeleteOperatorNote("");
+          setConfirm({ action: "delete", item: b });
+        }}
         onViewPhotos={setViewPhotos}
         onUploadPhotos={uploadPhotos}
         onContinuousCamera={(bookingId) => setCameraCapture(bookingId)}
@@ -353,8 +419,12 @@ export default function BookingsPage() {
         saving={saving}
         formError={formError}
         editBooking={editBooking}
+        auditHistory={bookingAuditHistory}
+        auditLoading={bookingAuditLoading}
+        currentUser={currentUser}
         onClose={() => {
           setModal(null);
+          setBookingAuditHistory([]);
           clearConflict();
           clearCustomerMatches();
         }}
@@ -385,13 +455,23 @@ export default function BookingsPage() {
         onDropToCar={onDropToCar}
       />
 
-      <Confirm
-        open={confirm?.action === "delete"}
-        message={`למחוק לצמיתות את הזמנה #${confirm?.item?.id}?`}
-        confirmLabel="מחק"
-        confirmColor="#dc2626"
+      <BookingDeleteModal
+        booking={confirm?.action === "delete" ? confirm.item : null}
+        loading={deleteLoading}
+        operatorNote={deleteOperatorNote}
+        onOperatorNoteChange={setDeleteOperatorNote}
+        requiresOperatorNote={Boolean(
+          confirm?.action === "delete" &&
+          currentUser?.role === "agent" &&
+          currentUser?.id &&
+          confirm?.item?.created_by &&
+          confirm.item.created_by !== currentUser.id
+        )}
         onConfirm={() => handleDelete(confirm.item)}
-        onCancel={() => setConfirm(null)}
+        onCancel={() => {
+          setDeleteOperatorNote("");
+          setConfirm(null);
+        }}
       />
 
       <Confirm

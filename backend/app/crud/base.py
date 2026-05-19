@@ -24,7 +24,8 @@ class CRUDBase(Generic[ModelType, CreateType, UpdateType]):
         return obj
 
     def update(self, db: Session, db_obj: ModelType, obj_in: UpdateType) -> ModelType:
-        for k, v in obj_in.model_dump(exclude_none=True).items():
+        update_data = obj_in if isinstance(obj_in, dict) else obj_in.model_dump(exclude_none=True)
+        for k, v in update_data.items():
             setattr(db_obj, k, v)
         db.commit(); db.refresh(db_obj)
         return db_obj

@@ -124,11 +124,28 @@ def send_customer_message(*, to: str, customer_name: str, subject: str, body: st
 
 
 def send_booking_delete_alert(*, booking_id: int, customer_name: str, car_name: str,
-                              start: str, end: str, actor_email: str, actor_role: str) -> bool:
+                              start: str, end: str, actor_email: str, actor_role: str,
+                              created_by_name: str | None = None, operator_note: str | None = None) -> bool:
     recipients = _parse_recipients(settings.SECURITY_ALERT_RECIPIENTS)
     if not recipients:
         logger.info("[ALERT EMAIL SKIPPED] No SECURITY_ALERT_RECIPIENTS configured")
         return False
+
+    created_by_row = ""
+    if created_by_name:
+        created_by_row = f"""
+      <tr>
+        <td style="padding:10px;font-weight:bold">יוצר ההזמנה</td>
+        <td style="padding:10px">{created_by_name}</td>
+      </tr>"""
+
+    operator_note_row = ""
+    if operator_note:
+        operator_note_row = f"""
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">הערת מפעיל</td>
+        <td style="padding:10px">{operator_note}</td>
+      </tr>"""
 
     body = f"""
     <p><strong>התראת אבטחה/תפעול:</strong> בוצעה מחיקה של הזמנה.</p>
@@ -157,6 +174,8 @@ def send_booking_delete_alert(*, booking_id: int, customer_name: str, car_name: 
         <td style="padding:10px;font-weight:bold">בוצע ע"י</td>
         <td style="padding:10px">{actor_email} ({actor_role})</td>
       </tr>
+      {created_by_row}
+      {operator_note_row}
     </table>
     <p style="color:#b91c1c;font-weight:bold">נדרשת בדיקה של הפעולה לפי נוהל.</p>"""
 
@@ -226,6 +245,67 @@ def send_missing_customer_email_alert(
     success = True
     for recipient in recipients:
         success = _send(recipient, subject, _base_template("התראת חוסר מייל ללקוח", body)) and success
+    return success
+
+
+def send_booking_edit_alert(
+    *,
+    booking_id: int,
+    customer_name: str,
+    actor_email: str,
+    actor_role: str,
+    created_by_name: str | None,
+    changed_fields: list[str],
+    operator_note: str | None = None,
+) -> bool:
+    if not settings.CROSS_AGENT_BOOKING_EDIT_ALERTS_ENABLED:
+        logger.info("[ALERT EMAIL SKIPPED] CROSS_AGENT_BOOKING_EDIT_ALERTS_ENABLED is disabled")
+        return False
+
+    recipients = _parse_recipients(settings.SECURITY_ALERT_RECIPIENTS)
+    if not recipients:
+        logger.info("[ALERT EMAIL SKIPPED] No SECURITY_ALERT_RECIPIENTS configured")
+        return False
+
+    note_row = ""
+    if operator_note:
+        note_row = f"""
+      <tr>
+        <td style=\"padding:10px;font-weight:bold\">הערת מפעיל</td>
+        <td style=\"padding:10px\">{operator_note}</td>
+      </tr>"""
+
+    body = f"""
+    <p><strong>התראת בקרה:</strong> בוצעה עריכת הזמנה ע"י משתמש שאינו יוצר ההזמנה.</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0">
+      <tr style="background:#fff7ed">
+        <td style="padding:10px;font-weight:bold">מספר הזמנה</td>
+        <td style="padding:10px">#{booking_id}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">לקוח</td>
+        <td style="padding:10px">{customer_name}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">יוצר ההזמנה</td>
+        <td style="padding:10px">{created_by_name or 'לא ידוע'}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">נערך ע"י</td>
+        <td style="padding:10px">{actor_email} ({actor_role})</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">שדות ששונו</td>
+        <td style="padding:10px">{', '.join(changed_fields) if changed_fields else 'לא זוהו שדות'}</td>
+      </tr>
+      {note_row}
+    </table>
+    <p style="color:#b45309;font-weight:bold">נדרשת אפשרות תחקור מלאה דרך audit log ומסך ההזמנות.</p>"""
+
+    subject = f"[ALERT] Booking #{booking_id} edited by non-owner — {settings.APP_NAME}"
+    success = True
+    for recipient in recipients:
+        success = _send(recipient, subject, _base_template("התראת עריכת הזמנה", body)) and success
     return success
 
 

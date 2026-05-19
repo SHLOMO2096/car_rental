@@ -16,6 +16,7 @@ class Booking(Base):
     car_id          = Column(Integer, ForeignKey("cars.id", ondelete="RESTRICT"), nullable=False)
     customer_id     = Column(Integer, ForeignKey("customers.id", ondelete="SET NULL"), nullable=True, index=True)
     created_by      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_by      = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     customer_name   = Column(String(255), nullable=False)
     customer_email  = Column(String(255), index=True)     # לשליחת אימיילים
     customer_phone  = Column(String(50))
@@ -38,4 +39,5 @@ class Booking(Base):
     car          = relationship("Car", back_populates="bookings")
     customer     = relationship("Customer", back_populates="bookings")
     agent        = relationship("User", foreign_keys=[created_by])
+    updated_by_user = relationship("User", foreign_keys=[updated_by])
     deleted_by_user = relationship("User", foreign_keys=[deleted_by])

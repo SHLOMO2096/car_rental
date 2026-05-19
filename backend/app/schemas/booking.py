@@ -1,9 +1,28 @@
 # ══════════════════════════════════════════════════════════════════════════════
-from pydantic import BaseModel, EmailStr, model_validator, computed_field
+from pydantic import BaseModel, EmailStr, model_validator
 from datetime import date, datetime
 from typing import Optional, Any
 from app.models.booking import BookingStatus
 from app.schemas.car import CarOut
+
+
+def parse_booking_time(value: Optional[str]) -> Optional[datetime.time]:
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%H:%M").time()
+    except ValueError as exc:
+        raise ValueError("שעת האיסוף/החזרה חייבת להיות בפורמט HH:MM") from exc
+
+
+def ensure_booking_start_not_in_past(start_date: date, pickup_time: Optional[str]) -> None:
+    parsed_pickup_time = parse_booking_time(pickup_time)
+    if start_date != date.today() or parsed_pickup_time is None:
+        return
+
+    now_time = datetime.now().replace(second=0, microsecond=0).time()
+    if parsed_pickup_time < now_time:
+        raise ValueError("לא ניתן ליצור או לעדכן הזמנה להיום בשעת איסוף שכבר עברה")
 
 class BookingCreate(BaseModel):
     car_id:          int
@@ -23,6 +42,7 @@ class BookingCreate(BaseModel):
     def dates_valid(self):
         if self.start_date < date.today():
             raise ValueError("לא ניתן ליצור הזמנה לתאריך עבר")
+        ensure_booking_start_not_in_past(self.start_date, self.pickup_time)
         if self.end_date < self.start_date:
             raise ValueError("תאריך סיום חייב להיות אחרי תאריך התחלה")
         if self.customer_has_no_email and self.customer_email:
@@ -40,8 +60,15 @@ class BookingUpdate(BaseModel):
     customer_id_num: Optional[str]           = None
     start_date:      Optional[date]          = None
     end_date:        Optional[date]          = None
+    pickup_time:     Optional[str]           = None
+    return_time:     Optional[str]           = None
+    operator_note:   Optional[str]           = None
     notes:           Optional[str]           = None
     status:          Optional[BookingStatus] = None
+
+
+class BookingDeleteRequest(BaseModel):
+    operator_note: Optional[str] = None
 
 class BookingOut(BaseModel):
     id:              int
@@ -63,6 +90,8 @@ class BookingOut(BaseModel):
     # ── Audit fields ──────────────────────────────────────────────────────────
     created_by:      Optional[int]      = None
     created_by_name: Optional[str]      = None   # שם היוצר (מה-relation)
+    updated_by:      Optional[int]      = None
+    updated_by_name: Optional[str]      = None
     created_at:      datetime
     updated_at:      Optional[datetime] = None
     deleted_at:      Optional[datetime] = None
@@ -78,6 +107,8 @@ class BookingOut(BaseModel):
         # מלא created_by_name מה-agent relation אם קיים
         if hasattr(obj, "agent") and obj.agent:
             instance.created_by_name = obj.agent.full_name
+        if hasattr(obj, "updated_by_user") and obj.updated_by_user:
+            instance.updated_by_name = obj.updated_by_user.full_name
         # מלא deleted_by_name מה-deleted_by_user relation אם קיים
         if hasattr(obj, "deleted_by_user") and obj.deleted_by_user:
             instance.deleted_by_name = obj.deleted_by_user.full_name

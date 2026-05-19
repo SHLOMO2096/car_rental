@@ -5,12 +5,15 @@ import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
 import { settingsAPI } from "../api/settings";
 import Confirm from "../components/ui/Confirm";
+import BookingDeleteModal from "../features/bookings/components/BookingDeleteModal";
 import { toast } from "../store/toast";
 import { getUserFacingErrorMessage } from "../api/errors";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useDragScroll } from "../hooks/useDragScroll";
+import { useAuthStore } from "../store/auth";
 import { getJewishDayMeta } from "../utils/jewishCalendar";
 import { PhotoMenu, CameraCaptureModal, ImageGallery } from "../components/photos/PhotoManagement";
+import { createDashboardPermissionModel } from "./dashboardPermissions";
 
 const DAY_NAMES   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
 const MODEL_COLOR_PALETTE = [
@@ -53,6 +56,8 @@ function fmtDay(d) {
 export function Dashboard() {
   const navigate = useNavigate();
   const isMobile = useIsMobile(900);
+  const currentUser = useAuthStore((s) => s.user);
+  const can = useAuthStore((s) => s.can);
   const [kpis, setKpis]   = useState(null);
   const [cars, setCars]         = useState([]);
   const todayBase = new Date();
@@ -85,6 +90,10 @@ export function Dashboard() {
       return true;
     }),
     [cars, selectedModels, selectedCategories]
+  );
+  const permissionModel = useMemo(
+    () => createDashboardPermissionModel({ can, currentUser, isMobile }),
+    [can, currentUser, isMobile]
   );
   const visibleDays = Math.max(diffDays(rangeStart, rangeEnd) + 1, 1);
 
@@ -223,6 +232,8 @@ export function Dashboard() {
         navigate={navigate} 
         isMobile={isMobile}
         isFiltered={selectedModels.length > 0 || selectedCategories.length > 0}
+        currentUser={currentUser}
+        permissionModel={permissionModel}
       />
 
       {/* Focus Mode Overlay */}
@@ -248,6 +259,8 @@ export function Dashboard() {
               navigate={navigate} 
               isMobile={isMobile}
               isFiltered={selectedModels.length > 0 || selectedCategories.length > 0}
+              currentUser={currentUser}
+              permissionModel={permissionModel}
               fullHeight={true}
             />
           </div>
@@ -277,7 +290,7 @@ export function Dashboard() {
 }
 
 // ── Reassign Confirm Modal ─────────────────────────────────────────────────────
-function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel }) {
+function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel, operatorNote, onOperatorNoteChange, requiresOperatorNote }) {
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1000,
                   display:"flex", alignItems:"center", justifyContent:"center" }}
@@ -307,16 +320,30 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel }
         <p style={{ fontSize:12, color:"#94a3b8", marginBottom:20 }}>
           לאחר האישור ההזמנה תועבר לרכב החדש ולא ניתן לבטל פעולה זו.
         </p>
+        {requiresOperatorNote && (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 6 }}>
+              נדרשת הערת מפעיל להעברה של הזמנה שנוצרה ע"י סוכן אחר
+            </div>
+            <textarea
+              value={operatorNote}
+              onChange={(e) => onOperatorNoteChange?.(e.target.value)}
+              rows={3}
+              placeholder="מה הסיבה להעברה? מי ביקש?"
+              style={{ width: "100%", borderRadius: 8, border: "1px solid #f59e0b", padding: 10, fontSize: 13, resize: "vertical", boxSizing: "border-box" }}
+            />
+          </div>
+        )}
         <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
           <button onClick={onCancel} disabled={loading}
                   style={{ padding:"9px 20px", borderRadius:8, border:"1px solid #cbd5e1",
                            background:"#fff", color:"#374151", fontSize:13, cursor:"pointer" }}>
             ביטול
           </button>
-          <button onClick={onConfirm} disabled={loading}
+          <button onClick={onConfirm} disabled={loading || (requiresOperatorNote && !operatorNote.trim())}
                   style={{ padding:"9px 20px", borderRadius:8, border:"none",
-                           background: loading ? "#93c5fd" : "#2563eb", color:"#fff",
-                           fontSize:13, fontWeight:700, cursor: loading ? "not-allowed" : "pointer" }}>
+                           background: (loading || (requiresOperatorNote && !operatorNote.trim())) ? "#93c5fd" : "#2563eb", color:"#fff",
+                           fontSize:13, fontWeight:700, cursor: (loading || (requiresOperatorNote && !operatorNote.trim())) ? "not-allowed" : "pointer" }}>
             {loading ? "מעדכן..." : "✔ אשר העברה"}
           </button>
         </div>
@@ -325,7 +352,7 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel }
   );
 }
 
-function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, onClose, photoMenu }) {
+function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, onClose, photoMenu, canReassign, onReassign }) {
   return (
     <div
       style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}
@@ -340,19 +367,29 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
         <div style={{ fontSize:13, color:"#475569", marginBottom:4 }}><strong>לקוח:</strong> {booking.customer_name}</div>
         <div style={{ fontSize:13, color:"#475569", marginBottom:4 }}><strong>רכב:</strong> {carName}</div>
         <div style={{ fontSize:13, color:"#475569", marginBottom:16 }}><strong>תאריכים:</strong> {booking.start_date} - {booking.end_date}</div>
+        {!canReassign && (
+          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>
+            במובייל העברת הזמנה מתבצעת דרך בחירת יעד, לא בגרירה.
+          </div>
+        )}
         <div style={{ display:"flex", gap:10, justifyContent:"space-between", alignItems:"center", flexWrap:"wrap" }}>
           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
              <button onClick={onClose} style={{ padding:"9px 16px", borderRadius:8, border:"1px solid #cbd5e1", background:"#fff", color:"#374151", cursor:"pointer" }}>סגור</button>
              {photoMenu}
           </div>
           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+            {canReassign && onReassign && (
+              <button onClick={onReassign} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#0f766e", color:"#fff", fontWeight:700, cursor:"pointer" }}>העבר</button>
+            )}
             {onDelete && (
               <button onClick={onDelete} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#fee2e2", color:"#dc2626", fontWeight:700, cursor:"pointer" }}>🗑 מחק</button>
             )}
             {booking.customer_id && onCustomer && (
               <button onClick={onCustomer} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#0f766e", color:"#fff", fontWeight:700, cursor:"pointer" }}>👤 לקוח</button>
             )}
-            <button onClick={onEdit} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#2563eb", color:"#fff", fontWeight:700, cursor:"pointer" }}>עריכה</button>
+            {onEdit && (
+              <button onClick={onEdit} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#2563eb", color:"#fff", fontWeight:700, cursor:"pointer" }}>עריכה</button>
+            )}
           </div>
         </div>
       </div>
@@ -363,7 +400,7 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
 
 
 // ── Availability Grid ──────────────────────────────────────────────────────────
-function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFiltered, fullHeight }) {
+function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFiltered, fullHeight, currentUser, permissionModel }) {
   const [bookings, setBookings]     = useState([]);
   const [loadingGrid, setLoadingGrid] = useState(false);
 
@@ -384,12 +421,16 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
   const [dragOverCarId, setDragOverCarId] = useState(null); // column being hovered
   const [confirmDrop, setConfirmDrop]   = useState(null);   // { booking, fromCar, toCar }
   const [dropLoading, setDropLoading]   = useState(false);
+  const [moveModeBooking, setMoveModeBooking] = useState(null);
   const [bookingAction, setBookingAction] = useState(null); // { booking, carName }
   const [confirmDeleteBooking, setConfirmDeleteBooking] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteOperatorNote, setDeleteOperatorNote] = useState("");
   const [viewPhotos, setViewPhotos] = useState(null);
   const [activePhotoMenu, setActivePhotoMenu] = useState(null);
   const [uploadQueue, setUploadQueue] = useState([]);
   const [cameraCapture, setCameraCapture] = useState(null); // bookingId
+  const [reassignOperatorNote, setReassignOperatorNote] = useState("");
 
   const todayBase = new Date(); todayBase.setHours(0,0,0,0);
   const todayStr  = toISO(todayBase);
@@ -461,7 +502,120 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
   });
 
   // ── Drag helpers ────────────────────────────────────────────────────────────
+  function canOpenBookingActions(booking) {
+    return permissionModel.hasAnyBookingActions(booking);
+  }
+
+  function startMoveMode(booking) {
+    if (!permissionModel.canReassignBooking(booking)) {
+      toast.error("אין לך הרשאה להעביר את ההזמנה הזו מתוך הדשבורד");
+      return;
+    }
+    setBookingAction(null);
+    setActivePhotoMenu(null);
+    setMoveModeBooking(booking);
+    setDragBooking(null);
+    setDragOverCarId(null);
+    setReassignOperatorNote("");
+    toast.success(isMobile ? "בחר רכב יעד מהגריד כדי להעביר את ההזמנה" : "מצב העברה פעיל — בחר רכב יעד או גרור לעמודת רכב אחרת");
+  }
+
+  function cancelMoveMode() {
+    setMoveModeBooking(null);
+    setDragBooking(null);
+    setDragOverCarId(null);
+    setReassignOperatorNote("");
+  }
+
+  function openCreateBooking(car, ds, isPastDay) {
+    if (moveModeBooking) {
+      prepareReassign(moveModeBooking, car);
+      return;
+    }
+    if (isPastDay) {
+      toast.error("לא ניתן ליצור הזמנה לתאריך שכבר עבר");
+      return;
+    }
+    if (!permissionModel.canCreateBookings) {
+      toast.error("אין לך הרשאה ליצור הזמנה חדשה מתוך הדשבורד");
+      return;
+    }
+    navigate("/bookings", {
+      state: { bookingPrefill: { car_id: car.id, start_date: ds } },
+    });
+  }
+
+  function openBookingActions(booking, carName) {
+    if (moveModeBooking) {
+      const targetCar = activeCars.find((car) => car.name === carName || `רכב #${car.id}` === carName || car.id === booking.car_id);
+      if (targetCar) prepareReassign(moveModeBooking, targetCar);
+      return;
+    }
+    if (!canOpenBookingActions(booking)) {
+      toast.error("אין לך פעולות זמינות על ההזמנה הזו מתוך הדשבורד");
+      return;
+    }
+    setBookingAction({ booking, carName });
+  }
+
+  function prepareReassign(sourceBooking, targetCar) {
+    if (!sourceBooking || !targetCar) return;
+    if (!permissionModel.canReassignBooking(sourceBooking)) {
+      toast.error("אין לך הרשאה להעביר את ההזמנה הזו");
+      return;
+    }
+    if (targetCar.id === sourceBooking.car_id) {
+      toast.error("יש לבחור רכב יעד שונה מהרכב הקיים");
+      return;
+    }
+
+    const bookingStart = fromISO(sourceBooking.start_date);
+    const bookingEnd = fromISO(sourceBooking.end_date);
+    const bookingDates = [];
+    let cursor = new Date(bookingStart);
+    while (cursor <= bookingEnd) {
+      bookingDates.push(toISO(cursor));
+      cursor = addDays(cursor, 1);
+    }
+
+    const conflicts = bookingDates.filter((d) => {
+      const cells = occ[`${d}:${targetCar.id}`];
+      if (!cells || cells.length === 0) return false;
+      return cells.some((cell) => {
+        if (cell.id === sourceBooking.id) return false;
+        if (cell.end_date === sourceBooking.start_date && d === cell.end_date) {
+          const cellRet = cell.return_time || "08:00";
+          const dragPick = sourceBooking.pickup_time || "08:30";
+          if (cellRet <= dragPick) return false;
+        }
+        if (cell.start_date === sourceBooking.end_date && d === cell.start_date) {
+          const cellPick = cell.pickup_time || "08:30";
+          const dragRet = sourceBooking.return_time || "08:00";
+          if (cellPick >= dragRet) return false;
+        }
+        return true;
+      });
+    });
+
+    if (conflicts.length > 0) {
+      alert(
+        `לא ניתן להעביר ל-${targetCar.name}:\n` +
+        `ישנה הזמנה קיימת בתאריכים ${conflicts[0]} – ${conflicts[conflicts.length - 1]}`
+      );
+      return;
+    }
+
+    const fromCar = activeCars.find((c) => c.id === sourceBooking.car_id) || { name: `רכב #${sourceBooking.car_id}` };
+    setReassignOperatorNote("");
+    setConfirmDrop({ booking: sourceBooking, fromCar, toCar: targetCar });
+  }
+
   function handleDragStart(e, b) {
+    if (!permissionModel.canDragReassignBooking(b)) {
+      e.preventDefault();
+      return;
+    }
+    setMoveModeBooking(null);
     setDragBooking(b);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", b.id.toString());
@@ -473,7 +627,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
   }
 
   function handleDragOverCell(e, carId) {
-    if (!dragBooking) return;
+    if (!dragBooking || !permissionModel.canDragReassignBooking(dragBooking)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     setDragOverCarId(carId);
@@ -482,83 +636,63 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
   function handleDrop(e, targetCar) {
     e.preventDefault();
     setDragOverCarId(null);
-    if (!dragBooking || targetCar.id === dragBooking.car_id) {
+    if (!dragBooking || !permissionModel.canDragReassignBooking(dragBooking)) {
       setDragBooking(null);
       return;
     }
-
-    // Collect all dates in the dragged booking's range
-    const bookingStart = fromISO(dragBooking.start_date);
-    const bookingEnd   = fromISO(dragBooking.end_date);
-    const bookingDates = [];
-    let cursor = new Date(bookingStart);
-    while (cursor <= bookingEnd) {
-      bookingDates.push(toISO(cursor));
-      cursor = addDays(cursor, 1);
-    }
-
-    // Check for conflicts in target car
-    const conflicts = bookingDates.filter(d => {
-      const cells = occ[`${d}:${targetCar.id}`];
-      if (!cells || cells.length === 0) return false;
-      return cells.some(cell => {
-          if (cell.id === dragBooking.id) return false;
-          if (cell.end_date === dragBooking.start_date && d === cell.end_date) {
-              const cellRet = cell.return_time || "08:00";
-              const dragPick = dragBooking.pickup_time || "08:30";
-              if (cellRet <= dragPick) return false;
-          }
-          if (cell.start_date === dragBooking.end_date && d === cell.start_date) {
-              const cellPick = cell.pickup_time || "08:30";
-              const dragRet = dragBooking.return_time || "08:00";
-              if (cellPick >= dragRet) return false;
-          }
-          return true;
-      });
-    });
-
-    if (conflicts.length > 0) {
-      alert(
-        `לא ניתן להעביר ל-${targetCar.name}:\n` +
-        `ישנה הזמנה קיימת בתאריכים ${conflicts[0]} – ${conflicts[conflicts.length - 1]}`
-      );
-      setDragBooking(null);
-      return;
-    }
-
-    const fromCar = activeCars.find(c => c.id === dragBooking.car_id) || { name: `רכב #${dragBooking.car_id}` };
-    setConfirmDrop({ booking: dragBooking, fromCar, toCar: targetCar });
+    prepareReassign(dragBooking, targetCar);
   }
 
   async function executeReassign() {
     if (!confirmDrop) return;
+    const needsOperatorNote = permissionModel.requiresOperatorNote(confirmDrop.booking);
+    if (needsOperatorNote && !reassignOperatorNote.trim()) {
+      toast.error("נדרשת הערת מפעיל להעברת הזמנה של סוכן אחר");
+      return;
+    }
     setDropLoading(true);
     try {
-      await bookingsAPI.update(confirmDrop.booking.id, { car_id: confirmDrop.toCar.id });
+      await bookingsAPI.update(confirmDrop.booking.id, {
+        car_id: confirmDrop.toCar.id,
+        ...(needsOperatorNote ? { operator_note: reassignOperatorNote.trim() } : {}),
+      });
       const data = await bookingsAPI.calendar(startDate, endDate);
       setBookings(data);
+      toast.success("ההזמנה הועברה בהצלחה");
     } catch (err) {
-      alert("שגיאה בעדכון ההזמנה: " + (err?.response?.data?.detail || err.message || "שגיאה לא ידועה"));
+      toast.error(getUserFacingErrorMessage(err));
     } finally {
       setDropLoading(false);
       setConfirmDrop(null);
       setDragBooking(null);
+      setMoveModeBooking(null);
+      setReassignOperatorNote("");
     }
   }
 
   async function executeDelete() {
     if (!confirmDeleteBooking) return;
-    setLoadingGrid(true);
+    const needsOperatorNote = permissionModel.requiresOperatorNote(confirmDeleteBooking);
+    if (needsOperatorNote && !deleteOperatorNote.trim()) {
+      toast.error("נדרשת הערת מפעיל למחיקת הזמנה של סוכן אחר");
+      return;
+    }
+
+    setDeleteLoading(true);
     try {
-      await bookingsAPI.delete(confirmDeleteBooking.id);
+      await bookingsAPI.delete(
+        confirmDeleteBooking.id,
+        needsOperatorNote ? { operator_note: deleteOperatorNote.trim() } : undefined,
+      );
       const data = await bookingsAPI.calendar(startDate, endDate);
       setBookings(data);
       toast.success("ההזמנה נמחקה בהצלחה");
     } catch (err) {
       toast.error(getUserFacingErrorMessage(err));
     } finally {
-      setLoadingGrid(false);
+      setDeleteLoading(false);
       setConfirmDeleteBooking(null);
+      setDeleteOperatorNote("");
     }
   }
 
@@ -644,20 +778,20 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
           booking={bookingAction.booking}
           carName={bookingAction.carName}
           onClose={() => { setBookingAction(null); setActivePhotoMenu(null); }}
-          onDelete={() => {
+          onDelete={permissionModel.canDeleteBooking(bookingAction.booking) ? (() => {
             setConfirmDeleteBooking(bookingAction.booking);
             setBookingAction(null);
-          }}
-          onEdit={() => {
+          }) : null}
+          onEdit={permissionModel.canEditBooking(bookingAction.booking) ? (() => {
             navigate("/bookings", { state: { bookingEditId: bookingAction.booking.id } });
             setBookingAction(null);
-          }}
-          onCustomer={() => {
+          }) : null}
+          onCustomer={permissionModel.canViewBookingCustomer(bookingAction.booking) ? (() => {
             navigate("/customers", { state: { highlightCustomerId: bookingAction.booking.customer_id } });
             setBookingAction(null);
-          }}
-          photoMenu={(
-            <PhotoMenu 
+          }) : null}
+          photoMenu={permissionModel.canManageBookingMedia(bookingAction.booking) ? (
+            <PhotoMenu
                booking={bookingAction.booking}
                onView={() => setViewPhotos(bookingAction.booking)}
                onUpload={(files) => handlePhotoUpload(bookingAction.booking.id, files)}
@@ -665,7 +799,9 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                isOpen={activePhotoMenu === bookingAction.booking.id}
                onToggle={() => setActivePhotoMenu(activePhotoMenu === bookingAction.booking.id ? null : bookingAction.booking.id)}
             />
-          )}
+          ) : null}
+          canReassign={permissionModel.canReassignBooking(bookingAction.booking)}
+          onReassign={permissionModel.canReassignBooking(bookingAction.booking) ? (() => startMoveMode(bookingAction.booking)) : null}
         />
       )}
       {confirmDrop && (
@@ -675,16 +811,23 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
           toCar={confirmDrop.toCar}
           loading={dropLoading}
           onConfirm={executeReassign}
-          onCancel={() => { setConfirmDrop(null); setDragBooking(null); }}
+          onCancel={() => { setConfirmDrop(null); setDragBooking(null); setReassignOperatorNote(""); }}
+          operatorNote={reassignOperatorNote}
+          onOperatorNoteChange={setReassignOperatorNote}
+          requiresOperatorNote={permissionModel.requiresOperatorNote(confirmDrop.booking)}
         />
       )}
-      <Confirm
-        open={!!confirmDeleteBooking}
-        message={`למחוק את ההזמנה של ${confirmDeleteBooking?.customer_name}? לא ניתן לבטל פעולה זו.`}
-        confirmLabel="מחק הזמנה"
-        confirmColor="#dc2626"
+      <BookingDeleteModal
+        booking={confirmDeleteBooking}
+        loading={deleteLoading}
         onConfirm={executeDelete}
-        onCancel={() => setConfirmDeleteBooking(null)}
+        onCancel={() => {
+          setConfirmDeleteBooking(null);
+          setDeleteOperatorNote("");
+        }}
+        operatorNote={deleteOperatorNote}
+        onOperatorNoteChange={setDeleteOperatorNote}
+        requiresOperatorNote={permissionModel.requiresOperatorNote(confirmDeleteBooking)}
       />
 
     <div style={{ ...cardStyle, padding:0, overflow:"hidden" }}>
@@ -707,10 +850,17 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
         <span><span style={dot("#e9d5ff","#7c3aed")} />חד-יומי</span>
         <span><span style={dot("#f3e8ff","#7c3aed")} />שבת</span>
         <span><span style={dot("#fee2e2","#dc2626")} />חג</span>
-        <span><span style={dot("#bfdbfe","#2563eb")} />✥ גרור להעברה</span>
+        {permissionModel.canEditBookings && !isMobile && <span><span style={dot("#bfdbfe","#2563eb")} />✥ גרור להעברה</span>}
+        {isMobile && <span><span style={dot("#dbeafe","#2563eb")} />הקשה על הזמנה לפעולות · הקשה על פנוי ליצירה</span>}
         <span><span style={dot("#e5e7eb","#64748b")} />עבר · לא ניתן להזמין</span>
         {loadingGrid && <span style={{ marginRight:"auto", color:"#94a3b8" }}>מרענן...</span>}
       </div>
+      {moveModeBooking && (
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, padding:"8px 18px", background:"#ecfeff", borderBottom:"1px solid #bae6fd", fontSize:12, color:"#0f766e" }}>
+          <span>מצב העברה פעיל עבור <strong>{moveModeBooking.customer_name}</strong> — בחר רכב יעד מהגריד</span>
+          <button onClick={cancelMoveMode} style={{ ...chipStyle, padding:"4px 10px" }}>בטל מצב העברה</button>
+        </div>
+      )}
 
        {/* Grid table */}
        <div
@@ -801,9 +951,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                       return (
                         <td key={car.id}
                             title={isPastDay ? `לא ניתן להזמין את ${car.name} לתאריך עבר` : (dragBooking ? `שחרר להעברה ל-${car.name}` : `לחץ להזמנת ${car.name} ב-${ds}`)}
-                            onClick={() => !dragBooking && !isPastDay && navigate("/bookings", {
-                              state: { bookingPrefill: { car_id: car.id, start_date: ds } }
-                            })}
+                            onClick={() => !dragBooking && openCreateBooking(car, ds, isPastDay)}
                             onDragOver={e => handleDragOverCell(e, car.id)}
                             onDrop={e => handleDrop(e, car)}
                             onDragLeave={() => setDragOverCarId(null)}
@@ -845,20 +993,21 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                                 onDragLeave={() => setDragOverCarId(null)}
                                 style={{ ...gtd, padding: 2, textAlign:"center", background: isDropColumn ? (isConflict ? "#fecaca" : "#bfdbfe") : "#fef08a", outline: isConflict ? "2px solid #ef4444" : "none", outlineOffset: "-2px" }}>
                                 <div style={{ display: "flex", flexDirection: "column", gap: 2, height: "100%" }}>
-                                    {cellBookings.map(b => {
+                                     {cellBookings.map(b => {
                                         const isDraggingThis = dragBooking?.id === b.id;
+                                         const canDragThis = permissionModel.canDragReassignBooking(b);
                                         return (
                                         <div key={b.id}
-                                             title={`${b.customer_name} | ${b.start_date} ${b.pickup_time||""} - ${b.end_date} ${b.return_time||""}\n${isDraggingThis ? "גרור לרכב אחר להעברה" : ""}`}
-                                             draggable={true}
+                                              title={`${b.customer_name} | ${b.start_date} ${b.pickup_time||""} - ${b.end_date} ${b.return_time||""}\n${canDragThis ? "גרור לרכב אחר להעברה" : "הקש לפעולות"}`}
+                                              draggable={canDragThis}
                                              onDragStart={e => handleDragStart(e, b)}
                                              onDragEnd={handleDragEnd}
                                              onClick={e => {
                                                  e.stopPropagation();
                                                  if (dragBooking) return;
-                                                 setBookingAction({ booking: b, carName: car.name || `רכב #${car.id}` });
+                                                  openBookingActions(b, car.name || `רכב #${car.id}`);
                                              }}
-                                             style={{ flex: 1, background: isDraggingThis ? "#e0f2fe" : "rgba(255,255,255,0.7)", borderRadius: 2, padding: "2px 4px", fontSize: 10, color: isDraggingThis ? "#0369a1" : "#854d0e", cursor: isDraggingThis ? "grabbing" : "grab", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", border: "1px solid rgba(133,77,14,0.2)", opacity: isDraggingThis ? 0.7 : 1 }}>
+                                              style={{ flex: 1, background: isDraggingThis ? "#e0f2fe" : "rgba(255,255,255,0.7)", borderRadius: 2, padding: "2px 4px", fontSize: 10, color: isDraggingThis ? "#0369a1" : "#854d0e", cursor: canDragThis ? (isDraggingThis ? "grabbing" : "grab") : "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", border: "1px solid rgba(133,77,14,0.2)", opacity: isDraggingThis ? 0.7 : 1 }}>
                                              {b.customer_name?.split(" ")[0]}
                                         </div>
                                     )})}
@@ -872,6 +1021,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                     const isLast    = b.end_date   === ds;
                     const isSameDay = isFirst && isLast;
                     const isDragging = dragBooking?.id === b.id;
+                     const canDragBooking = permissionModel.canDragReassignBooking(b);
 
                     let bg, fg, label;
                     const firstName = b.customer_name?.split(" ")[0] || "לקוח";
@@ -909,12 +1059,12 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
 
                     return (
                       <td key={car.id}
-                          title={`${b.customer_name} | ${b.start_date} ${b.pickup_time||""} – ${b.end_date} ${b.return_time||""}\n${isDragging ? "גרור לרכב אחר להעברה" : ""}`}
+                          title={`${b.customer_name} | ${b.start_date} ${b.pickup_time||""} – ${b.end_date} ${b.return_time||""}\n${canDragBooking ? "גרור לרכב אחר להעברה" : "הקש לפעולות"}`}
                           onClick={() => {
                             if (dragBooking) return;
-                            setBookingAction({ booking: b, carName: car.name || `רכב #${car.id}` });
+                            openBookingActions(b, car.name || `רכב #${car.id}`);
                           }}
-                          draggable={!!b}
+                          draggable={!!b && canDragBooking}
                           onDragStart={e => handleDragStart(e, b)}
                           onDragEnd={handleDragEnd}
                           onDragOver={e => handleDragOverCell(e, car.id)}
@@ -927,7 +1077,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                                    color: isDragging ? "#0369a1" :
                                           isConflict ? "#991b1b" : fg,
                                    lineHeight:1.3,
-                                   cursor: isDragging ? "grabbing" : "grab",
+                                   cursor: canDragBooking ? (isDragging ? "grabbing" : "grab") : "pointer",
                                    opacity: isDragging ? 0.7 : 1,
                                    outline: isConflict ? "2px solid #ef4444" : "none",
                                    outlineOffset:"-2px",

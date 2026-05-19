@@ -1,7 +1,8 @@
 import Modal from "../../../components/ui/Modal";
 
 import { s } from "../styles";
-import { addDays, formatDateTime } from "../utils/dates";
+import { addDays, formatDateTime, todayISO } from "../utils/dates";
+import { getEarliestAllowedPickupTime } from "../utils/form";
 
 export default function BookingFormModal({
   open,
@@ -19,10 +20,43 @@ export default function BookingFormModal({
   saving,
   formError,
   editBooking,
+  auditHistory,
+  auditLoading,
+  currentUser,
   preview,
 }) {
   const isCreate = mode === "create";
   const isEdit = mode === "edit";
+  const earliestStartTime = getEarliestAllowedPickupTime(form.start_date, new Date(), form.start_time);
+  const isCrossAgentEdit =
+    isEdit &&
+    currentUser?.role === "agent" &&
+    editBooking?.created_by &&
+    editBooking.created_by !== currentUser.id;
+
+  const formatAuditAction = (action) => {
+    switch (action) {
+      case "booking.create":
+        return "יצירה";
+      case "booking.update":
+        return "עריכה";
+      case "booking.delete":
+        return "מחיקה";
+      case "booking.upload_photo":
+        return "העלאת תמונה";
+      default:
+        return action;
+    }
+  };
+
+  const summarizeAuditEntry = (entry) => {
+    const changedFields = entry?.after_json?.changed_fields;
+    const operatorNote = entry?.after_json?.operator_note;
+    const parts = [];
+    if (Array.isArray(changedFields) && changedFields.length) parts.push(`שדות: ${changedFields.join(", ")}`);
+    if (operatorNote) parts.push(`הערה: ${operatorNote}`);
+    return parts.join(" · ");
+  };
 
   return (
     <Modal open={open} onClose={onClose} title={isCreate ? "הזמנה חדשה" : "עריכת הזמנה"} wide>
@@ -139,12 +173,20 @@ export default function BookingFormModal({
             <input
               type="date"
               value={form.start_date}
-              onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
+              min={todayISO()}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  start_date: e.target.value,
+                  start_time: getEarliestAllowedPickupTime(e.target.value, new Date(), f.start_time),
+                }))
+              }
               style={{ ...s.input, flex: 2 }}
             />
             <input
               type="time"
               value={form.start_time}
+              min={form.start_date === todayISO() ? earliestStartTime : undefined}
               onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
               style={{ ...s.input, flex: 1 }}
             />
@@ -202,6 +244,19 @@ export default function BookingFormModal({
             style={{ ...s.input, resize: "vertical" }}
           />
         </div>
+
+        {isCrossAgentEdit && (
+          <div style={{ gridColumn: "1/-1" }}>
+            <label style={s.label}>הערת מפעיל *</label>
+            <textarea
+              value={form.operator_note}
+              rows={2}
+              onChange={(e) => setForm((f) => ({ ...f, operator_note: e.target.value }))}
+              style={{ ...s.input, resize: "vertical", borderColor: "#fdba74", background: "#fff7ed" }}
+              placeholder="הסבר קצר למה נדרשת עריכה של הזמנה שנוצרה על ידי סוכן אחר"
+            />
+          </div>
+        )}
       </div>
 
       {/* Price preview */}
@@ -235,8 +290,63 @@ export default function BookingFormModal({
               🧑‍💼 נוצר ע"י <strong>{editBooking.created_by_name}</strong>
             </span>
           )}
+          {editBooking.updated_by_name && (
+            <span>
+              ✏️ עודכן לאחרונה ע"י <strong>{editBooking.updated_by_name}</strong>
+            </span>
+          )}
           {editBooking.created_at && <span>🕐 {formatDateTime(editBooking.created_at)}</span>}
           {editBooking.updated_at && <span>✏️ עודכן: {formatDateTime(editBooking.updated_at)}</span>}
+          {isCrossAgentEdit && <span style={{ color: "#b45309", fontWeight: 700 }}>⚠️ עריכת הזמנה של סוכן אחר</span>}
+        </div>
+      )}
+
+      {isEdit && (
+        <div
+          style={{
+            marginTop: 12,
+            border: "1px solid #e2e8f0",
+            borderRadius: 10,
+            background: "#ffffff",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "10px 12px",
+              background: "#f8fafc",
+              borderBottom: "1px solid #e2e8f0",
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#334155",
+            }}
+          >
+            תיעוד פעולות אחרונות
+          </div>
+          <div style={{ padding: "8px 12px", display: "grid", gap: 8, maxHeight: 180, overflowY: "auto" }}>
+            {auditLoading && <div style={{ fontSize: 12, color: "#64748b" }}>טוען היסטוריית שינויים...</div>}
+            {!auditLoading && (!auditHistory || auditHistory.length === 0) && (
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>אין עדיין אירועי תיעוד להצגה</div>
+            )}
+            {!auditLoading &&
+              auditHistory?.map((entry) => {
+                const summary = summarizeAuditEntry(entry);
+                const severityColor =
+                  entry?.severity === "critical" ? "#b91c1c" : entry?.severity === "warning" ? "#b45309" : "#475569";
+                return (
+                  <div key={entry.id} style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", fontSize: 12 }}>
+                      <span style={{ fontWeight: 700, color: severityColor }}>{formatAuditAction(entry.action)}</span>
+                      <span style={{ color: "#64748b" }}>{formatDateTime(entry.created_at)}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>
+                      בוצע ע"י <strong>{entry.actor_user_name || `משתמש #${entry.actor_user_id || "לא ידוע"}`}</strong>
+                    </div>
+                    {summary && <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>{summary}</div>}
+                  </div>
+                );
+              })}
+          </div>
         </div>
       )}
 

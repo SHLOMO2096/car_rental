@@ -5,9 +5,10 @@ export const bookingsAPI = {
   calendar: (start, end)=> api.get("/bookings/calendar", { params: { start, end } }).then(r => r.data),
   kpi:      ()          => api.get("/bookings/kpi").then(r => r.data),
   get:      (id)        => api.get(`/bookings/${id}`).then(r => r.data),
+  history:  (id, limit = 20) => api.get(`/bookings/${id}/audit`, { params: { limit } }).then(r => r.data),
   create:   (data)      => api.post("/bookings/", data).then(r => r.data),
   update:   (id, data)  => api.patch(`/bookings/${id}`, data).then(r => r.data),
-  delete:   (id)        => api.delete(`/bookings/${id}`),
+  delete:   (id, data)  => api.delete(`/bookings/${id}`, data ? { data } : undefined),
   uploadPhoto: (id, file) => {
     const formData = new FormData();
     formData.append("file", file);
