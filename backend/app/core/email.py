@@ -1,9 +1,10 @@
 import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 from app.core.config import settings
-from app.core.signature import get_business_signature
+from app.core.signature import get_business_signature, get_logo_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +20,21 @@ def _send(to: str, subject: str, html: str) -> bool:
         logger.info(f"[EMAIL DISABLED] To: {to} | Subject: {subject}")
         return True
     try:
-        msg = MIMEMultipart("alternative")
+        msg = MIMEMultipart("related")
         msg["Subject"] = subject
         msg["From"] = f"{settings.EMAILS_FROM_NAME} <{settings.EMAILS_FROM}>"
         msg["To"] = to
-        msg.attach(MIMEText(html, "html", "utf-8"))
+
+        alt = MIMEMultipart("alternative")
+        alt.attach(MIMEText(html, "html", "utf-8"))
+        msg.attach(alt)
+
+        logo_bytes = get_logo_bytes()
+        if logo_bytes:
+            logo = MIMEImage(logo_bytes)
+            logo.add_header("Content-ID", "<waycar-logo>")
+            logo.add_header("Content-Disposition", "inline", filename="logo.jpg")
+            msg.attach(logo)
 
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as srv:
             srv.starttls()
@@ -38,10 +49,18 @@ def _send(to: str, subject: str, html: str) -> bool:
 # ── Templates ──────────────────────────────────────────────────────────────────
 def _base_template(title: str, body: str) -> str:
     signature = get_business_signature()
+    header_logo_html = ""
+    if get_logo_bytes():
+        header_logo_html = (
+            '<div style="margin-bottom:10px">'
+            '<img src="cid:waycar-logo" alt="WayCar" style="width:200px;max-width:100%;height:auto;border-radius:6px" />'
+            '</div>'
+        )
     return f"""
     <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:auto;
          background:#f8fafc;border-radius:12px;overflow:hidden">
       <div style="background:#1e3a5f;padding:24px;text-align:center">
+        {header_logo_html}
         <h1 style="color:#fff;margin:0;font-size:22px">🚘 {settings.APP_NAME}</h1>
       </div>
       <div style="padding:32px;background:#fff">
@@ -66,7 +85,7 @@ def send_booking_confirmation(to: str, customer_name: str, car_name: str,
         <td style="padding:10px">#{booking_id}</td>
       </tr>
       <tr>
-        <td style="padding:10px;font-weight:bold">רכב</td>
+        <td style="padding:10px;font-weight:bold">קטגוריה</td>
         <td style="padding:10px">{car_name}</td>
       </tr>
       <tr style="background:#f1f5f9">
@@ -92,7 +111,7 @@ def send_booking_cancellation(to: str, customer_name: str, car_name: str,
                                booking_id: int) -> bool:
     body = f"""
     <p>שלום <strong>{customer_name}</strong>,</p>
-    <p>הזמנתך מספר <strong>#{booking_id}</strong> עבור רכב <strong>{car_name}</strong>
+    <p>הזמנתך מספר <strong>#{booking_id}</strong> עבור קטגוריה <strong>{car_name}</strong>
        <span style="color:#ef4444">בוטלה</span>.</p>
     <p>אם לדעתך מדובר בטעות, אנא צור קשר עמנו בהקדם.</p>"""
     return _send(to, f"ביטול הזמנה #{booking_id} — {settings.APP_NAME}",
@@ -103,7 +122,7 @@ def send_booking_reminder(to: str, customer_name: str, car_name: str,
                            start: str, booking_id: int) -> bool:
     body = f"""
     <p>שלום <strong>{customer_name}</strong>,</p>
-    <p>תזכורת: מחר (<strong>{start}</strong>) מתחילה השכרת הרכב שלך — <strong>{car_name}</strong>.</p>
+    <p>תזכורת: מחר (<strong>{start}</strong>) מתחילה ההשכרה שלך — <strong>{car_name}</strong>.</p>
     <p>מספר הזמנה: <strong>#{booking_id}</strong></p>
     <p>נסיעה טובה! 🚗</p>"""
     return _send(to, f"תזכורת להזמנה #{booking_id} — {settings.APP_NAME}",

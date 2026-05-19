@@ -44,6 +44,19 @@ SENSITIVE_BOOKING_UPDATE_FIELDS = {
 }
 
 
+def _car_category_label(car: Car | None) -> str:
+    if not car:
+        return "לא ידוע"
+    if car.category:
+        return car.category
+    if car.group:
+        return f"קטגוריה {car.group}"
+    if car.type:
+        raw = car.type.value if hasattr(car.type, "value") else str(car.type)
+        return f"קטגוריה {raw}"
+    return "לא ידוע"
+
+
 def _booking_update_snapshot(booking: Booking) -> dict:
     return {
         "id": booking.id,
@@ -171,7 +184,7 @@ def create_booking(
             send_booking_confirmation,
             to=data.customer_email,
             customer_name=data.customer_name,
-            car_name=car.name,
+            car_name=_car_category_label(car),
             start=str(data.start_date),
             end=str(data.end_date),
             total=booking.total_price,
@@ -186,7 +199,7 @@ def create_booking(
             customer_name=data.customer_name,
             customer_phone=data.customer_phone,
             customer_id_num=data.customer_id_num,
-            car_name=car.name,
+            car_name=_car_category_label(car),
             start=str(data.start_date),
             end=str(data.end_date),
             actor_email=current_user.email,
@@ -277,7 +290,7 @@ def update_booking(
             send_booking_cancellation,
             to=b.customer_email,
             customer_name=b.customer_name,
-            car_name=b.car.name,
+            car_name=_car_category_label(b.car),
             booking_id=b.id,
         )
 
@@ -343,7 +356,7 @@ def delete_booking(
         "status": booking.status.value if hasattr(booking.status, "value") else str(booking.status),
         "total_price": booking.total_price,
     }
-    car_name = booking.car.name if booking.car else "לא ידוע"
+    car_name = _car_category_label(booking.car)
     actor_email = current_user.email
     actor_role = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
     booking_id = booking.id

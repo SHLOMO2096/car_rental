@@ -28,8 +28,12 @@ class SignatureConfig:
     
     WHATSAPP_URL_TEMPLATE = "https://wa.me/972{phone}?text={message}"
     
-    # Logo path - relative to backend root
-    LOGO_PATH = "../../לוגו.jpg"  # 2 levels up from this file (app/core -> root)
+    # Primary logo candidates (backend runtime first, then project root)
+    LOGO_FILE_CANDIDATES = [
+        "logo.jpg",
+        "logo.png",
+        "לוגו.jpg",
+    ]
 
 
 @lru_cache(maxsize=1)
@@ -39,37 +43,36 @@ def get_logo_base64() -> Optional[str]:
     Returns None if logo file not found
     """
     try:
-        # Get the path relative to this file
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(current_dir, SignatureConfig.LOGO_PATH)
-        
-        # Try alternative path (logo might be in backend root)
-        if not os.path.exists(logo_path):
-            backend_root = os.path.join(current_dir, "../..")
-            logo_path = os.path.join(backend_root, "לוגו.jpg")
-        
-        if not os.path.exists(logo_path):
-            # Try looking for any logo-like file
-            possible_roots = [
-                os.path.join(current_dir, "../../.."),  # Up 3 levels to project root
-                os.path.join(current_dir, "../.."),      # Up 2 levels to backend root
-                "/app",  # Docker container path
-            ]
-            for root in possible_roots:
-                for filename in ["לוגו.jpg", "logo.jpg", "logo.png"]:
-                    test_path = os.path.join(root, filename)
-                    if os.path.exists(test_path):
-                        logo_path = test_path
-                        break
-        
-        if os.path.exists(logo_path):
-            with open(logo_path, "rb") as f:
-                logo_bytes = f.read()
-                return base64.b64encode(logo_bytes).decode("utf-8")
+        logo_bytes = get_logo_bytes()
+        if logo_bytes:
+            return base64.b64encode(logo_bytes).decode("utf-8")
     except Exception as e:
         import logging
         logging.warning(f"Could not load logo: {e}")
     
+    return None
+
+
+@lru_cache(maxsize=1)
+def get_logo_bytes() -> Optional[bytes]:
+    """Load logo bytes from common backend/project locations."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    backend_root = os.path.abspath(os.path.join(current_dir, "../.."))
+    project_root = os.path.abspath(os.path.join(current_dir, "../../.."))
+
+    search_roots = [
+        backend_root,
+        project_root,
+        "/app",
+    ]
+
+    for root in search_roots:
+        for filename in SignatureConfig.LOGO_FILE_CANDIDATES:
+            path = os.path.join(root, filename)
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    return f.read()
+
     return None
 
 
@@ -84,13 +87,13 @@ def get_logo_html(width: int = 150, height: str = "auto") -> str:
     Returns:
         HTML img tag or empty string if logo not available
     """
-    logo_b64 = get_logo_base64()
-    if not logo_b64:
+    # CID works in major email clients better than data-uri in <img src="...">.
+    if not get_logo_bytes():
         return ""
-    
+
     return f'''
     <img 
-        src="data:image/jpeg;base64,{logo_b64}" 
+        src="cid:waycar-logo"
         alt="WayCar Logo" 
         style="width:{width}px;height:{height};max-width:100%;margin-bottom:8px;border-radius:4px"
     />
