@@ -3,6 +3,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from app.core.config import settings
+from app.core.signature import get_business_signature
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ def _send(to: str, subject: str, html: str) -> bool:
 
 # ── Templates ──────────────────────────────────────────────────────────────────
 def _base_template(title: str, body: str) -> str:
+    signature = get_business_signature()
     return f"""
     <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:auto;
          background:#f8fafc;border-radius:12px;overflow:hidden">
@@ -45,6 +47,7 @@ def _base_template(title: str, body: str) -> str:
       <div style="padding:32px;background:#fff">
         <h2 style="color:#1e293b">{title}</h2>
         {body}
+        {signature}
       </div>
       <div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px;background:#f1f5f9">
         {settings.APP_NAME} | נשלח אוטומטית — אין להשיב למייל זה
