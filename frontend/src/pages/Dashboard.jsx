@@ -435,7 +435,8 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
   const [scrollWidth, setScrollWidth] = useState(0);
   const syncingScroll = useRef(false);
   const hScrollDrag = useDragScroll({ axis: "x" });
-  const gridScrollDrag = useDragScroll({ axis: "x", enabled: !isMobile });
+  // Keep click behavior deterministic on desktop: drag-scroll here can swallow booking clicks.
+  const gridScrollDrag = useDragScroll({ axis: "x", enabled: false });
 
   // Header hover tooltip
   const [hoveredCar, setHoveredCar] = useState(null);
