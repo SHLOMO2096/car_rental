@@ -7,8 +7,8 @@ export function createDashboardPermissionModel({ can, currentUser, isMobile }) {
   const canDeleteBookings = safeCan(Permissions.BOOKINGS_DELETE);
   const canViewCustomers = safeCan(Permissions.CUSTOMERS_VIEW);
 
-  function canEditBooking() {
-    return canEditBookings;
+  function canEditBooking(booking) {
+    return canEditBookings && Boolean(booking);
   }
 
   function canDeleteBooking(booking) {
