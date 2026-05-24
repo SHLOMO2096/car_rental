@@ -7,12 +7,15 @@ export function createDashboardPermissionModel({ can, currentUser, isMobile }) {
   const canDeleteBookings = safeCan(Permissions.BOOKINGS_DELETE);
   const canViewCustomers = safeCan(Permissions.CUSTOMERS_VIEW);
 
+  const hasBooking = (booking) => Boolean(booking);
+  const canModifyBooking = (booking) => canEditBookings && hasBooking(booking);
+
   function canEditBooking(booking) {
-    return canEditBookings && Boolean(booking);
+    return canModifyBooking(booking);
   }
 
   function canDeleteBooking(booking) {
-    return canDeleteBookings && Boolean(booking);
+    return canDeleteBookings && hasBooking(booking);
   }
 
   function canViewBookingCustomer(booking) {
@@ -20,11 +23,11 @@ export function createDashboardPermissionModel({ can, currentUser, isMobile }) {
   }
 
   function canManageBookingMedia(booking) {
-    return canEditBooking(booking);
+    return canModifyBooking(booking);
   }
 
   function canReassignBooking(booking) {
-    return canEditBooking(booking);
+    return canModifyBooking(booking);
   }
 
   function canDragReassignBooking(booking) {
