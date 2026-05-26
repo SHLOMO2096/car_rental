@@ -107,21 +107,6 @@ jobs:
           fi
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Write .env.development to server
-        shell: bash
-        env:
-          DEV_HOST: ${{ secrets.DEV_HOST }}
-          DEV_PORT: ${{ secrets.DEV_PORT }}
-          DEV_USER: ${{ secrets.DEV_USER }}
-          DEV_ENV_FILE: ${{ secrets.DEV_ENV_FILE }}
-        run: |
-          set -euo pipefail
-          PORT="${DEV_PORT:-22}"
-          # Write the secret directly to the server – no manual SSH needed
-          printf '%s' "$DEV_ENV_FILE" | \
-            ssh -p "$PORT" "${DEV_USER}@${DEV_HOST}" \
-            "mkdir -p /opt/car-rental-dev && cat > /opt/car-rental-dev/.env.development && chmod 600 /opt/car-rental-dev/.env.development"
-          echo ".env.development written to server"
 
       - name: Deploy on dev server
         shell: bash
