@@ -1,0 +1,42 @@
+# Dev-server overlay – used only when deploying to the development VPS.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev-server.yml up -d --build
+#
+# What this adds / overrides compared to docker-compose.yml:
+#  - frontend: builds with Dockerfile.prod (static Nginx) instead of Vite dev-server
+#  - nginx:    reverse proxy on port 80, Cloudflare terminates HTTPS upstream
+#  - Removes dev-only volume mounts and port 5173 exposure
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: /api
+    # No volume mount – serve a real production build
+    volumes: []
+    ports: []
+    # Prod image has its own entrypoint (nginx), not `npm run dev`
+    command: []
+    environment:
+      # Not needed for static build, but harmless
+      VITE_API_URL: /api
+
+  backend:
+    # Keep live-reload off on the dev server
+    volumes: []
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - car_rental_internal
+    depends_on:
+      - backend
+      - frontend
+

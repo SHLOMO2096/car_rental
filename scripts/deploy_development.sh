@@ -73,14 +73,14 @@ echo "Syncing $ENV_FILE -> backend/.env ..."
 cp "$ENV_FILE" backend/.env
 
 echo "Validating docker compose configuration..."
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$COMPOSE_OVERRIDE" config >/dev/null
 
 echo "Starting development stack..."
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build --remove-orphans
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$COMPOSE_OVERRIDE" up -d --build --remove-orphans
 
 echo "Waiting for backend container health..."
 for i in $(seq 1 15); do
-  if docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T backend \
+  if docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$COMPOSE_OVERRIDE" exec -T backend \
       python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" \
       >/dev/null 2>&1; then
     echo "Backend responded successfully on attempt $i"
@@ -89,8 +89,8 @@ for i in $(seq 1 15); do
 
   if [[ "$i" -eq 15 ]]; then
     echo "Backend health check failed after 15 attempts"
-    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
-    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail=100 backend frontend
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$COMPOSE_OVERRIDE" ps
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$COMPOSE_OVERRIDE" logs --tail=100 backend frontend nginx
     exit 1
   fi
 
