@@ -1,0 +1,17 @@
+# Traefik dynamic configuration for the dev server.
+# Loads the Cloudflare Origin Certificate so Traefik can terminate TLS
+# on behalf of Cloudflare (SSL mode = "Full" in Cloudflare dashboard).
+#
+# The cert files are mounted into the Traefik container at /certs/
+# from /opt/car-rental-dev/certs/ on the host.
+
+tls:
+  certificates:
+    - certFile: /certs/origin.crt
+      keyFile: /certs/origin.key
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/origin.crt
+        keyFile: /certs/origin.key
+

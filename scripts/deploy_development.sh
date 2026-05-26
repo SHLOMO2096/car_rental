@@ -53,6 +53,7 @@ git config --global --add safe.directory "$REPO_DIR"
 
 echo "Ensuring shared Docker networks exist..."
 docker network create car_rental_default >/dev/null 2>&1 || true
+docker network create traefik-dev-public >/dev/null 2>&1 || true
 
 echo "Fetching repository state..."
 git fetch --all --tags --prune
