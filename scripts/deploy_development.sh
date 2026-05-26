@@ -43,9 +43,17 @@ git reset --hard "$TARGET_SHA"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "ERROR: $ENV_FILE not found in $REPO_DIR"
-  echo "Run: cp .env.development.example $ENV_FILE && edit the real values"
+  echo ""
+  echo "Run these commands on the server to create it:"
+  echo "  cp $REPO_DIR/.env.development.example $REPO_DIR/$ENV_FILE"
+  echo "  nano $REPO_DIR/$ENV_FILE   # fill in SECRET_KEY and other values"
   exit 1
 fi
+
+# The backend service in docker-compose.yml loads ./backend/.env into the
+# container – keep it in sync with the active env file.
+echo "Syncing $ENV_FILE -> backend/.env ..."
+cp "$ENV_FILE" backend/.env
 
 echo "Validating docker compose configuration..."
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
