@@ -120,6 +120,6 @@ jobs:
           set -euo pipefail
           PORT="${DEV_PORT:-22}"
           ssh -p "$PORT" "${DEV_USER}@${DEV_HOST}" \
-            "TARGET_SHA='$TARGET_SHA' REPO_URL='$REPO_URL' REPO_DIR='/opt/car-rental-dev' ENV_FILE='.env.development' COMPOSE_FILE='docker-compose.yml' bash -s" \
+            "TARGET_SHA='$TARGET_SHA' REPO_URL='$REPO_URL' REPO_DIR='/opt/car-rental-dev' ENV_FILE='.env.development' COMPOSE_FILE='docker-compose.yml' bash -l -s" \
             < scripts/deploy_development.sh
 

@@ -8,6 +8,9 @@
 #   COMPOSE_FILE – docker-compose override                      (default: docker-compose.yml)
 set -euo pipefail
 
+# Ensure docker is on PATH (common locations when running via non-login SSH)
+export PATH="/usr/local/bin:/usr/bin:$PATH"
+
 REPO_DIR="${REPO_DIR:-/opt/car-rental-dev}"
 REPO_URL="${REPO_URL:-}"
 TARGET_SHA="${TARGET_SHA:-}"
