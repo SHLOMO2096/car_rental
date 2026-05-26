@@ -8,8 +8,22 @@
 #   COMPOSE_FILE – docker-compose override                      (default: docker-compose.yml)
 set -euo pipefail
 
-# Ensure docker is on PATH (common locations when running via non-login SSH)
-export PATH="/usr/local/bin:/usr/bin:$PATH"
+# Ensure docker is on PATH – covers apt, snap, and manual installs
+export PATH="/usr/local/bin:/usr/bin:/snap/bin:/usr/local/sbin:/usr/sbin:$PATH"
+
+# If docker is still not on PATH, try to locate it and add its directory
+if ! command -v docker &>/dev/null; then
+  DOCKER_BIN="$(find /usr /snap /opt -maxdepth 6 -name docker -type f 2>/dev/null | head -1 || true)"
+  if [[ -n "$DOCKER_BIN" ]]; then
+    export PATH="$(dirname "$DOCKER_BIN"):$PATH"
+  else
+    echo "ERROR: docker binary not found on this server"
+    echo "Install Docker: https://docs.docker.com/engine/install/"
+    exit 1
+  fi
+fi
+
+echo "Using docker: $(command -v docker) ($(docker --version))"
 
 REPO_DIR="${REPO_DIR:-/opt/car-rental-dev}"
 REPO_URL="${REPO_URL:-}"
