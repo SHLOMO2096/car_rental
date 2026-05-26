@@ -30,6 +30,7 @@ REPO_URL="${REPO_URL:-}"
 TARGET_SHA="${TARGET_SHA:-}"
 ENV_FILE="${ENV_FILE:-.env.development}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
+COMPOSE_OVERRIDE="${COMPOSE_OVERRIDE:-docker-compose.dev-server.yml}"
 
 if [[ -z "$TARGET_SHA" ]]; then
   echo "ERROR: TARGET_SHA is required"
