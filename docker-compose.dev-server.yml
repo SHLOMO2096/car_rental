@@ -1,87 +1,37 @@
-# Dev-server overlay – mirrors production Traefik architecture.
-# Usage: docker compose -f docker-compose.yml -f docker-compose.dev-server.yml up -d --build
 #
 # Differences vs docker-compose.yml (local dev):
-#  - Traefik replaces direct port exposure (same pattern as docker-compose.prod.yml)
+#  - Traefik edge proxy is provided by infra-proxy-dev � this stack no longer owns ports 80/443
 #  - frontend: built with Dockerfile.prod (static nginx, not Vite dev-server)
-#  - backend:  no --reload, no volume mount
-#  - SSL:      Cloudflare Origin Certificate mounted from /opt/car-rental-dev/certs/
+#  - Traefik edge proxy is provided by infra-proxy-dev – this stack no longer owns ports 80/443
+#  - TLS:      Let's Encrypt Staging (handled by infra-proxy-dev Traefik)
 #
-# One-time server setup:
-#   1. Cloudflare → SSL/TLS → Origin Server → Create Certificate for dev.waycar.co.il
-#   2. Save cert → /opt/car-rental-dev/certs/origin.crt
-#      Save key  → /opt/car-rental-dev/certs/origin.key
-#   3. Set Cloudflare SSL mode to "Full" (not Flexible, not Full Strict)
-
-services:
-
-  traefik:
-    image: traefik:v3.3
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    command:
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=traefik-dev-public
-      - --providers.file.directory=/etc/traefik/dynamic
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --entrypoints.websecure.address=:443
-      - --log.level=INFO
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik-dev-dynamic.yml:/etc/traefik/dynamic/tls.yml:ro
-      - /opt/car-rental-dev/certs:/certs:ro
-    networks:
-      - traefik-dev-public
-      - car_rental_internal
-
-  frontend:
-    build:
-      context: ./frontend
+#  - TLS:      Let's Encrypt Staging (handled by infra-proxy-dev Traefik)
+#   1. infra-proxy-dev must already be running and have created the `traefik-public` network
+# Prerequisites:
+#   1. infra-proxy-dev must already be running and have created the `traefik-public` network
+#   2. DNS: dev.waycar.co.il -> dev server IP
       dockerfile: Dockerfile.prod
       args:
         VITE_API_URL: /api
-    volumes: []
-    ports: []
-    command: []
-    networks:
-      - traefik-dev-public
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.dev-car-rental-web.rule=Host(`dev.waycar.co.il`)
-      - traefik.http.routers.dev-car-rental-web.entrypoints=websecure
-      - traefik.http.routers.dev-car-rental-web.tls=true
-      - traefik.http.routers.dev-car-rental-web.priority=1
-      - traefik.http.services.dev-car-rental-web.loadbalancer.server.port=80
-
-  backend:
-    volumes: []
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    networks:
-      - traefik-dev-public
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.dev-car-rental-api.rule=Host(`dev.waycar.co.il`) && PathPrefix(`/api`)
-      - traefik.http.routers.dev-car-rental-api.entrypoints=websecure
-      - traefik.http.routers.dev-car-rental-api.tls=true
-      - traefik.http.routers.dev-car-rental-api.priority=100
-      - traefik.http.services.dev-car-rental-api.loadbalancer.server.port=8000
-      - traefik.http.routers.dev-car-rental-login.rule=Host(`dev.waycar.co.il`) && Path(`/api/auth/login`)
-      - traefik.http.routers.dev-car-rental-login.entrypoints=websecure
-      - traefik.http.routers.dev-car-rental-login.tls=true
-      - traefik.http.routers.dev-car-rental-login.priority=200
-      - traefik.http.routers.dev-car-rental-login.service=dev-car-rental-api
-      - traefik.http.routers.dev-car-rental-health.rule=Host(`dev.waycar.co.il`) && Path(`/health`)
-      - traefik.http.routers.dev-car-rental-health.entrypoints=websecure
-      - traefik.http.routers.dev-car-rental-health.tls=true
-      - traefik.http.routers.dev-car-rental-health.priority=150
-      - traefik.http.routers.dev-car-rental-health.service=dev-car-rental-api
-
-networks:
-  traefik-dev-public:
-    external: true
-    name: traefik-dev-public
+      - traefik.http.routers.car-rental-dev-api.rule=Host(`dev.waycar.co.il`) && PathPrefix(`/api`)
+      - traefik.http.routers.car-rental-dev-api.entrypoints=websecure
+      - traefik.http.routers.car-rental-dev-api.tls.certresolver=letsencrypt
+      - traefik.http.routers.car-rental-dev-api.priority=100
+      - traefik.http.services.car-rental-dev-api.loadbalancer.server.port=8000
+      - traefik.http.routers.car-rental-dev-login.rule=Host(`dev.waycar.co.il`) && Path(`/api/auth/login`)
+      - traefik.http.routers.car-rental-dev-login.entrypoints=websecure
+      - traefik.http.routers.car-rental-dev-login.tls.certresolver=letsencrypt
+      - traefik.http.routers.car-rental-dev-login.priority=200
+      - traefik.http.routers.car-rental-dev-login.service=car-rental-dev-api
+      - car_rental_internal
+      - traefik-public
+      - traefik.http.routers.car-rental-dev-health.entrypoints=websecure
+      - traefik.http.routers.car-rental-dev-health.tls.certresolver=letsencrypt
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.car-rental-dev-web.rule=Host(`dev.waycar.co.il`)
+      - traefik.http.routers.car-rental-dev-web.entrypoints=websecure
+      - traefik.http.routers.car-rental-dev-web.tls.certresolver=letsencrypt
+      - traefik.http.routers.car-rental-dev-web.priority=1
+      - traefik.http.routers.car-rental-dev-web.middlewares=default-chain@file
+      - traefik.http.services.car-rental-dev-web.loadbalancer.server.port=80
+    name: traefik-public
