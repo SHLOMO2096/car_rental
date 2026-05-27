@@ -81,6 +81,9 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$COMPOSE_OVERRIDE" 
 echo "Starting development stack..."
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$COMPOSE_OVERRIDE" up -d --build --remove-orphans
 
+echo "Running database migrations..."
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$COMPOSE_OVERRIDE" exec -T backend alembic upgrade head
+
 echo "Waiting for backend container health..."
 for i in $(seq 1 15); do
   if docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$COMPOSE_OVERRIDE" exec -T backend \
