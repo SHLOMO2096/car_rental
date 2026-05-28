@@ -238,16 +238,17 @@ class TestBookings:
         assert "שעת איסוף" in r.text
 
     def test_create_booking(self, client, auth_headers, sample_car):
+        # 2030-06-03 (Mon) → 2030-06-07 (Fri) = 4 ימי חיוב (ללא שבת) × 100 = 400
         r = client.post("/api/bookings/", json={
             "car_id": sample_car.id,
             "customer_name": "ישראל ישראלי",
             "customer_has_no_email": True,
-            "start_date": "2030-06-01",
-            "end_date":   "2030-06-05",
+            "start_date": "2030-06-03",
+            "end_date":   "2030-06-07",
         }, headers=auth_headers)
         assert r.status_code == 201
         data = r.json()
-        assert data["total_price"] == 400.0   # 4 ימים (הפרש תאריכים) × 100
+        assert data["total_price"] == 400.0   # 4 ימי חיוב (Mon–Thu) × 100
 
     def test_overlap_conflict(self, client, auth_headers, sample_car):
         # יצירת הזמנה ראשונה
