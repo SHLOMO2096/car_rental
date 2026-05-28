@@ -19,6 +19,7 @@ const Attendance = lazy(() => import("./pages/Attendance"));
 const Users = lazy(() => import("./pages/Users"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Payroll = lazy(() => import("./pages/Payroll"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 
 const APP_VERSION = __APP_VERSION__;
 const BUILD_TIME = new Date(__BUILD_TIME__).toLocaleString("he-IL");
@@ -62,6 +63,7 @@ function Layout({ children }) {
     ...(can(Permissions.ATTENDANCE_VIEW) ? [{ to:"/attendance", label:"נוכחות", icon:"🕒" }] : []),
     ...(can(Permissions.REPORTS_VIEW) ? [{ to:"/reports", label:"סטטיסטיקות", icon:"📈" }] : []),
     ...(can(Permissions.PAYROLL_VIEW) ? [{ to:"/payroll", label:"שכר עובדים", icon:"💵" }] : []),
+    ...(can(Permissions.PRICING_VIEW) ? [{ to:"/pricing", label:"מחירים", icon:"🏷️" }] : []),
     ...(can(Permissions.USERS_MANAGE) ? [{ to:"/users", label:"משתמשים", icon:"👥" }] : []),
     ...(can(Permissions.USERS_MANAGE) ? [{ to:"/settings", label:"הגדרות", icon:"⚙️" }] : []),
   ];
@@ -312,6 +314,7 @@ export default function App() {
                   <Route path="/attendance" element={<Attendance />} />
                   <Route path="/reports"  element={<AdminRoute><Reports /></AdminRoute>} />
                   <Route path="/payroll" element={<AdminRoute><Payroll /></AdminRoute>} />
+                  <Route path="/pricing" element={<PrivateRoute><Pricing /></PrivateRoute>} />
                   <Route path="/users"    element={<AdminRoute><Users /></AdminRoute>} />
                   <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
                   <Route path="*"         element={<Navigate to="/" replace />} />

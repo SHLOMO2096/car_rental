@@ -1,7 +1,7 @@
 # ══════════════════════════════════════════════════════════════════════════════
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, UploadFile, File, Body
 from sqlalchemy.orm import Session
-from datetime import date as Date
+from datetime import date as Date, datetime, timezone
 from app.db.session import get_db
 from app.models.booking import Booking, BookingStatus
 from app.models.car import Car
@@ -41,6 +41,7 @@ SENSITIVE_BOOKING_UPDATE_FIELDS = {
     "pickup_time",
     "return_time",
     "status",
+    "price_override",   # שינוי מחיר ידני — רגיש
 }
 
 
@@ -74,6 +75,12 @@ def _booking_update_snapshot(booking: Booking) -> dict:
         "status": booking.status.value if hasattr(booking.status, "value") else str(booking.status),
         "total_price": booking.total_price,
         "notes": booking.notes,
+        # ── Pricing ──────────────────────────────────────────────────────────
+        "billable_days":        booking.billable_days,
+        "actual_days":          booking.actual_days,
+        "price_type_used":      booking.price_type_used.value if booking.price_type_used and hasattr(booking.price_type_used, "value") else booking.price_type_used,
+        "price_override":       booking.price_override,
+        "price_override_reason": booking.price_override_reason,
     }
 
 
@@ -275,11 +282,51 @@ def update_booking(
 
     before_state = _booking_update_snapshot(b)
 
+    # ── הפרד price_override מהעדכון הרגיל ───────────────────────────────────
+    price_override        = data.price_override
+    price_override_reason = data.price_override_reason
+
     update_payload = data.model_dump(exclude_unset=True)
     update_payload.pop("operator_note", None)
+    update_payload.pop("price_override", None)
+    update_payload.pop("price_override_reason", None)
     update_payload["updated_by"] = current_user.id
 
     updated = crud_booking.update(db, b, update_payload)
+
+    # ── price override — תיעוד ב-audit_log ──────────────────────────────────
+    if price_override is not None:
+        before_price = {
+            "total_price":           updated.total_price,
+            "price_override":        updated.price_override,
+            "price_override_reason": updated.price_override_reason,
+            "price_override_by":     updated.price_override_by,
+        }
+        updated.price_override        = price_override
+        updated.price_override_reason = price_override_reason
+        updated.price_override_by     = current_user.id
+        updated.price_override_at     = datetime.now(timezone.utc)
+        updated.total_price           = price_override
+        db.commit()
+        db.refresh(updated)
+
+        log_audit_event(
+            db,
+            actor_user_id=current_user.id,
+            action="booking.price_override",
+            entity_type="booking",
+            entity_id=str(booking_id),
+            before_obj=before_price,
+            after_obj={
+                "price_override":        price_override,
+                "price_override_reason": price_override_reason,
+                "total_price":           price_override,
+                "override_by_user_id":   current_user.id,
+            },
+            ip_address=request.client.host if request and request.client else None,
+            severity=AuditSeverity.warning,
+        )
+
     after_state = _booking_update_snapshot(updated)
     changed_fields = _changed_booking_fields(before_state, after_state)
     has_sensitive_changes = any(field in SENSITIVE_BOOKING_UPDATE_FIELDS for field in changed_fields)

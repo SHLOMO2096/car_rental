@@ -30,6 +30,9 @@ class Permissions:
     PAYROLL_VIEW = "payroll:view"
     PAYROLL_MANAGE = "payroll:manage"
 
+    PRICING_VIEW = "pricing:view"
+    PRICING_MANAGE = "pricing:manage"
+
 
 ROLE_PERMISSIONS = {
     UserRole.agent: {
@@ -48,6 +51,8 @@ ROLE_PERMISSIONS = {
 
         Permissions.ATTENDANCE_CLOCK,
         Permissions.ATTENDANCE_VIEW,
+
+        Permissions.PRICING_VIEW,        # agent רואה מחירים
     },
     UserRole.admin: {
         Permissions.BOOKINGS_VIEW,
@@ -74,6 +79,9 @@ ROLE_PERMISSIONS = {
 
         Permissions.PAYROLL_VIEW,
         Permissions.PAYROLL_MANAGE,
+
+        Permissions.PRICING_VIEW,        # admin מנהל מחירים
+        Permissions.PRICING_MANAGE,
     },
 }
 

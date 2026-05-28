@@ -6,7 +6,13 @@ from app.models.booking import Booking, BookingStatus
 from app.models.car import Car
 from app.schemas.booking import BookingCreate, BookingUpdate
 
+# שדות שכאשר מתעדכנים — מצריכים חישוב מחדש של המחיר
+_PRICE_RECALC_FIELDS = {"start_date", "end_date", "car_id", "pickup_time", "return_time"}
+
+
 class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
+
+    # --- legacy fallback (משמש רק כ-fallback אם PricingService לא זמין) ---
     def get_effective_price(self, db: Session, car: Car) -> float:
         price = car.price_per_day
         if not price:
@@ -61,16 +67,45 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
 
     def create_booking(self, db: Session, data: BookingCreate | dict,
                        user_id: int, car: Car) -> Booking:
+        from app.services.pricing import calculate_total_price, price_result_to_breakdown_json
+
         payload = data.model_dump() if hasattr(data, "model_dump") else dict(data)
-        days  = max((payload["end_date"] - payload["start_date"]).days, 1)
-        
-        effective_price = self.get_effective_price(db, car)
-        total = effective_price * days
-        
+
+        # חישוב מחיר דרך PricingService
+        try:
+            pricing_result = calculate_total_price(
+                db=db,
+                car=car,
+                start_date=payload["start_date"],
+                end_date=payload["end_date"],
+                pickup_time=payload.get("pickup_time"),
+                return_time=payload.get("return_time"),
+            )
+            total_price       = pricing_result.total_price
+            billable_days     = pricing_result.billable_days
+            actual_days       = pricing_result.actual_days
+            price_type_used   = pricing_result.price_type_used
+            price_rule_id     = pricing_result.price_rule_id
+            breakdown_json    = price_result_to_breakdown_json(pricing_result)
+        except Exception:
+            # fallback לחישוב ישן אם PricingService נכשל
+            days = max((payload["end_date"] - payload["start_date"]).days, 1)
+            total_price     = self.get_effective_price(db, car) * days
+            billable_days   = float(days)
+            actual_days     = days
+            price_type_used = None
+            price_rule_id   = None
+            breakdown_json  = None
+
         b = Booking(
             **payload,
             created_by=user_id,
-            total_price=total,
+            total_price=total_price,
+            billable_days=billable_days,
+            actual_days=actual_days,
+            price_type_used=price_type_used,
+            price_rule_id=price_rule_id,
+            price_breakdown_json=breakdown_json,
         )
         db.add(b); db.commit(); db.refresh(b)
         return b
@@ -178,24 +213,54 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         return {"total": total, "active": active}
 
     def update(self, db: Session, db_obj: Booking, obj_in: BookingUpdate | dict) -> Booking:
+        from app.services.pricing import calculate_total_price, price_result_to_breakdown_json
+
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
             update_data = obj_in.model_dump(exclude_unset=True)
 
-        recalc = False
-        if "start_date" in update_data or "end_date" in update_data or "car_id" in update_data:
-            recalc = True
+        # הסר שדות override — מנוהלים בנפרד מה-router
+        update_data.pop("price_override", None)
+        update_data.pop("price_override_reason", None)
 
-        res = super().update(db, db_obj=db_obj, obj_in=update_data)
+        needs_recalc = any(f in update_data for f in _PRICE_RECALC_FIELDS)
 
-        if recalc:
-            days = max((res.end_date - res.start_date).days, 1)
-            effective_price = self.get_effective_price(db, res.car)
-            res.total_price = effective_price * days
-            db.commit()
-            db.refresh(res)
+        # החל עדכון שדות
+        for k, v in update_data.items():
+            setattr(db_obj, k, v)
+        db.flush()  # ודא שהשינויים נגישים לחישוב
 
-        return res
+        if needs_recalc:
+            # כשמחשבים מחדש — מנקים override קיים
+            if db_obj.price_override is not None:
+                db_obj.price_override        = None
+                db_obj.price_override_reason = None
+                db_obj.price_override_by     = None
+                db_obj.price_override_at     = None
+
+            try:
+                result = calculate_total_price(
+                    db=db,
+                    car=db_obj.car,
+                    start_date=db_obj.start_date,
+                    end_date=db_obj.end_date,
+                    pickup_time=db_obj.pickup_time,
+                    return_time=db_obj.return_time,
+                )
+                db_obj.total_price         = result.total_price
+                db_obj.billable_days       = result.billable_days
+                db_obj.actual_days         = result.actual_days
+                db_obj.price_type_used     = result.price_type_used
+                db_obj.price_rule_id       = result.price_rule_id
+                db_obj.price_breakdown_json = price_result_to_breakdown_json(result)
+            except Exception:
+                # fallback
+                days = max((db_obj.end_date - db_obj.start_date).days, 1)
+                db_obj.total_price = self.get_effective_price(db, db_obj.car) * days
+
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
 
 crud_booking = CRUDBooking(Booking)
