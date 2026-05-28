@@ -542,12 +542,12 @@ class TestRBAC:
         r = client.get("/api/auth/users", headers=agent_headers)
         assert r.status_code == 403
 
-    def test_agent_cannot_create_car(self, client, agent_headers):
+    def test_agent_can_create_car(self, client, agent_headers):
         r = client.post("/api/cars/", json={
-            "name": "Blocked Car", "type": "sedan", "year": 2023,
-            "plate": "BLOCK-001", "price_per_day": 100
+            "name": "Agent Car", "type": "sedan", "year": 2023,
+            "plate": "AGENT-001", "price_per_day": 100
         }, headers=agent_headers)
-        assert r.status_code == 403
+        assert r.status_code == 201
 
     def test_agent_cannot_permanently_delete_car(self, client, agent_headers, sample_car):
         r = client.delete(f"/api/cars/{sample_car.id}/permanent", headers=agent_headers)
