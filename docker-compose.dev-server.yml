@@ -31,6 +31,7 @@ services:
       - traefik.http.routers.car-rental-dev-web.entrypoints=websecure
       - traefik.http.routers.car-rental-dev-web.tls.certresolver=letsencrypt
       - traefik.http.routers.car-rental-dev-web.priority=1
+      - traefik.http.routers.car-rental-dev-web.middlewares=default-chain@file
       - traefik.http.services.car-rental-dev-web.loadbalancer.server.port=80
 
   backend:
@@ -46,11 +47,13 @@ services:
       - traefik.http.routers.car-rental-dev-api.entrypoints=websecure
       - traefik.http.routers.car-rental-dev-api.tls.certresolver=letsencrypt
       - traefik.http.routers.car-rental-dev-api.priority=100
+      - traefik.http.routers.car-rental-dev-api.middlewares=default-chain@file,api-rate-limit@file
       - traefik.http.services.car-rental-dev-api.loadbalancer.server.port=8000
       - "traefik.http.routers.car-rental-dev-login.rule=Host(`dev.waycar.co.il`) && Path(`/api/auth/login`)"
       - traefik.http.routers.car-rental-dev-login.entrypoints=websecure
       - traefik.http.routers.car-rental-dev-login.tls.certresolver=letsencrypt
       - traefik.http.routers.car-rental-dev-login.priority=200
+      - traefik.http.routers.car-rental-dev-login.middlewares=default-chain@file,login-rate-limit@file
       - traefik.http.routers.car-rental-dev-login.service=car-rental-dev-api
       - "traefik.http.routers.car-rental-dev-health.rule=Host(`dev.waycar.co.il`) && Path(`/health`)"
       - traefik.http.routers.car-rental-dev-health.entrypoints=websecure
