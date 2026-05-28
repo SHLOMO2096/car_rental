@@ -39,6 +39,7 @@ ROLE_PERMISSIONS = {
         Permissions.BOOKINGS_CANCEL,
         Permissions.BOOKINGS_DELETE,
         Permissions.CARS_VIEW,
+        Permissions.CARS_MANAGE,
         Permissions.CUSTOMERS_VIEW,
         Permissions.CUSTOMERS_MANAGE,
         # Reports/analytics are manager-only (admins)

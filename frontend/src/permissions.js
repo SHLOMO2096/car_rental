@@ -47,6 +47,7 @@ const ROLE_PERMISSIONS = {
   agent: new Set([
     Permissions.BOOKINGS_CREATE,
     Permissions.BOOKINGS_UPDATE,
+    Permissions.CARS_MANAGE,
     Permissions.CUSTOMERS_VIEW,
     Permissions.CUSTOMERS_MANAGE,
     Permissions.BOOKINGS_DELETE,
