@@ -17,12 +17,12 @@ export default function Pricing() {
   const canManage = can(Permissions.PRICING_MANAGE);
   const [tab, setTab] = useState("seasons");
 
-  // סדר חדש: חגים (שמאלי ביותר), אחריו כללי מחיר, אחריו כללים עונתיים, ואז עונות
+  // סדר חדש: חגים (ימין ביותר), אחריו כללי מחיר, כללים עונתיים, עונות
   const tabs = [
-    { id:"holidays", label:"חגים",         icon:"✡️" },
+    { id:"seasons",  label:"עונות מחיר",  icon:"🗓" },
     { id:"rules",    label:"כללי מחיר",   icon:"💰" },
     { id:"seasonal", label:"כללים עונתיים", icon:"📈" },
-    { id:"seasons",  label:"עונות מחיר",  icon:"🗓" },
+    { id:"holidays", label:"חגים",         icon:"✡️" },
   ];
 
   return (
@@ -752,8 +752,24 @@ function SeasonalRulesTab({ canManage }) {
 
     const fetchPrice = async () => {
       setLoading(true); setError("");
+      // ולידציה קשיחה
+      if (!params.season_id || isNaN(+params.season_id)) {
+        setError("חובה לבחור עונה"); setLoading(false); return;
+      }
+      if (params.entity_type !== "global_" && !params.entity_value) {
+        setError("חובה לבחור ערך ישות"); setLoading(false); return;
+      }
       try {
-        const res = await pricingAPI.effectivePrice(params);
+        // ודא שליחה של season_id כ-int
+        const payload = {
+          ...params,
+          season_id: +params.season_id,
+        };
+        // ודא entity_value כ-int אם צריך (למשל לרכב)
+        if (["car"].includes(params.entity_type) && params.entity_value && !isNaN(+params.entity_value)) {
+          payload.entity_value = +params.entity_value;
+        }
+        const res = await pricingAPI.effectivePrice(payload);
         setPreview(res);
       } catch(e) {
         setError(e?.detail || "שגיאה בחישוב");
