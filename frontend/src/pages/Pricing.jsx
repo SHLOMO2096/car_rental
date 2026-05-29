@@ -3,6 +3,7 @@ import { pricingAPI } from "../api/pricing";
 import { toast } from "../store/toast";
 import { useAuthStore } from "../store/auth";
 import { Permissions } from "../permissions";
+import { carsAPI } from "../api/cars";
 
 // ── קבועים ────────────────────────────────────────────────────────────────────
 const MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
@@ -334,7 +335,42 @@ function RulesTab({ canManage }) {
 
               {form.entity_type !== "global_" && (
                 <Field label={form.entity_type==="car" ? "מזהה רכב (מספר)" : form.entity_type==="group" ? "אות קבוצה (A,B...)" : "שם קטגוריה"}>
-                  <input value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle} />
+                  {form.entity_type === "category" && (
+                    <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
+                      <option value="">בחר קטגוריה</option>
+                      {Object.keys(carTree).map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  )}
+                  {form.entity_type === "group" && (
+                    <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
+                      <option value="">בחר קבוצה</option>
+                      {Object.entries(carTree).map(([cat, groups]) => (
+                        <optgroup key={cat} label={cat}>
+                          {Object.keys(groups).map(group => (
+                            <option key={group} value={group}>{group}</option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  )}
+                  {form.entity_type === "car" && (
+                    <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
+                      <option value="">בחר רכב</option>
+                      {Object.entries(carTree).map(([cat, groups]) => (
+                        <optgroup key={cat} label={cat}>
+                          {Object.entries(groups).map(([group, cars]) => (
+                            <optgroup key={group} label={group}>
+                              {cars.map(car => (
+                                <option key={car.plate} value={car.plate}>{car.name} ({car.plate})</option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  )}
                 </Field>
               )}
 
@@ -578,3 +614,23 @@ const smallBtn = (bg, color) => ({
   background:bg, color, border:`1px solid ${color}30`,
   borderRadius:7, padding:"5px 10px", fontSize:12, cursor:"pointer", fontWeight:600,
 });
+
+// טען רכבים ובנה עץ היררכי
+function loadCars() {
+  carsAPI.list().then((data) => {
+    setCars(data);
+    // בניית עץ היררכי: { [category]: { [group]: [cars] } }
+    const tree = {};
+    data.forEach(car => {
+      const cat = car.category || "ללא קטגוריה";
+      const group = car.group || "ללא קבוצה";
+      if (!tree[cat]) tree[cat] = {};
+      if (!tree[cat][group]) tree[cat][group] = [];
+      tree[cat][group].push(car);
+    });
+    setCarTree(tree);
+  });
+}
+
+const [cars, setCars] = useState([]);
+const [carTree, setCarTree] = useState([]); // היררכיה: קטגוריה > קבוצה > רכבים
