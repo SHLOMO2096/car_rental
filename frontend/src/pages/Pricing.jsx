@@ -633,4 +633,4 @@ function loadCars() {
 }
 
 const [cars, setCars] = useState([]);
-const [carTree, setCarTree] = useState([]); // היררכיה: קטגוריה > קבוצה > רכבים
+const [carTree, setCarTree] = useState({}); // היררכיה: קטגוריה > קבוצה > רכבים
