@@ -9,7 +9,7 @@ import { carsAPI } from "../api/cars";
 const MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
                    "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
 const PRICE_TYPE_HE = { daily:"יומי", half_day:"חצי יום", weekly:"שבועי", monthly:"חודשי" };
-const ENTITY_HE = { car:"רכב ספציפי", model:"דגם", category:"קטגוריה", global_:"גלובלי" };
+const ENTITY_HE = { car:"רכב ספציפי", group:"דגם", category:"קטגוריה", global_:"גלובלי" };
 
 // ── כניסה לעמוד ───────────────────────────────────────────────────────────────
 export default function Pricing() {
@@ -261,7 +261,7 @@ function RulesTab({ canManage }) {
       <div style={{ display:"flex", gap:10, marginBottom:16, flexWrap:"wrap", alignItems:"center" }}>
         {canManage && <button onClick={openNew} style={btnStyle("#2563eb")}>+ כלל חדש</button>}
         <div style={{ display:"flex", gap:6 }}>
-          {["all","global_","category","model","car"].map(t => (
+          {["all","global_","category","group","car"].map(t => (
             <button key={t} onClick={()=>setFilterType(t)} style={{
               ...smallBtn(filterType===t?"#dbeafe":"#f1f5f9", filterType===t?"#1d4ed8":"#475569"),
               fontWeight: filterType===t ? 800 : 600,
@@ -346,7 +346,7 @@ function RulesTab({ canManage }) {
                       {(!carTree || Object.keys(carTree).length === 0) && <option disabled>אין קטגוריות זמינות</option>}
                     </select>
                   )}
-                  {form.entity_type === "model" && (
+                  {form.entity_type === "group" && (
                     <>
                       <select value={form.category||""} onChange={e=>setForm({...form,category:e.target.value,entity_value:""})} style={inputStyle}>
                         <option value="">בחר קטגוריה</option>
