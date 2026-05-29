@@ -338,37 +338,40 @@ function RulesTab({ canManage }) {
                   {form.entity_type === "category" && (
                     <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
                       <option value="">בחר קטגוריה</option>
-                      {Object.keys(carTree).map(cat => (
+                      {(carTree && Object.keys(carTree).length > 0 ? Object.keys(carTree) : []).map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
+                      {(!carTree || Object.keys(carTree).length === 0) && <option disabled>אין קטגוריות זמינות</option>}
                     </select>
                   )}
                   {form.entity_type === "group" && (
                     <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
                       <option value="">בחר קבוצה</option>
-                      {Object.entries(carTree).map(([cat, groups]) => (
+                      {(carTree && Object.keys(carTree).length > 0 ? Object.entries(carTree) : []).map(([cat, groups]) => (
                         <optgroup key={cat} label={cat}>
-                          {Object.keys(groups).map(group => (
+                          {groups && Object.keys(groups).map(group => (
                             <option key={group} value={group}>{group}</option>
                           ))}
                         </optgroup>
                       ))}
+                      {(!carTree || Object.keys(carTree).length === 0) && <option disabled>אין קבוצות זמינות</option>}
                     </select>
                   )}
                   {form.entity_type === "car" && (
                     <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
                       <option value="">בחר רכב</option>
-                      {Object.entries(carTree).map(([cat, groups]) => (
+                      {(carTree && Object.keys(carTree).length > 0 ? Object.entries(carTree) : []).map(([cat, groups]) => (
                         <optgroup key={cat} label={cat}>
-                          {Object.entries(groups).map(([group, cars]) => (
+                          {groups && Object.entries(groups).map(([group, cars]) => (
                             <optgroup key={group} label={group}>
-                              {cars.map(car => (
+                              {cars && cars.map(car => (
                                 <option key={car.plate} value={car.plate}>{car.name} ({car.plate})</option>
                               ))}
                             </optgroup>
                           ))}
                         </optgroup>
                       ))}
+                      {(!carTree || Object.keys(carTree).length === 0) && <option disabled>אין רכבים זמינים</option>}
                     </select>
                   )}
                 </Field>
