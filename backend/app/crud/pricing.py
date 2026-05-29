@@ -6,11 +6,14 @@ from datetime import date
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
-from app.models.pricing import Season, PriceRule, IsraeliHoliday, PriceEntityType, PriceType
+from app.models.pricing import (
+    Season, PriceRule, IsraeliHoliday, PriceEntityType, PriceType, SeasonalPriceRule
+)
 from app.schemas.pricing import (
     SeasonCreate, SeasonUpdate,
     PriceRuleCreate, PriceRuleUpdate,
     IsraeliHolidayCreate, IsraeliHolidayUpdate,
+    SeasonalPriceRuleCreate, SeasonalPriceRuleUpdate
 )
 
 
@@ -190,3 +193,49 @@ class CRUDIsraeliHoliday(CRUDBase[IsraeliHoliday, IsraeliHolidayCreate, IsraeliH
 
 crud_holiday = CRUDIsraeliHoliday(IsraeliHoliday)
 
+
+# ── Seasonal Price Rules ───────────────────────────────────────────────────────
+
+class CRUDSeasonalPriceRule(CRUDBase[SeasonalPriceRule, SeasonalPriceRuleCreate, SeasonalPriceRuleUpdate]):
+
+    def get_filtered(
+        self,
+        db: Session,
+        *,
+        season_id: int | None = None,
+        entity_type: PriceEntityType | None = None,
+        entity_value: str | None = None,
+        active_only: bool = True,
+    ) -> list[SeasonalPriceRule]:
+        q = db.query(SeasonalPriceRule)
+        if active_only:
+            q = q.filter(SeasonalPriceRule.is_active == True)  # noqa: E712
+        if season_id is not None:
+            q = q.filter(SeasonalPriceRule.season_id == season_id)
+        if entity_type is not None:
+            q = q.filter(SeasonalPriceRule.entity_type == entity_type)
+        if entity_value is not None:
+            q = q.filter(SeasonalPriceRule.entity_value == entity_value)
+        return q.order_by(
+            SeasonalPriceRule.entity_type,
+            SeasonalPriceRule.entity_value,
+            SeasonalPriceRule.rule_type,
+        ).all()
+
+    def create(self, db: Session, obj_in: SeasonalPriceRuleCreate) -> SeasonalPriceRule:
+        obj = SeasonalPriceRule(**obj_in.model_dump())
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj
+
+    def update(self, db: Session, db_obj: SeasonalPriceRule, obj_in: SeasonalPriceRuleUpdate) -> SeasonalPriceRule:
+        data = obj_in.model_dump(exclude_none=True)
+        for k, v in data.items():
+            setattr(db_obj, k, v)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+
+
+crud_seasonal_price_rule = CRUDSeasonalPriceRule(SeasonalPriceRule)

@@ -14,7 +14,7 @@ import Confirm from "../components/ui/Confirm";
 
 const EMPTY_FORM = { 
   name:"", category:"", is_hybrid: false, year: new Date().getFullYear(),
-  plate:"", color:"", price_per_day:"", test_date: "", description:"", image_url:"" 
+  plate:"", color:"", test_date: "", description:"", image_url:""
 };
 
 export default function Cars() {
@@ -82,7 +82,7 @@ export default function Cars() {
       year: car.year, 
       plate: car.plate,
       color: car.color||"", 
-      price_per_day: car.price_per_day || "",
+      // price_per_day: car.price_per_day || "",
       test_date: car.test_date || "",
       description: car.description||"", 
       image_url: car.image_url||"" 
@@ -94,13 +94,13 @@ export default function Cars() {
   async function handleSave() {
     if (!form.name.trim())  return setFormError("יש להזין שם רכב");
     if (!form.plate.trim()) return setFormError("יש להזין לוחית רישוי");
-    if (!form.price_per_day || +form.price_per_day <= 0) return setFormError("מחיר לא תקין");
+    // if (!form.price_per_day || +form.price_per_day <= 0) return setFormError("מחיר לא תקין");
     setSaving(true); setFormError("");
     try {
       const data = { 
         ...form, 
         year: +form.year, 
-        price_per_day: form.price_per_day ? +form.price_per_day : null 
+        // price_per_day: form.price_per_day ? +form.price_per_day : null
       };
       if (modal === "create") await carsAPI.create(data);
       else await carsAPI.update(editCar.id, data);
@@ -215,12 +215,12 @@ export default function Cars() {
                         <div style={s.grid}>
                           {subCars.map(car => {
                             const carCat = categories.find(c => c.name === car.category);
-                            let displayPrice = car.price_per_day;
-                            let isInherited = false;
-                            if (!displayPrice && carCat) {
-                              displayPrice = car.is_hybrid ? (carCat.hybrid_price || carCat.base_price) : carCat.base_price;
-                              isInherited = true;
-                            }
+                             // let displayPrice = car.price_per_day;
+                             // let isInherited = false;
+                             // if (!displayPrice && carCat) {
+                             //   displayPrice = car.is_hybrid ? (carCat.hybrid_price || carCat.base_price) : carCat.base_price;
+                             //   isInherited = true;
+                             // }
 
                             return (
                               <div key={car.id} style={{ ...s.card, opacity: car.is_active ? 1 : 0.55 }}>
@@ -238,11 +238,8 @@ export default function Cars() {
                                   </div>
                                 )}
                                 
-                                <div style={s.price}>
-                                  ₪{Number(displayPrice || 0).toLocaleString()} / יום
-                                  {isInherited && <span style={s.priceHint}>(מחיר קטגוריה)</span>}
-                                </div>
-                                
+                                 {/* מחיר ליום הוסר */}
+
                                 <div style={{ display:"flex", gap:6, marginTop:12, flexWrap:"wrap" }}>
                                   {car.is_active && (
                                     <button
@@ -311,11 +308,7 @@ export default function Cars() {
           <Field label="צבע">
             <input value={form.color} onChange={e => setForm(f=>({...f,color:e.target.value}))} style={s.input} />
           </Field>
-          <Field label="מחיר ליום (₪)">
-            <input type="number" value={form.price_per_day} min={0}
-              placeholder="השאר ריק למחיר קטגוריה"
-              onChange={e => setForm(f=>({...f,price_per_day:e.target.value}))} style={s.input} />
-          </Field>
+           {/* שדה מחיר ליום הוסר */}
           <Field label="תאריך טסט">
             <input value={form.test_date} placeholder="למשל: 19/02/2027"
               onChange={e => setForm(f=>({...f,test_date:e.target.value}))} style={s.input} />
@@ -397,8 +390,8 @@ const s = {
                 transition:"transform 0.15s, box-shadow 0.15s" },
   carName:    { fontWeight:800, fontSize:16, marginTop:8 },
   carSub:     { fontSize:12, color:"#94a3b8", marginTop:2 },
-  price:      { fontSize:15, fontWeight:700, color:"#1d4ed8", marginTop:6, display: "flex", alignItems: "center", gap: 6 },
-  priceHint:  { fontSize:11, color: "#94a3b8", fontWeight: 400 },
+  // price:      { fontSize:15, fontWeight:700, color:"#1d4ed8", marginTop:6, display: "flex", alignItems: "center", gap: 6 },
+  // priceHint:  { fontSize:11, color: "#94a3b8", fontWeight: 400 },
   desc:       { fontSize:12, color:"#64748b", marginTop:6, lineHeight:1.5 },
   typeTag:    { background:"#eff6ff", color:"#3b82f6", borderRadius:20,
                 padding:"2px 10px", fontSize:11, fontWeight:600 },

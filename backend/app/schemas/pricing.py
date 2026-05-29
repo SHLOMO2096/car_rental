@@ -5,7 +5,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, model_validator
 from datetime import date, datetime
 from typing import Optional
-from app.models.pricing import PriceEntityType, PriceType
+from app.models.pricing import PriceEntityType, PriceType, SeasonalPriceRuleType
 
 
 # ── Seasons ───────────────────────────────────────────────────────────────────
@@ -174,3 +174,29 @@ class HolidayGenerateResponse(BaseModel):
     skipped: int           # כמה כבר היו קיימים
     holidays: list[IsraeliHolidayOut]
 
+
+# ── Seasonal Price Rules ─────────────────────────────────────────────────────
+class SeasonalPriceRuleBase(BaseModel):
+    season_id:    int
+    entity_type:  PriceEntityType
+    entity_value: str | None = None
+    rule_type:    SeasonalPriceRuleType
+    value:        float
+    is_active:    bool = True
+
+class SeasonalPriceRuleCreate(SeasonalPriceRuleBase):
+    pass
+
+class SeasonalPriceRuleUpdate(BaseModel):
+    entity_type:  PriceEntityType | None = None
+    entity_value: str | None = None
+    rule_type:    SeasonalPriceRuleType | None = None
+    value:        float | None = None
+    is_active:    bool | None = None
+
+class SeasonalPriceRuleOut(SeasonalPriceRuleBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime | None = None
+    
+    model_config = {"from_attributes": True}

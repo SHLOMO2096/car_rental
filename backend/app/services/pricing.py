@@ -29,7 +29,15 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.models.car import Car
-from app.models.pricing import PriceType, PriceEntityType, PriceRule, Season
+from app.models.pricing import (
+    PriceType,
+    PriceEntityType,
+    PriceRule,
+    Season,
+    SeasonalPriceRule,
+    SeasonalPriceRuleType,
+    IsraeliHoliday,
+)
 from app.schemas.pricing import (
     BreakdownLine,
     PriceCalculateResponse,
@@ -306,6 +314,43 @@ def resolve_price(
 
 # ── 6. חישוב מחיר לקטע (segment) ─────────────────────────────────────────────
 
+def _apply_seasonal_rule(db, car, season_id, base_price):
+    """מאתר ומחיל כלל עונתי רלוונטי (אם קיים) על מחיר בסיסי."""
+    # סדר עדיפויות: car > group > category > global
+    candidates = db.query(SeasonalPriceRule).filter(
+        SeasonalPriceRule.season_id == season_id,
+        SeasonalPriceRule.is_active == True
+    ).all()
+    rule = None
+    # בדוק לפי סדר עדיפויות
+    for etype, evalue in [
+        ("car", str(car.id)),
+        ("group", getattr(car, "group", None)),
+        ("category", getattr(car, "category", None)),
+        ("global", None)
+    ]:
+        for r in candidates:
+            if r.entity_type == etype and (r.entity_value == evalue or (etype == "global" and not r.entity_value)):
+                rule = r
+                break
+        if rule:
+            break
+    if not rule:
+        return base_price, None
+    # החלת הכלל
+    if rule.rule_type == SeasonalPriceRuleType.discount_percent:
+        new_price = base_price * (1 - rule.value / 100)
+    elif rule.rule_type == SeasonalPriceRuleType.discount_fixed:
+        new_price = base_price - rule.value
+    elif rule.rule_type == SeasonalPriceRuleType.surcharge_percent:
+        new_price = base_price * (1 + rule.value / 100)
+    elif rule.rule_type == SeasonalPriceRuleType.surcharge_fixed:
+        new_price = base_price + rule.value
+    else:
+        new_price = base_price
+    return max(new_price, 0), rule
+
+
 def _calc_segment_price(
     db: Session,
     car: Car,
@@ -324,10 +369,12 @@ def _calc_segment_price(
 
     # קבל מחיר
     unit_price, rule_id = resolve_price(db, car, price_type, segment.season_id)
+    # החלת כלל עונתי (אם קיים)
+    adj_price, seasonal_rule = _apply_seasonal_rule(db, car, segment.season_id, unit_price)
 
     # חישוב לפי סוג מחיר
     if price_type == PriceType.half_day:
-        subtotal = unit_price
+        subtotal = adj_price
         label = f"חצי יום ({segment.season_name or 'ברירת מחדל'})"
 
     elif price_type == PriceType.weekly:
@@ -335,7 +382,7 @@ def _calc_segment_price(
         weeks    = int(billable) // WEEKLY_BILLABLE_PER_WEEK
         remaining = billable - weeks * WEEKLY_BILLABLE_PER_WEEK
 
-        weekly_subtotal = weeks * unit_price
+        weekly_subtotal = weeks * adj_price
 
         # מחיר יומי לשארית
         daily_price, _  = resolve_price(db, car, PriceType.daily, segment.season_id)
@@ -370,7 +417,7 @@ def _calc_segment_price(
         label = f"{', '.join(parts)} ({season_label})"
 
     else:  # daily
-        subtotal = billable * unit_price
+        subtotal = billable * adj_price
         skipped_note = (
             f" | {bd_result.skipped_days} ימים דולגו"
             if bd_result.skipped_days
@@ -380,13 +427,13 @@ def _calc_segment_price(
         label = f"{billable:.0f} ימי חיוב מתוך {cal_days} ({season_label}){skipped_note}"
 
     return subtotal, BreakdownLine(
-        label=label,
+        label=label + (f" | כלל עונתי: {seasonal_rule.rule_type} {seasonal_rule.value}" if seasonal_rule else ""),
         season_name=segment.season_name,
         days=cal_days,
         billable_days=billable,
         skipped_dates=bd_result.skipped_dates,
         price_type=price_type,
-        unit_price=unit_price,
+        unit_price=adj_price,
         subtotal=round(subtotal, 2),
     )
 
@@ -415,8 +462,6 @@ def calculate_total_price(
     Returns:
         PriceCalculateResponse עם total_price, breakdown, ומטא-דאטה
     """
-    from app.models.pricing import IsraeliHoliday  # lazy import
-
     actual_days = max((end_date - start_date).days, 0)
 
     # ── קביעת סוג מחיר ──────────────────────────────────────────────────────

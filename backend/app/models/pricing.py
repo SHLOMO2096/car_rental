@@ -68,6 +68,30 @@ class PriceRule(Base):
     )
 
 
+class SeasonalPriceRuleType(str, enum.Enum):
+    discount_percent = "discount_percent"
+    discount_fixed = "discount_fixed"
+    surcharge_percent = "surcharge_percent"
+    surcharge_fixed = "surcharge_fixed"
+
+
+class SeasonalPriceRule(Base):
+    """כלל מחיר עונתי — הנחה/תוספת לעונה, ברמת רכב/קבוצה/קטגוריה/גלובלי"""
+    __tablename__ = "seasonal_price_rules"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    season_id    = Column(Integer, ForeignKey("seasons.id", ondelete="CASCADE"), nullable=False, index=True)
+    entity_type  = Column(Enum(PriceEntityType), nullable=False, index=True)
+    entity_value = Column(String(100), nullable=True, index=True)
+    rule_type    = Column(Enum(SeasonalPriceRuleType), nullable=False)
+    value        = Column(Float, nullable=False)
+    is_active    = Column(Boolean, default=True, nullable=False)
+    created_at   = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
+
+    season = relationship("Season")
+
+
 class IsraeliHoliday(Base):
     """חג ישראלי — תאריך גרגוריאני של חגי ישראל שלא נחשבים בחיוב יומי/שבועי"""
     __tablename__ = "israeli_holidays"
@@ -82,4 +106,3 @@ class IsraeliHoliday(Base):
     created_at        = Column(DateTime(timezone=True), server_default=func.now())
 
     creator = relationship("User", foreign_keys=[created_by])
-

@@ -19,7 +19,7 @@ from app.db.session import get_db
 from app.core.permissions import Permissions
 from app.core.security import require_permission
 from app.crud.audit_log import log_audit_event
-from app.crud.pricing import crud_season, crud_price_rule, crud_holiday
+from app.crud.pricing import crud_season, crud_price_rule, crud_holiday, crud_seasonal_price_rule
 from app.models.audit_log import AuditSeverity
 from app.models.car import Car
 from app.models.pricing import PriceEntityType, PriceType
@@ -29,6 +29,7 @@ from app.schemas.pricing import (
     IsraeliHolidayCreate, IsraeliHolidayUpdate, IsraeliHolidayOut,
     PriceCalculateRequest, PriceCalculateResponse,
     HolidayGenerateResponse,
+    SeasonalPriceRuleCreate, SeasonalPriceRuleUpdate, SeasonalPriceRuleOut
 )
 from app.services.pricing import calculate_total_price
 from app.services.holiday_generator import generate_holidays_for_year
@@ -421,3 +422,62 @@ def get_effective_price(
     )
     return result
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Seasonal Price Rules
+# ══════════════════════════════════════════════════════════════════════════════
+@router.get("/seasonal-rules", response_model=list[SeasonalPriceRuleOut])
+def list_seasonal_rules(
+    season_id: int | None = Query(None),
+    entity_type: PriceEntityType | None = Query(None),
+    entity_value: str | None = Query(None),
+    active_only: bool = Query(True),
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(Permissions.PRICING_VIEW)),
+):
+    """רשימת כללי מחיר עונתיים."""
+    return crud_seasonal_price_rule.get_filtered(
+        db,
+        season_id=season_id,
+        entity_type=entity_type,
+        entity_value=entity_value,
+        active_only=active_only,
+    )
+
+@router.post("/seasonal-rules", response_model=SeasonalPriceRuleOut, status_code=201)
+def create_seasonal_rule(
+    data: SeasonalPriceRuleCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
+    request: Request = None,
+):
+    rule = crud_seasonal_price_rule.create(db, obj_in=data)
+    log_audit_event(db, current_user.id, AuditSeverity.info, f"יצר כלל עונתי {rule.id}")
+    return rule
+
+@router.patch("/seasonal-rules/{rule_id}", response_model=SeasonalPriceRuleOut)
+def update_seasonal_rule(
+    rule_id: int,
+    data: SeasonalPriceRuleUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
+):
+    rule = db.query(crud_seasonal_price_rule.model).get(rule_id)
+    if not rule:
+        raise HTTPException(404, "Seasonal price rule not found")
+    updated = crud_seasonal_price_rule.update(db, db_obj=rule, obj_in=data)
+    log_audit_event(db, current_user.id, AuditSeverity.info, f"עדכן כלל עונתי {rule_id}")
+    return updated
+
+@router.delete("/seasonal-rules/{rule_id}", status_code=204)
+def delete_seasonal_rule(
+    rule_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
+):
+    rule = db.query(crud_seasonal_price_rule.model).get(rule_id)
+    if not rule:
+        raise HTTPException(404, "Seasonal price rule not found")
+    db.delete(rule)
+    db.commit()
+    log_audit_event(db, current_user.id, AuditSeverity.info, f"מחק כלל עונתי {rule_id}")
