@@ -645,7 +645,7 @@ function loadCars() {
     const tree = {};
     data.forEach(car => {
       const cat = car.category || "ללא קטגוריה";
-      const model = car.model || "ללא דגם";
+      const model = car.model || car.group || "ללא דגם";
       if (!tree[cat]) tree[cat] = {};
       if (!tree[cat][model]) tree[cat][model] = [];
       tree[cat][model].push(car);
@@ -667,7 +667,7 @@ function useCarTree() {
       const tree = {};
       data.forEach(car => {
         const cat = car.category || "ללא קטגוריה";
-        const model = car.model || "ללא דגם";
+        const model = car.model || car.group || "ללא דגם";
         if (!tree[cat]) tree[cat] = {};
         if (!tree[cat][model]) tree[cat][model] = [];
         tree[cat][model].push(car);
