@@ -550,3 +550,22 @@ def update_seasonal_rule(
         severity=AuditSeverity.info
     )
     return updated
+
+@router.get("/seasonal-rules", response_model=list[SeasonalPriceRuleOut])
+def list_seasonal_rules(
+    season_id: int | None = Query(None),
+    entity_type: PriceEntityType | None = Query(None),
+    entity_value: str | None = Query(None),
+    active_only: bool = Query(True),
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(Permissions.PRICING_VIEW)),
+):
+    """רשימת כללי מחיר עונתיים."""
+    return crud_seasonal_price_rule.get_filtered(
+        db,
+        season_id=season_id,
+        entity_type=entity_type,
+        entity_value=entity_value,
+        active_only=active_only,
+    )
+
