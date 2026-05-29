@@ -17,11 +17,12 @@ export default function Pricing() {
   const canManage = can(Permissions.PRICING_MANAGE);
   const [tab, setTab] = useState("seasons");
 
+  // סדר חדש: חגים (שמאלי ביותר), אחריו כללי מחיר, אחריו כללים עונתיים, ואז עונות
   const tabs = [
-    { id:"seasons",  label:"עונות מחיר",  icon:"🗓" },
-    { id:"rules",    label:"כללי מחיר",   icon:"💰" },
     { id:"holidays", label:"חגים",         icon:"✡️" },
+    { id:"rules",    label:"כללי מחיר",   icon:"💰" },
     { id:"seasonal", label:"כללים עונתיים", icon:"📈" },
+    { id:"seasons",  label:"עונות מחיר",  icon:"🗓" },
   ];
 
   return (
@@ -590,47 +591,49 @@ function SeasonalRulesTab({ canManage }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const openNew = () => setForm({
-    season_id: "",
-    entity_type: "global_",
-    entity_value: "",
-    rule_type: "discount_percent",
-    value: 0,
-    is_active: true
-  });
+   const openNew = () => setForm({
+     season_id: "",
+     entity_type: "global_",
+     entity_value: "",
+     rule_type: "discount_percent",
+     value: "",
+     is_active: true
+   });
 
   const openEdit = (r) => setForm({ ...r });
 
-  const save = async () => {
-    if (!form.season_id) return toast.error("חובה לבחור עונה");
-    if (form.entity_type !== "global_" && !form.entity_value) return toast.error("חובה לבחור ערך ישות");
-    setSaving(true);
-    try {
-      // שלח רק שדות רלוונטיים
-      const payload = {
-        season_id: form.season_id,
-        entity_type: form.entity_type,
-        entity_value: form.entity_type === "global_" ? null : form.entity_value,
-        rule_type: form.rule_type,
-        value: form.value,
-        is_active: form.is_active,
-      };
-      if (form.id) {
-        await pricingAPI.updateSeasonalRule(form.id, payload);
-        toast.success("כלל עודכן");
-      } else {
-        await pricingAPI.createSeasonalRule(payload);
-        toast.success("כלל נוצר");
-      }
-      setForm(null);
-      // רענון
-      setLoading(true);
-      const rules = await pricingAPI.listSeasonalRules();
-      setRules(rules);
-    } catch(e) {
-      toast.error(e?.detail || "שגיאה בשמירה");
-    } finally { setSaving(false); }
-  };
+   const save = async () => {
+     // ולידציה קשיחה
+     if (!form.season_id || isNaN(+form.season_id)) return toast.error("חובה לבחור עונה");
+     if (form.entity_type !== "global_" && !form.entity_value) return toast.error("חובה לבחור ערך ישות");
+     if (form.value === "" || isNaN(+form.value)) return toast.error("ערך חובה (מספר)");
+     setSaving(true);
+     try {
+       // שלח רק שדות רלוונטיים, ודא המרה ל-int/float
+       const payload = {
+         season_id: +form.season_id,
+         entity_type: form.entity_type,
+         entity_value: form.entity_type === "global_" ? null : form.entity_value,
+         rule_type: form.rule_type,
+         value: +form.value,
+         is_active: form.is_active,
+       };
+       if (form.id) {
+         await pricingAPI.updateSeasonalRule(form.id, payload);
+         toast.success("כלל עודכן");
+       } else {
+         await pricingAPI.createSeasonalRule(payload);
+         toast.success("כלל נוצר");
+       }
+       setForm(null);
+       // רענון
+       setLoading(true);
+       const rules = await pricingAPI.listSeasonalRules();
+       setRules(rules);
+     } catch(e) {
+       toast.error(e?.detail || "שגיאה בשמירה");
+     } finally { setSaving(false); }
+   };
 
   const remove = async (r) => {
     if (!confirm("למחוק את הכלל?")) return;
@@ -901,9 +904,9 @@ function SeasonalRulesTab({ canManage }) {
               <option value="surcharge_fixed">תוספת קבועה</option>
             </select>
           </Field>
-          <Field label="ערך">
-            <input type="number" value={form.value} onChange={e=>setForm({...form,value:+e.target.value})} style={inputStyle} />
-          </Field>
+           <Field label="ערך">
+             <input type="number" value={form.value} onChange={e=>setForm({...form,value:e.target.value})} style={inputStyle} />
+           </Field>
           <Field label="פעיל">
             <input type="checkbox" checked={form.is_active} onChange={e=>setForm({...form,is_active:e.target.checked})} />
           </Field>
