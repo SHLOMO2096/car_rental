@@ -431,7 +431,7 @@ function RulesTab({ canManage }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════���═══════════════
+// ══════════════════════════════════════════════════════════════���════════════�����══
 // TAB 3 — חגים
 // ══════════════════════════════════════════════════════════════════════════════
 function HolidaysTab({ canManage }) {
@@ -603,13 +603,23 @@ function SeasonalRulesTab({ canManage }) {
 
   const save = async () => {
     if (!form.season_id) return toast.error("חובה לבחור עונה");
+    if (form.entity_type !== "global_" && !form.entity_value) return toast.error("חובה לבחור ערך ישות");
     setSaving(true);
     try {
+      // שלח רק שדות רלוונטיים
+      const payload = {
+        season_id: form.season_id,
+        entity_type: form.entity_type,
+        entity_value: form.entity_type === "global_" ? null : form.entity_value,
+        rule_type: form.rule_type,
+        value: form.value,
+        is_active: form.is_active,
+      };
       if (form.id) {
-        await pricingAPI.updateSeasonalRule(form.id, form);
+        await pricingAPI.updateSeasonalRule(form.id, payload);
         toast.success("כלל עודכן");
       } else {
-        await pricingAPI.createSeasonalRule(form);
+        await pricingAPI.createSeasonalRule(payload);
         toast.success("כלל נוצר");
       }
       setForm(null);
@@ -729,11 +739,101 @@ function SeasonalRulesTab({ canManage }) {
     );
   }
 
+  // פונקציה להצגת אימפקט בפועל (preview)
+  function EffectivePricePreview() {
+    const [preview, setPreview] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [params, setParams] = useState({ season_id: "", entity_type: "global_", entity_value: "" });
+    const { carTree } = useCarTree();
+    const [error, setError] = useState("");
+
+    const fetchPrice = async () => {
+      setLoading(true); setError("");
+      try {
+        const res = await pricingAPI.effectivePrice(params);
+        setPreview(res);
+      } catch(e) {
+        setError(e?.detail || "שגיאה בחישוב");
+        setPreview(null);
+      } finally { setLoading(false); }
+    };
+
+    return (
+      <div style={{ background: "#f1f5f9", borderRadius: 8, padding: 16, margin: "24px 0" }}>
+        <b>בדיקת מחיר בפועל:</b>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", margin: "12px 0" }}>
+          <select value={params.season_id} onChange={e=>setParams(p=>({...p,season_id:e.target.value}))} style={inputStyle}>
+            <option value="">בחר עונה</option>
+            {seasons.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select value={params.entity_type} onChange={e=>setParams(p=>({...p,entity_type:e.target.value,entity_value:""}))} style={inputStyle}>
+            <option value="global_">גלובלי</option>
+            <option value="category">קטגוריה</option>
+            <option value="group">דגם</option>
+            <option value="car">רכב</option>
+          </select>
+          {params.entity_type === "category" && (
+            <select value={params.entity_value} onChange={e=>setParams(p=>({...p,entity_value:e.target.value}))} style={inputStyle}>
+              <option value="">בחר קטגוריה</option>
+              {Object.keys(carTree).map(cat=><option key={cat} value={cat}>{cat}</option>)}
+            </select>
+          )}
+          {params.entity_type === "group" && (
+            <>
+              <select value={params.category||""} onChange={e=>setParams(p=>({...p,category:e.target.value,entity_value:""}))} style={inputStyle}>
+                <option value="">בחר קטגוריה</option>
+                {Object.keys(carTree).map(cat=><option key={cat} value={cat}>{cat}</option>)}
+              </select>
+              {params.category && (
+                <select value={params.entity_value} onChange={e=>setParams(p=>({...p,entity_value:e.target.value}))} style={inputStyle}>
+                  <option value="">בחר דגם</option>
+                  {Object.keys(carTree[params.category]||{}).map(model=><option key={model} value={model}>{model}</option>)}
+                </select>
+              )}
+            </>
+          )}
+          {params.entity_type === "car" && (
+            <>
+              <select value={params.category||""} onChange={e=>setParams(p=>({...p,category:e.target.value,model:"",entity_value:""}))} style={inputStyle}>
+                <option value="">בחר קטגוריה</option>
+                {Object.keys(carTree).map(cat=><option key={cat} value={cat}>{cat}</option>)}
+              </select>
+              {params.category && (
+                <select value={params.model||""} onChange={e=>setParams(p=>({...p,model:e.target.value,entity_value:""}))} style={inputStyle}>
+                  <option value="">בחר דגם</option>
+                  {Object.keys(carTree[params.category]||{}).map(model=><option key={model} value={model}>{model}</option>)}
+                </select>
+              )}
+              {params.category && params.model && (
+                <select value={params.entity_value} onChange={e=>setParams(p=>({...p,entity_value:e.target.value}))} style={inputStyle}>
+                  <option value="">בחר רכב</option>
+                  {(carTree[params.category]?.[params.model]||[]).map(car=>(
+                    <option key={car.plate} value={car.plate}>{car.name} ({car.plate})</option>
+                  ))}
+                </select>
+              )}
+            </>
+          )}
+          <button onClick={fetchPrice} disabled={loading || !params.season_id || (params.entity_type!=="global_" && !params.entity_value)} style={btnStyle("#2563eb")}>חשב מחיר</button>
+        </div>
+        {loading && <div>⏳ מחשב...</div>}
+        {error && <div style={{ color:"#dc2626" }}>{error}</div>}
+        {preview && (
+          <div style={{ background: "#fff", borderRadius: 8, padding: 12, marginTop: 10, fontSize: 15 }}>
+            <b>מחיר בפועל:</b> ₪{preview.price?.toLocaleString()}
+            {preview.details && <div style={{ fontSize:12, color:"#64748b", marginTop:6 }}>{preview.details}</div>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       {canManage && (
         <button onClick={openNew} style={btnStyle("#2563eb")}>+ כלל עונתי חדש</button>
       )}
+      <EffectivePricePreview />
       {loading ? <Spinner /> : (
         <table style={{ width:"100%", marginTop:16, borderCollapse:"collapse" }}>
           <thead>
@@ -818,9 +918,9 @@ function SeasonalRulesTab({ canManage }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ══��═══════════════════════════════════════════════════════════════════════════
 // רכיבי עזר
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════��═══════════
 
 function MonthSelect({ value, onChange }) {
   return (
@@ -858,7 +958,7 @@ function ModalOverlay({ children, onClose }) {
 function ModalFooter({ saving, onCancel, onSave }) {
   return (
     <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop:20 }}>
-      <button onClick={onCancel} disabled={saving} style={smallBtn("#f1f5f9","#475569")}>ביטול</button>
+      <button onClick={onCancel} disabled={saving} style={smallBtn("#f1f5f9","#475569")}>ביטו��</button>
       <button onClick={onSave}   disabled={saving} style={btnStyle("#2563eb")}>
         {saving ? "שומר..." : "שמור"}
       </button>
