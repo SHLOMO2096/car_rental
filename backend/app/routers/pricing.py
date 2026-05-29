@@ -546,18 +546,7 @@ def update_seasonal_rule(
         action="pricing.seasonal_rule.update",
         entity_type="seasonal_price_rule",
         entity_id=str(rule_id),
-            # 1. חפש כלל עונתי רלוונטי
-            seasonal_rule = None
-            if season_id:
-                seasonal_rules = crud_seasonal_price_rule.get_filtered(db, season_id=season_id, entity_type=entity_type, entity_value=entity_value, active_only=True)
-                if seasonal_rules:
-                                    log_audit_event(
-                                        db,
-                                        actor_user_id=current_user.id,
-                                        action="pricing.seasonal_rule.update",
-                                        entity_type="seasonal_price_rule",
-                                        entity_id=str(rule_id),
-                                        after_obj=updated,
-                                        severity=AuditSeverity.info
-                                    )
-                                    return updated
+        after_obj=updated,
+        severity=AuditSeverity.info
+    )
+    return updated
