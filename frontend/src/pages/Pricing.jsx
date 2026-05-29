@@ -572,8 +572,9 @@ function SeasonalRulesTab({ canManage }) {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null); // null=סגור | {}=חדש | {id,...}=עריכה
   const [saving, setSaving] = useState(false);
+  const { carTree } = useCarTree();
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     setLoading(true);
     Promise.all([
       pricingAPI.listSeasonalRules(),
@@ -587,6 +588,8 @@ function SeasonalRulesTab({ canManage }) {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
   const openNew = () => setForm({
     season_id: "",
     entity_type: "global_",
@@ -599,7 +602,7 @@ function SeasonalRulesTab({ canManage }) {
   const openEdit = (r) => setForm({ ...r });
 
   const save = async () => {
-    if (!form.season_id) return toast.error("חובה לבחור עונ��");
+    if (!form.season_id) return toast.error("חובה לבחור עונה");
     setSaving(true);
     try {
       if (form.id) {
@@ -627,6 +630,104 @@ function SeasonalRulesTab({ canManage }) {
       setRules(rules => rules.filter(x => x.id !== r.id));
     } catch(e) { toast.error(e?.detail || "שגיאה במחיקה"); }
   };
+
+  // פונקציה להצגת ערך ישות היררכי
+  function EntityValuePicker({ form, setForm, carTree }) {
+    if (form.entity_type === "global_") return null;
+    if (form.entity_type === "category") {
+      return (
+        <Field label="קטגוריה">
+          <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
+            <option value="">בחר קטגוריה</option>
+            {Object.keys(carTree).map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </Field>
+      );
+    }
+    if (form.entity_type === "group") {
+      return (
+        <>
+          <Field label="קטגוריה">
+            <select value={form.category||""} onChange={e=>setForm({...form,category:e.target.value,entity_value:""})} style={inputStyle}>
+              <option value="">בחר קטגוריה</option>
+              {Object.keys(carTree).map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </Field>
+          {form.category && (
+            <Field label="דגם">
+              <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
+                <option value="">בחר דגם</option>
+                {Object.keys(carTree[form.category]||{}).map(model => (
+                  <option key={model} value={model}>{model}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+        </>
+      );
+    }
+    if (form.entity_type === "car") {
+      return (
+        <>
+          <Field label="קטגוריה">
+            <select value={form.category||""} onChange={e=>setForm({...form,category:e.target.value,model:"",entity_value:""})} style={inputStyle}>
+              <option value="">בחר קטגוריה</option>
+              {Object.keys(carTree).map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </Field>
+          {form.category && (
+            <Field label="דגם">
+              <select value={form.model||""} onChange={e=>setForm({...form,model:e.target.value,entity_value:""})} style={inputStyle}>
+                <option value="">בחר דגם</option>
+                {Object.keys(carTree[form.category]||{}).map(model => (
+                  <option key={model} value={model}>{model}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+          {form.category && form.model && (
+            <Field label="רכב">
+              <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
+                <option value="">בחר רכב</option>
+                {(carTree[form.category]?.[form.model]||[]).map(car => (
+                  <option key={car.plate} value={car.plate}>{car.name} ({car.plate})</option>
+                ))}
+              </select>
+            </Field>
+          )}
+        </>
+      );
+    }
+    return null;
+  }
+
+  // פונקציה להצגת preview של הכלל
+  function RulePreview({ form, seasons }) {
+    if (!form) return null;
+    const season = seasons.find(s => s.id === form.season_id)?.name || "[לא נבחרה עונה]";
+    let entity = "";
+    if (form.entity_type === "global_") entity = "כלל גלובלי";
+    if (form.entity_type === "category") entity = `קטגוריה: ${form.entity_value||"[לא נבחרה]"}`;
+    if (form.entity_type === "group") entity = form.category ? `דגם: ${form.entity_value||"[לא נבחר]"} (קטגוריה: ${form.category})` : "[בחר קטגוריה ודגם]";
+    if (form.entity_type === "car") entity = form.category && form.model ? `רכב: ${form.entity_value||"[לא נבחר]"} (דגם: ${form.model}, קטגוריה: ${form.category})` : "[בחר קטגוריה, דגם ורכב]";
+    const ruleTypeHe = {
+      discount_percent: "הנחה באחוזים",
+      discount_fixed: "הנחה קבועה",
+      surcharge_percent: "תוספת באחוזים",
+      surcharge_fixed: "תוספת קבועה"
+    }[form.rule_type] || form.rule_type;
+    return (
+      <div style={{ background: "#f1f5f9", borderRadius: 8, padding: 12, margin: "12px 0", fontSize: 14 }}>
+        <b>סיכום הכלל:</b> בעונה <b>{season}</b>, <b>{entity}</b>, <b>{ruleTypeHe}</b> <b>{form.value}</b> ({form.is_active ? "פעיל" : "לא פעיל"})
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -684,16 +785,14 @@ function SeasonalRulesTab({ canManage }) {
             </select>
           </Field>
           <Field label="סוג ישות">
-            <select value={form.entity_type} onChange={e=>setForm({...form,entity_type:e.target.value})} style={inputStyle}>
+            <select value={form.entity_type} onChange={e=>setForm({...form,entity_type:e.target.value,entity_value:"",category:"",model:""})} style={inputStyle}>
               <option value="car">רכב ספציפי</option>
               <option value="group">דגם</option>
               <option value="category">קטגוריה</option>
               <option value="global_">גלובלי</option>
             </select>
           </Field>
-          <Field label="ערך ישות">
-            <input value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle} />
-          </Field>
+          <EntityValuePicker form={form} setForm={setForm} carTree={carTree} />
           <Field label="סוג כלל">
             <select value={form.rule_type} onChange={e=>setForm({...form,rule_type:e.target.value})} style={inputStyle}>
               <option value="discount_percent">הנחה באחוזים</option>
@@ -708,6 +807,7 @@ function SeasonalRulesTab({ canManage }) {
           <Field label="פעיל">
             <input type="checkbox" checked={form.is_active} onChange={e=>setForm({...form,is_active:e.target.checked})} />
           </Field>
+          <RulePreview form={form} seasons={seasons} />
           <div style={{ display:"flex", gap:8, marginTop:18 }}>
             <button onClick={save} disabled={saving} style={btnStyle("#2563eb")}>שמור</button>
             <button onClick={()=>setForm(null)} style={btnStyle("#e5e7eb","#334155")}>ביטול</button>
