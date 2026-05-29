@@ -635,5 +635,26 @@ function loadCars() {
   });
 }
 
-const [cars, setCars] = useState([]);
-const [carTree, setCarTree] = useState({}); // היררכיה: קטגוריה > קבוצה > רכבים
+
+// hook מותאם אישית לטעינת רכבים ובניית עץ היררכי
+import { useEffect as useEffectReact } from "react";
+function useCarTree() {
+  const [cars, setCars] = useState([]);
+  const [carTree, setCarTree] = useState({}); // היררכיה: קטגוריה > קבוצה > רכבים
+  useEffectReact(() => {
+    carsAPI.list().then((data) => {
+      setCars(data);
+      // בניית עץ היררכי: { [category]: { [group]: [cars] } }
+      const tree = {};
+      data.forEach(car => {
+        const cat = car.category || "ללא קטגוריה";
+        const group = car.group || "ללא קבוצה";
+        if (!tree[cat]) tree[cat] = {};
+        if (!tree[cat][group]) tree[cat][group] = [];
+        tree[cat][group].push(car);
+      });
+      setCarTree(tree);
+    });
+  }, []);
+  return { cars, carTree };
+}
