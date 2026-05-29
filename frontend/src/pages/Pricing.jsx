@@ -209,6 +209,8 @@ function RulesTab({ canManage }) {
   const [form, setForm]     = useState(null);
   const [saving, setSaving] = useState(false);
   const [filterType, setFilterType] = useState("all");
+  // שימוש ב-hook לטעינת carTree
+  const { carTree } = useCarTree();
 
   const load = useCallback(async () => {
     setLoading(true);
