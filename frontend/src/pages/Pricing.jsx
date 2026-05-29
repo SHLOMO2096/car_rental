@@ -9,7 +9,7 @@ import { carsAPI } from "../api/cars";
 const MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
                    "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
 const PRICE_TYPE_HE = { daily:"יומי", half_day:"חצי יום", weekly:"שבועי", monthly:"חודשי" };
-const ENTITY_HE = { car:"רכב ספציפי", group:"קבוצה", category:"קטגוריה", global_:"גלובלי" };
+const ENTITY_HE = { car:"רכב ספציפי", model:"דגם", category:"קטגוריה", global_:"גלובלי" };
 
 // ── כניסה לעמוד ───────────────────────────────────────────────────────────────
 export default function Pricing() {
@@ -261,7 +261,7 @@ function RulesTab({ canManage }) {
       <div style={{ display:"flex", gap:10, marginBottom:16, flexWrap:"wrap", alignItems:"center" }}>
         {canManage && <button onClick={openNew} style={btnStyle("#2563eb")}>+ כלל חדש</button>}
         <div style={{ display:"flex", gap:6 }}>
-          {["all","global_","category","group","car"].map(t => (
+          {["all","global_","category","model","car"].map(t => (
             <button key={t} onClick={()=>setFilterType(t)} style={{
               ...smallBtn(filterType===t?"#dbeafe":"#f1f5f9", filterType===t?"#1d4ed8":"#475569"),
               fontWeight: filterType===t ? 800 : 600,
@@ -336,7 +336,7 @@ function RulesTab({ canManage }) {
               </div>
 
               {form.entity_type !== "global_" && (
-                <Field label={form.entity_type==="car" ? "מזהה רכב (מספר)" : form.entity_type==="group" ? "אות קבוצה (A,B...)" : "שם קטגוריה"}>
+                <Field label={form.entity_type==="car" ? "בחר רכב" : form.entity_type==="model" ? "בחר דגם" : "שם קטגוריה"}>
                   {form.entity_type === "category" && (
                     <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
                       <option value="">בחר קטגוריה</option>
@@ -346,35 +346,52 @@ function RulesTab({ canManage }) {
                       {(!carTree || Object.keys(carTree).length === 0) && <option disabled>אין קטגוריות זמינות</option>}
                     </select>
                   )}
-                  {form.entity_type === "group" && (
-                    <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
-                      <option value="">בחר קבוצה</option>
-                      {(carTree && Object.keys(carTree).length > 0 ? Object.entries(carTree) : []).map(([cat, groups]) => (
-                        <optgroup key={cat} label={cat}>
-                          {groups && Object.keys(groups).map(group => (
-                            <option key={group} value={group}>{group}</option>
+                  {form.entity_type === "model" && (
+                    <>
+                      <select value={form.category||""} onChange={e=>setForm({...form,category:e.target.value,entity_value:""})} style={inputStyle}>
+                        <option value="">בחר קטגוריה</option>
+                        {(carTree && Object.keys(carTree).length > 0 ? Object.keys(carTree) : []).map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                      {form.category && (
+                        <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
+                          <option value="">בחר דגם</option>
+                          {carTree[form.category] && Object.keys(carTree[form.category]).map(model => (
+                            <option key={model} value={model}>{model}</option>
                           ))}
-                        </optgroup>
-                      ))}
-                      {(!carTree || Object.keys(carTree).length === 0) && <option disabled>אין קבוצות זמינות</option>}
-                    </select>
+                          {(!carTree[form.category] || Object.keys(carTree[form.category]).length === 0) && <option disabled>אין דגמים זמינים</option>}
+                        </select>
+                      )}
+                    </>
                   )}
                   {form.entity_type === "car" && (
-                    <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
-                      <option value="">בחר רכב</option>
-                      {(carTree && Object.keys(carTree).length > 0 ? Object.entries(carTree) : []).map(([cat, groups]) => (
-                        <optgroup key={cat} label={cat}>
-                          {groups && Object.entries(groups).map(([group, cars]) => (
-                            <optgroup key={group} label={group}>
-                              {cars && cars.map(car => (
-                                <option key={car.plate} value={car.plate}>{car.name} ({car.plate})</option>
-                              ))}
-                            </optgroup>
+                    <>
+                      <select value={form.category||""} onChange={e=>setForm({...form,category:e.target.value,model:"",entity_value:""})} style={inputStyle}>
+                        <option value="">בחר קטגוריה</option>
+                        {(carTree && Object.keys(carTree).length > 0 ? Object.keys(carTree) : []).map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                      {form.category && (
+                        <select value={form.model||""} onChange={e=>setForm({...form,model:e.target.value,entity_value:""})} style={inputStyle}>
+                          <option value="">בחר דגם</option>
+                          {carTree[form.category] && Object.keys(carTree[form.category]).map(model => (
+                            <option key={model} value={model}>{model}</option>
                           ))}
-                        </optgroup>
-                      ))}
-                      {(!carTree || Object.keys(carTree).length === 0) && <option disabled>אין רכבים זמינים</option>}
-                    </select>
+                          {(!carTree[form.category] || !carTree[form.category][form.model] || carTree[form.category][form.model].length === 0) && <option disabled>אין רכבים זמינים</option>}
+                        </select>
+                      )}
+                      {form.category && form.model && (
+                        <select value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle}>
+                          <option value="">בחר רכב</option>
+                          {carTree[form.category] && carTree[form.category][form.model] && carTree[form.category][form.model].map(car => (
+                            <option key={car.plate} value={car.plate}>{car.name} ({car.plate})</option>
+                          ))}
+                          {(!carTree[form.category] || !carTree[form.category][form.model] || carTree[form.category][form.model].length === 0) && <option disabled>אין רכבים זמינים</option>}
+                        </select>
+                      )}
+                    </>
                   )}
                 </Field>
               )}
@@ -628,10 +645,10 @@ function loadCars() {
     const tree = {};
     data.forEach(car => {
       const cat = car.category || "ללא קטגוריה";
-      const group = car.group || "ללא קבוצה";
+      const model = car.model || "ללא דגם";
       if (!tree[cat]) tree[cat] = {};
-      if (!tree[cat][group]) tree[cat][group] = [];
-      tree[cat][group].push(car);
+      if (!tree[cat][model]) tree[cat][model] = [];
+      tree[cat][model].push(car);
     });
     setCarTree(tree);
   });
@@ -646,14 +663,14 @@ function useCarTree() {
   useEffectReact(() => {
     carsAPI.list().then((data) => {
       setCars(data);
-      // בניית עץ היררכי: { [category]: { [group]: [cars] } }
+      // בניית עץ היררכי: { [category]: { [model]: [cars] } }
       const tree = {};
       data.forEach(car => {
         const cat = car.category || "ללא קטגוריה";
-        const group = car.group || "ללא קבוצה";
+        const model = car.model || "ללא דגם";
         if (!tree[cat]) tree[cat] = {};
-        if (!tree[cat][group]) tree[cat][group] = [];
-        tree[cat][group].push(car);
+        if (!tree[cat][model]) tree[cat][model] = [];
+        tree[cat][model].push(car);
       });
       setCarTree(tree);
     });
