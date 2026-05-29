@@ -452,7 +452,15 @@ def create_seasonal_rule(
     request: Request = None,
 ):
     rule = crud_seasonal_price_rule.create(db, obj_in=data)
-    log_audit_event(db, current_user.id, AuditSeverity.info, f"יצר כלל עונתי {rule.id}")
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="pricing.seasonal_rule.create",
+        entity_type="seasonal_price_rule",
+        entity_id=str(rule.id),
+        after_obj=rule,
+        severity=AuditSeverity.info
+    )
     return rule
 
 @router.patch("/seasonal-rules/{rule_id}", response_model=SeasonalPriceRuleOut)
@@ -466,7 +474,15 @@ def update_seasonal_rule(
     if not rule:
         raise HTTPException(404, "Seasonal price rule not found")
     updated = crud_seasonal_price_rule.update(db, db_obj=rule, obj_in=data)
-    log_audit_event(db, current_user.id, AuditSeverity.info, f"עדכן כלל עונתי {rule_id}")
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="pricing.seasonal_rule.update",
+        entity_type="seasonal_price_rule",
+        entity_id=str(rule_id),
+        after_obj=updated,
+        severity=AuditSeverity.info
+    )
     return updated
 
 @router.delete("/seasonal-rules/{rule_id}", status_code=204)
@@ -480,4 +496,11 @@ def delete_seasonal_rule(
         raise HTTPException(404, "Seasonal price rule not found")
     db.delete(rule)
     db.commit()
-    log_audit_event(db, current_user.id, AuditSeverity.info, f"מחק כלל עונתי {rule_id}")
+    log_audit_event(
+        db,
+        actor_user_id=current_user.id,
+        action="pricing.seasonal_rule.delete",
+        entity_type="seasonal_price_rule",
+        entity_id=str(rule_id),
+        severity=AuditSeverity.info
+    )
