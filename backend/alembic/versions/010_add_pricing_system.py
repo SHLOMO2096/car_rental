@@ -8,7 +8,7 @@ Create Date: 2026-05-28
 from alembic import op
 import sqlalchemy as sa
 
-revision = "010"
+revision = "010_add_pricing_system"
 down_revision = "009"
 branch_labels = None
 depends_on = None
