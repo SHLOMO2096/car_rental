@@ -452,9 +452,11 @@ def get_effective_price_by_entity(
         if rules:
             rule = rules[0]
     if not rule:
+        # Return a valid price_type_used (default to 'daily')
+        from app.models.pricing import PriceType
         return PriceCalculateResponse(
             total_price=0,
-            price_type_used=None,
+            price_type_used=PriceType.daily,
             billable_days=0,
             actual_days=0,
             price_rule_id=None,
@@ -463,19 +465,22 @@ def get_effective_price_by_entity(
         )
     # בנה breakdown בסיסי
     label = f"{rule.value} ({rule.rule_type})"
+    # Try to get price_type from rule if exists, else default to 'daily'
+    from app.models.pricing import PriceType
+    price_type = getattr(rule, 'price_type', PriceType.daily) if hasattr(rule, 'price_type') else PriceType.daily
     breakdown = [{
         "label": label,
         "season_name": str(season_id) if season_id else None,
         "days": 1,
         "billable_days": 1,
         "skipped_dates": [],
-        "price_type": None,
+        "price_type": price_type,
         "unit_price": rule.value,
         "subtotal": rule.value,
     }]
     return PriceCalculateResponse(
         total_price=rule.value,
-        price_type_used=None,
+        price_type_used=price_type,
         billable_days=1,
         actual_days=1,
         price_rule_id=rule.id,
