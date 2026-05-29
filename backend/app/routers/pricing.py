@@ -546,27 +546,96 @@ def update_seasonal_rule(
         action="pricing.seasonal_rule.update",
         entity_type="seasonal_price_rule",
         entity_id=str(rule_id),
-        after_obj=updated,
-        severity=AuditSeverity.info
-    )
-    return updated
+            # 1. חפש כלל עונתי רלוונטי
+            seasonal_rule = None
+            if season_id:
+                seasonal_rules = crud_seasonal_price_rule.get_filtered(db, season_id=season_id, entity_type=entity_type, entity_value=entity_value, active_only=True)
+                if seasonal_rules:
+                    seasonal_rule = seasonal_rules[0]
 
-@router.delete("/seasonal-rules/{rule_id}", status_code=204)
-def delete_seasonal_rule(
-    rule_id: int,
-    db: Session = Depends(get_db),
-    current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
-):
-    rule = db.query(crud_seasonal_price_rule.model).get(rule_id)
-    if not rule:
-        raise HTTPException(404, "Seasonal price rule not found")
-    db.delete(rule)
-    db.commit()
-    log_audit_event(
-        db,
-        actor_user_id=current_user.id,
-        action="pricing.seasonal_rule.delete",
-        entity_type="seasonal_price_rule",
-        entity_id=str(rule_id),
-        severity=AuditSeverity.info
-    )
+            # 2. חפש כלל מחיר בסיסי (רגיל)
+            base_rule = None
+            base_rules = crud_price_rule.get_filtered(db, entity_type=entity_type, entity_value=entity_value, season_id=season_id, active_only=True)
+            if base_rules:
+                base_rule = base_rules[0]
+
+            # אם אין כלל בסיסי, נסה כלל גלובלי
+            if not base_rule:
+                base_rules = crud_price_rule.get_filtered(db, entity_type=entity_type, entity_value=None, season_id=season_id, active_only=True)
+                if base_rules:
+                    base_rule = base_rules[0]
+
+            from app.models.pricing import PriceType
+
+            if not base_rule:
+                # אין כלל בסיסי — לא ניתן לחשב מחיר
+                return PriceCalculateResponse(
+                    total_price=0,
+                    price_type_used=PriceType.daily,
+                    billable_days=0,
+                    actual_days=0,
+                    price_rule_id=None,
+                    breakdown=[],
+                    note="לא נמצא כלל מחיר בסיסי"
+                )
+
+            # 3. חשב מחיר בסיסי
+            base_price = base_rule.price
+            price_type = base_rule.price_type
+            breakdown = [{
+                "label": f"מחיר בסיסי ({base_price}₪)",
+                "season_name": str(season_id) if season_id else None,
+                "days": 1,
+                "billable_days": 1,
+                "skipped_dates": [],
+                "price_type": price_type,
+                "unit_price": base_price,
+                "subtotal": base_price,
+            }]
+
+            # 4. אם יש כלל עונתי — הפעל אותו
+            total_price = base_price
+            note = None
+            if seasonal_rule:
+                rt = seasonal_rule.rule_type
+                val = seasonal_rule.value
+                if rt == "discount_percent":
+                    diff = -base_price * (val / 100)
+                    total_price = base_price + diff
+                    label = f"הנחה עונתית {val}% (-{abs(diff):.2f}₪)"
+                elif rt == "discount_fixed":
+                    diff = -val
+                    total_price = base_price + diff
+                    label = f"הנחה עונתית {val}₪ (-{abs(diff):.2f}₪)"
+                elif rt == "surcharge_percent":
+                    diff = base_price * (val / 100)
+                    total_price = base_price + diff
+                    label = f"תוספת עונתית {val}% (+{diff:.2f}₪)"
+                elif rt == "surcharge_fixed":
+                    diff = val
+                    total_price = base_price + diff
+                    label = f"תוספת עונתית {val}₪ (+{diff:.2f}₪)"
+                else:
+                    diff = 0
+                    label = f"כלל עונתי לא ידוע"
+                breakdown.append({
+                    "label": label,
+                    "season_name": str(season_id) if season_id else None,
+                    "days": 1,
+                    "billable_days": 1,
+                    "skipped_dates": [],
+                    "price_type": price_type,
+                    "unit_price": diff,
+                    "subtotal": total_price,
+                })
+                note = f"הופעל כלל עונתי: {rt} ({val})"
+
+            return PriceCalculateResponse(
+                total_price=total_price,
+                price_type_used=price_type,
+                billable_days=1,
+                actual_days=1,
+                price_rule_id=base_rule.id,
+                breakdown=breakdown,
+                note=note
+            )
