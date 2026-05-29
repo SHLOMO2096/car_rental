@@ -26,6 +26,10 @@ class PriceEntityType(str, enum.Enum):
     global_ = "global"
 
 def upgrade():
+    op.execute("DROP TYPE IF EXISTS priceentitytype CASCADE")
+    op.execute("DROP TYPE IF EXISTS seasonalpriceruletype CASCADE")
+    op.execute("DROP TYPE IF EXISTS priceentitytype CASCADE")
+    op.execute("DROP TYPE IF EXISTS seasonalpriceruletype CASCADE")
     op.create_table(
         'seasonal_price_rules',
         sa.Column('id', sa.Integer, primary_key=True),
@@ -41,4 +45,3 @@ def upgrade():
 
 def downgrade():
     op.drop_table('seasonal_price_rules')
-
