@@ -21,6 +21,7 @@ export default function Pricing() {
     { id:"seasons",  label:"עונות מחיר",  icon:"🗓" },
     { id:"rules",    label:"כללי מחיר",   icon:"💰" },
     { id:"holidays", label:"חגים",         icon:"✡️" },
+    { id:"seasonal", label:"כללים עונתיים", icon:"📈" },
   ];
 
   return (
@@ -47,6 +48,7 @@ export default function Pricing() {
       {tab === "seasons"  && <SeasonsTab  canManage={canManage} />}
       {tab === "rules"    && <RulesTab    canManage={canManage} />}
       {tab === "holidays" && <HolidaysTab canManage={canManage} />}
+      {tab === "seasonal" && <SeasonalRulesTab canManage={canManage} />}
     </div>
   );
 }
@@ -429,7 +431,7 @@ function RulesTab({ canManage }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════���═══════════════
 // TAB 3 — חגים
 // ══════════════════════════════════════════════════════════════════════════════
 function HolidaysTab({ canManage }) {
@@ -555,6 +557,161 @@ function HolidaysTab({ canManage }) {
             <input type="date" value={form.date||""} onChange={e=>setForm({...form,date:e.target.value})} style={inputStyle} />
           </Field>
           <ModalFooter saving={saving} onCancel={()=>setForm(null)} onSave={save} />
+        </ModalOverlay>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB 4 — כללים עונתיים
+// ══════════════════════════════════════════════════════════════════════════════
+function SeasonalRulesTab({ canManage }) {
+  const [rules, setRules] = useState([]);
+  const [seasons, setSeasons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState(null); // null=סגור | {}=חדש | {id,...}=עריכה
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      pricingAPI.listSeasonalRules(),
+      pricingAPI.listSeasons()
+    ])
+      .then(([rules, seasons]) => {
+        setRules(rules);
+        setSeasons(seasons);
+      })
+      .catch(() => toast.error("נכשל בטעינת כללים עונתיים"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const openNew = () => setForm({
+    season_id: "",
+    entity_type: "global_",
+    entity_value: "",
+    rule_type: "discount_percent",
+    value: 0,
+    is_active: true
+  });
+
+  const openEdit = (r) => setForm({ ...r });
+
+  const save = async () => {
+    if (!form.season_id) return toast.error("חובה לבחור עונ��");
+    setSaving(true);
+    try {
+      if (form.id) {
+        await pricingAPI.updateSeasonalRule(form.id, form);
+        toast.success("כלל עודכן");
+      } else {
+        await pricingAPI.createSeasonalRule(form);
+        toast.success("כלל נוצר");
+      }
+      setForm(null);
+      // רענון
+      setLoading(true);
+      const rules = await pricingAPI.listSeasonalRules();
+      setRules(rules);
+    } catch(e) {
+      toast.error(e?.detail || "שגיאה בשמירה");
+    } finally { setSaving(false); }
+  };
+
+  const remove = async (r) => {
+    if (!confirm("למחוק את הכלל?")) return;
+    try {
+      await pricingAPI.deleteSeasonalRule(r.id);
+      toast.success("כלל נמחק");
+      setRules(rules => rules.filter(x => x.id !== r.id));
+    } catch(e) { toast.error(e?.detail || "שגיאה במחיקה"); }
+  };
+
+  return (
+    <div>
+      {canManage && (
+        <button onClick={openNew} style={btnStyle("#2563eb")}>+ כלל עונתי חדש</button>
+      )}
+      {loading ? <Spinner /> : (
+        <table style={{ width:"100%", marginTop:16, borderCollapse:"collapse" }}>
+          <thead>
+            <tr style={{ background:"#f1f5f9" }}>
+              <th>עונה</th>
+              <th>סוג ישות</th>
+              <th>ערך ישות</th>
+              <th>סוג כלל</th>
+              <th>ערך</th>
+              <th>פעיל</th>
+              <th>פעולות</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rules.length === 0 && (
+              <tr><td colSpan={7} style={{ color:"#94a3b8", textAlign:"center" }}>אין כללים עונתיים</td></tr>
+            )}
+            {rules.map(r => (
+              <tr key={r.id} style={{ background: r.is_active ? "#fff" : "#f1f5f9" }}>
+                <td>{seasons.find(s => s.id === r.season_id)?.name || r.season_id}</td>
+                <td>{ENTITY_HE[r.entity_type]}</td>
+                <td>{r.entity_value || "-"}</td>
+                <td>{r.rule_type}</td>
+                <td>{r.value}</td>
+                <td>{r.is_active ? "כן" : "לא"}</td>
+                <td>
+                  {canManage && (
+                    <>
+                      <button onClick={() => openEdit(r)} style={smallBtn("#e0f2fe","#0369a1")}>ערוך</button>
+                      <button onClick={() => remove(r)} style={smallBtn("#fef2f2","#dc2626")}>מחק</button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {/* Modal עריכה/יצירה */}
+      {form !== null && (
+        <ModalOverlay onClose={() => setForm(null)}>
+          <h3 style={{ margin:"0 0 16px", color:"#1e293b" }}>
+            {form.id ? "✏️ עדכון כלל עונתי" : "➕ כלל עונתי חדש"}
+          </h3>
+          <Field label="עונה">
+            <select value={form.season_id} onChange={e=>setForm({...form,season_id:+e.target.value})} style={inputStyle}>
+              <option value="">בחר עונה</option>
+              {seasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </Field>
+          <Field label="סוג ישות">
+            <select value={form.entity_type} onChange={e=>setForm({...form,entity_type:e.target.value})} style={inputStyle}>
+              <option value="car">רכב ספציפי</option>
+              <option value="group">דגם</option>
+              <option value="category">קטגוריה</option>
+              <option value="global_">גלובלי</option>
+            </select>
+          </Field>
+          <Field label="ערך ישות">
+            <input value={form.entity_value||""} onChange={e=>setForm({...form,entity_value:e.target.value})} style={inputStyle} />
+          </Field>
+          <Field label="סוג כלל">
+            <select value={form.rule_type} onChange={e=>setForm({...form,rule_type:e.target.value})} style={inputStyle}>
+              <option value="discount_percent">הנחה באחוזים</option>
+              <option value="discount_fixed">הנחה קבועה</option>
+              <option value="surcharge_percent">תוספת באחוזים</option>
+              <option value="surcharge_fixed">תוספת קבועה</option>
+            </select>
+          </Field>
+          <Field label="ערך">
+            <input type="number" value={form.value} onChange={e=>setForm({...form,value:+e.target.value})} style={inputStyle} />
+          </Field>
+          <Field label="פעיל">
+            <input type="checkbox" checked={form.is_active} onChange={e=>setForm({...form,is_active:e.target.checked})} />
+          </Field>
+          <div style={{ display:"flex", gap:8, marginTop:18 }}>
+            <button onClick={save} disabled={saving} style={btnStyle("#2563eb")}>שמור</button>
+            <button onClick={()=>setForm(null)} style={btnStyle("#e5e7eb","#334155")}>ביטול</button>
+          </div>
         </ModalOverlay>
       )}
     </div>

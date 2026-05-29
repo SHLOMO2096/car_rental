@@ -24,5 +24,10 @@ export const pricingAPI = {
   // ── Calculation ───────────────────────────────────────────────────────────
   calculate:      (data)     => api.post("/pricing/calculate", data).then(r => r.data),
   effectivePrice: (carId, params) => api.get(`/pricing/effective/${carId}`, { params }).then(r => r.data),
-};
 
+  // ── Seasonal Price Rules ───────────────────────────────────────────────
+  listSeasonalRules:   (params)   => api.get("/pricing/seasonal-rules", { params }).then(r => r.data),
+  createSeasonalRule:  (data)     => api.post("/pricing/seasonal-rules", data).then(r => r.data),
+  updateSeasonalRule:  (id, data) => api.patch(`/pricing/seasonal-rules/${id}`, data).then(r => r.data),
+  deleteSeasonalRule:  (id)       => api.delete(`/pricing/seasonal-rules/${id}`),
+};
