@@ -24,6 +24,7 @@ export const pricingAPI = {
   // ── Calculation ───────────────────────────────────────────────────────────
   calculate:      (data)     => api.post("/pricing/calculate", data).then(r => r.data),
   effectivePrice: (carId, params) => api.get(`/pricing/effective/${carId}`, { params }).then(r => r.data),
+  effectiveEntityPrice: (data) => api.post("/pricing/effective-entity", data).then(r => r.data),
 
   // ── Seasonal Price Rules ───────────────────────────────────────────────
   listSeasonalRules:   (params)   => api.get("/pricing/seasonal-rules", { params }).then(r => r.data),

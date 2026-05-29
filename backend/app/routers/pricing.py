@@ -11,7 +11,7 @@ Endpoints:
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Body
 from sqlalchemy.orm import Session
 from datetime import date
 
@@ -421,6 +421,67 @@ def get_effective_price(
         return_time=return_time,
     )
     return result
+
+
+@router.post("/effective-entity", response_model=PriceCalculateResponse)
+def get_effective_price_by_entity(
+    data: dict = Body(...),
+    db: Session = Depends(get_db),
+    _=Depends(require_permission(Permissions.PRICING_VIEW)),
+):
+    """
+    חישוב מחיר אפקטיבי לפי entity_type, entity_value, season_id (לא רק לפי רכב).
+    מחזיר את המחיר המשוקלל לפי הכללים הרלוונטיים.
+    """
+    entity_type = data.get("entity_type")
+    entity_value = data.get("entity_value")
+    season_id = data.get("season_id")
+    # כאן יש לממש את הלוגיקה למציאת הכלל הרלוונטי (eonתי/רגיל)
+    # דוגמה בסיסית:
+    from app.crud.pricing import crud_price_rule, crud_seasonal_price_rule
+    from app.schemas.pricing import PriceCalculateResponse
+    # שלוף כלל עונתי רלוונטי
+    rule = None
+    if season_id:
+        rules = crud_seasonal_price_rule.get_filtered(db, season_id=season_id, entity_type=entity_type, entity_value=entity_value, active_only=True)
+        if rules:
+            rule = rules[0]
+    if not rule:
+        # נסה כלל רגיל
+        rules = crud_price_rule.get_filtered(db, entity_type=entity_type, entity_value=entity_value, season_id=season_id, active_only=True)
+        if rules:
+            rule = rules[0]
+    if not rule:
+        return PriceCalculateResponse(
+            total_price=0,
+            price_type_used=None,
+            billable_days=0,
+            actual_days=0,
+            price_rule_id=None,
+            breakdown=[],
+            note="לא נמצא כלל רלוונטי"
+        )
+    # בנה breakdown בסיסי
+    label = f"{rule.value} ({rule.rule_type})"
+    breakdown = [{
+        "label": label,
+        "season_name": str(season_id) if season_id else None,
+        "days": 1,
+        "billable_days": 1,
+        "skipped_dates": [],
+        "price_type": None,
+        "unit_price": rule.value,
+        "subtotal": rule.value,
+    }]
+    return PriceCalculateResponse(
+        total_price=rule.value,
+        price_type_used=None,
+        billable_days=1,
+        actual_days=1,
+        price_rule_id=rule.id,
+        breakdown=breakdown,
+        note=None
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════

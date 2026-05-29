@@ -432,7 +432,7 @@ function RulesTab({ canManage }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════���════════════�����══
+// ══════════════════════════════════════════════════════════════════════════════
 // TAB 3 — חגים
 // ══════════════════════════════════════════════════════════════════════════════
 function HolidaysTab({ canManage }) {
@@ -752,7 +752,6 @@ function SeasonalRulesTab({ canManage }) {
 
     const fetchPrice = async () => {
       setLoading(true); setError("");
-      // ולידציה קשיחה
       if (!params.season_id || isNaN(+params.season_id)) {
         setError("חובה לבחור עונה"); setLoading(false); return;
       }
@@ -760,16 +759,14 @@ function SeasonalRulesTab({ canManage }) {
         setError("חובה לבחור ערך ישות"); setLoading(false); return;
       }
       try {
-        // ודא שליחה של season_id כ-int
         const payload = {
           ...params,
           season_id: +params.season_id,
         };
-        // ודא entity_value כ-int אם צריך (למשל לרכב)
         if (["car"].includes(params.entity_type) && params.entity_value && !isNaN(+params.entity_value)) {
           payload.entity_value = +params.entity_value;
         }
-        const res = await pricingAPI.effectivePrice(payload);
+        const res = await pricingAPI.effectiveEntityPrice(payload);
         setPreview(res);
       } catch(e) {
         setError(e?.detail || "שגיאה בחישוב");
@@ -839,8 +836,15 @@ function SeasonalRulesTab({ canManage }) {
         {error && <div style={{ color:"#dc2626" }}>{error}</div>}
         {preview && (
           <div style={{ background: "#fff", borderRadius: 8, padding: 12, marginTop: 10, fontSize: 15 }}>
-            <b>מחיר בפועל:</b> ₪{preview.price?.toLocaleString()}
-            {preview.details && <div style={{ fontSize:12, color:"#64748b", marginTop:6 }}>{preview.details}</div>}
+            <b>מחיר בפועל:</b> ₪{preview.total_price?.toLocaleString()}
+            {preview.breakdown && preview.breakdown.length > 0 && (
+              <div style={{ fontSize:12, color:"#64748b", marginTop:6 }}>
+                {preview.breakdown.map((b,i)=>(
+                  <div key={i}>{b.label}</div>
+                ))}
+              </div>
+            )}
+            {preview.note && <div style={{ fontSize:12, color:"#64748b", marginTop:6 }}>{preview.note}</div>}
           </div>
         )}
       </div>
@@ -876,7 +880,7 @@ function SeasonalRulesTab({ canManage }) {
                 <td>{ENTITY_HE[r.entity_type]}</td>
                 <td>{r.entity_value || "-"}</td>
                 <td>{r.rule_type}</td>
-                <td>{r.value}</td>
+                <td>{formatRuleValue(r.rule_type, r.value)}</td>
                 <td>{r.is_active ? "כן" : "לא"}</td>
                 <td>
                   {canManage && (
@@ -1052,4 +1056,13 @@ function useCarTree() {
     });
   }, []);
   return { cars, carTree };
+}
+
+// Add helper for value display
+function formatRuleValue(rule_type, value) {
+  if (rule_type === "discount_percent") return `-${value}%`;
+  if (rule_type === "discount_fixed") return `-${value}₪`;
+  if (rule_type === "surcharge_percent") return `+${value}%`;
+  if (rule_type === "surcharge_fixed") return `+${value}₪`;
+  return value;
 }
