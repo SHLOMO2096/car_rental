@@ -892,18 +892,30 @@ function SeasonRulesTab({ canManage, isMobile }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // מסיר כללי-רכב שהדגם שלהם כבר מכוסה בכלל-דגם
+  // מסיר כללים שמכוסים על ידי כלל ברמה גבוהה יותר:
+  // - כלל-דגם מוסתר אם יש כלל-קטגוריה לקטגוריה שלו
+  // - כלל-רכב מוסתר אם יש כלל-דגם לדגם שלו
   const deduplicatedRules = useMemo(() => {
+    const categoryRuleValues = new Set(
+      prules.filter(r => r.entity_type === "category").map(r => r.entity_value)
+    );
     const modelRuleValues = new Set(
       prules.filter(r => r.entity_type === "model").map(r => r.entity_value)
     );
     return prules.filter(r => {
-      if (r.entity_type !== "car") return true;
-      // כשallCars עדיין לא נטען — מסתיר כל כלל-רכב (safe fallback)
-      if (allCars.length === 0) return false;
-      const car = allCars.find(c => String(c.id) === r.entity_value);
-      if (!car) return true;
-      return !modelRuleValues.has(car.name || "");
+      if (r.entity_type === "model") {
+        if (allCars.length === 0) return true;
+        const car = allCars.find(c => c.name === r.entity_value);
+        if (!car) return true;
+        return !categoryRuleValues.has(car.category || "");
+      }
+      if (r.entity_type === "car") {
+        if (allCars.length === 0) return false;
+        const car = allCars.find(c => String(c.id) === r.entity_value);
+        if (!car) return true;
+        return !modelRuleValues.has(car.name || "");
+      }
+      return true;
     });
   }, [prules, allCars]);
 
@@ -1058,7 +1070,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
                     <em style={{ color: "#6b7280" }}>כל הכללים</em>
                   </label>
                 )}
-                {deduplicatedRules.filter(r => r.entity_type !== "model" && r.entity_type !== "car").map(r => {
+                {deduplicatedRules.map(r => {
                   const sid = String(r.id);
                   const checked = form.price_rule_ids.includes(sid);
                   return (
