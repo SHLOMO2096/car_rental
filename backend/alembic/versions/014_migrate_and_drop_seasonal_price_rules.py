@@ -29,7 +29,7 @@ def upgrade():
                                   applies_to_half_day, applies_to_day,
                                   applies_to_week, applies_to_month)
         SELECT DISTINCT spr.season_id,
-               NULL,      -- חל על כל כללי המחיר
+               NULL::INTEGER,
                true, true, true, true
         FROM   seasonal_price_rules spr
         WHERE  spr.is_active = true
