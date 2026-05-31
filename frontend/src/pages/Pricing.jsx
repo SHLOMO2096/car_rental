@@ -903,6 +903,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
       prules.filter(r => r.entity_type === "model").map(r => r.entity_value)
     );
     console.log("[dedup] allCars.length:", allCars.length, "modelRuleValues:", [...modelRuleValues], "categoryRuleValues:", [...categoryRuleValues]);
+    console.log("[dedup] all prules:", prules.map(r => `id=${r.id} type=${r.entity_type} val=${r.entity_value} name=${r.name}`));
     return prules.filter(r => {
       if (r.entity_type === "model") {
         if (allCars.length === 0) return true;
