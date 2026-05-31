@@ -5,6 +5,7 @@ import {
   getEarliestAllowedPickupTime,
   isBookingStartInPast,
   makeEmptyForm,
+  subtractMinutes,
 } from "../features/bookings/utils/form";
 
 
@@ -18,16 +19,24 @@ afterEach(() => {
 });
 
 describe("Bookings makeEmptyForm defaults", () => {
-  it("defaults pickup time to 08:30 and return time to 08:00 when no settings are provided", () => {
-    const form = makeEmptyForm({});
+  it("defaults pickup time to current rounded time and return time to 30 min before", () => {
+    vi.setSystemTime(new Date("2026-05-18T08:30:00"));
+    const form = makeEmptyForm();
     expect(form.start_time).toBe("08:30");
     expect(form.end_time).toBe("08:00");
   });
 
-  it("uses provided general_settings overrides", () => {
-    const form = makeEmptyForm({ default_pickup_time: "09:15", default_return_time: "18:45" });
-    expect(form.start_time).toBe("09:15");
-    expect(form.end_time).toBe("18:45");
+  it("rounds pickup time up to next 30-min slot and sets return 30 min earlier", () => {
+    vi.setSystemTime(new Date("2026-05-18T10:07:00"));
+    const form = makeEmptyForm();
+    expect(form.start_time).toBe("10:30");
+    expect(form.end_time).toBe("10:00");
+  });
+
+  it("subtractMinutes returns correct time and clamps at 00:00", () => {
+    expect(subtractMinutes("08:30", 30)).toBe("08:00");
+    expect(subtractMinutes("10:00", 30)).toBe("09:30");
+    expect(subtractMinutes("00:15", 30)).toBe("00:00");
   });
 
   it("bumps same-day prefills to the next allowed pickup slot", () => {

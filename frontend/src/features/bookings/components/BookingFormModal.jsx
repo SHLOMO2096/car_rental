@@ -2,7 +2,7 @@ import Modal from "../../../components/ui/Modal";
 
 import { s } from "../styles";
 import { addDays, formatDateTime, todayISO } from "../utils/dates";
-import { getEarliestAllowedPickupTime } from "../utils/form";
+import { getEarliestAllowedPickupTime, subtractMinutes } from "../utils/form";
 
 export default function BookingFormModal({
   open,
@@ -175,11 +175,15 @@ export default function BookingFormModal({
               value={form.start_date}
               min={isCreate ? todayISO() : undefined}
               onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  start_date: e.target.value,
-                  start_time: getEarliestAllowedPickupTime(e.target.value, new Date(), f.start_time),
-                }))
+                setForm((f) => {
+                  const newPickupTime = getEarliestAllowedPickupTime(e.target.value, new Date(), f.start_time);
+                  return {
+                    ...f,
+                    start_date: e.target.value,
+                    start_time: newPickupTime,
+                    end_time: subtractMinutes(newPickupTime, 30),
+                  };
+                })
               }
               style={{ ...s.input, flex: 2 }}
             />

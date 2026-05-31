@@ -26,6 +26,13 @@ export function isTimeBefore(left, right) {
 }
 
 
+export function subtractMinutes(time, minutes) {
+  const [h, m] = time.split(":").map(Number);
+  const total = Math.max(0, h * 60 + m - minutes);
+  return `${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`;
+}
+
+
 export function getEarliestAllowedPickupTime(startDate, now = new Date(), fallbackTime = DEFAULT_GENERAL_SETTINGS.default_pickup_time) {
   if (!startDate || startDate !== todayISO()) {
     return fallbackTime;
@@ -41,7 +48,9 @@ export function isBookingStartInPast(form, now = new Date()) {
   return isTimeBefore(form.start_time, `${pad2(now.getHours())}:${pad2(now.getMinutes())}`);
 }
 
-export function makeEmptyForm(defaults = {}) {
+export function makeEmptyForm(_defaults = {}) {
+  const pickupTime = getRoundedCurrentTime();
+  const returnTime = subtractMinutes(pickupTime, 30);
   return {
     customer_id: "",
     car_id: "",
@@ -51,9 +60,9 @@ export function makeEmptyForm(defaults = {}) {
     customer_phone: "",
     customer_id_num: "",
     start_date: todayISO(),
-    start_time: defaults.default_pickup_time || DEFAULT_GENERAL_SETTINGS.default_pickup_time,
+    start_time: pickupTime,
     end_date: tomorrowISO(),
-    end_time: defaults.default_return_time || DEFAULT_GENERAL_SETTINGS.default_return_time,
+    end_time: returnTime,
     notes: "",
     operator_note: "",
   };
