@@ -1058,7 +1058,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
                     <em style={{ color: "#6b7280" }}>כל הכללים</em>
                   </label>
                 )}
-                {deduplicatedRules.filter(r => r.entity_type === "global_" || r.entity_type === "category").map(r => {
+                {deduplicatedRules.filter(r => r.entity_type !== "model" && r.entity_type !== "car").map(r => {
                   const sid = String(r.id);
                   const checked = form.price_rule_ids.includes(sid);
                   return (
