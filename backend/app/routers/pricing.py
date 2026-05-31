@@ -4,7 +4,7 @@ Router למערכת המחירים.
 Endpoints:
     Seasons     : GET /seasons, POST /seasons, PUT /seasons/{id}, DELETE /seasons/{id}
     Rules       : GET /rules, POST /rules, PUT /rules/{id}, DELETE /rules/{id}
-    Season-Rules: POST /season-rules, DELETE /season-rules/{id}
+    Season-Rules: GET /season-rules, POST /season-rules, DELETE /season-rules/{id}
     Holidays    : GET /holidays, POST /holidays, PUT /holidays/{id},
                   DELETE /holidays/{id}, POST /holidays/generate/{year}
     Calc        : POST /calculate, GET /effective/{car_id}
@@ -212,6 +212,18 @@ def delete_rule(
 # ══════════════════════════════════════════════════════════════════════════════
 # Season Rules
 # ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/season-rules", response_model=list[SeasonRuleOut])
+def list_season_rules(
+    season_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
+):
+    if season_id is not None:
+        return crud_season_rule.get_by_season(db, season_id)
+    from app.models.pricing import SeasonRule
+    return db.query(SeasonRule).order_by(SeasonRule.id).all()
+
 
 @router.post("/season-rules", response_model=SeasonRuleOut, status_code=201)
 def create_season_rule(
