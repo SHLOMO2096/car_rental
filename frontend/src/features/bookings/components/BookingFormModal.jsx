@@ -173,7 +173,7 @@ export default function BookingFormModal({
             <input
               type="date"
               value={form.start_date}
-              min={todayISO()}
+              min={isCreate ? todayISO() : undefined}
               onChange={(e) =>
                 setForm((f) => ({
                   ...f,
@@ -186,7 +186,7 @@ export default function BookingFormModal({
             <input
               type="time"
               value={form.start_time}
-              min={form.start_date === todayISO() ? earliestStartTime : undefined}
+              min={isCreate && form.start_date === todayISO() ? earliestStartTime : undefined}
               onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
               style={{ ...s.input, flex: 1 }}
             />
