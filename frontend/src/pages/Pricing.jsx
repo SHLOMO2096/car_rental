@@ -902,6 +902,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
     const modelRuleValues = new Set(
       prules.filter(r => r.entity_type === "model").map(r => r.entity_value)
     );
+    console.log("[dedup] allCars.length:", allCars.length, "modelRuleValues:", [...modelRuleValues], "categoryRuleValues:", [...categoryRuleValues]);
     return prules.filter(r => {
       if (r.entity_type === "model") {
         if (allCars.length === 0) return true;
@@ -912,6 +913,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
       if (r.entity_type === "car") {
         if (allCars.length === 0) return false;
         const car = allCars.find(c => String(c.id) === r.entity_value);
+        console.log("[dedup] car rule", r.entity_value, "→ car:", car?.name, "in modelRuleValues:", modelRuleValues.has(car?.name || ""));
         if (!car) return true;
         return !modelRuleValues.has(car.name || "");
       }
