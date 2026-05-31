@@ -65,7 +65,7 @@ export default function Pricing() {
         💰 ניהול מחירים
       </h2>
 
-      {/* Tabs — גלילה אופקית במובייל */}
+      {/* Tabs */}
       <div style={{
         display: "flex", gap: 4, marginBottom: 24,
         borderBottom: "2px solid #e2e8f0",
@@ -204,7 +204,6 @@ function SeasonsTab({ canManage, isMobile }) {
               borderRadius: 12, padding: 16,
               opacity: s.is_active ? 1 : 0.6,
             }}>
-              {/* כותרת */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 800, fontSize: 15, color: "#1e293b", marginBottom: 4 }}>
@@ -231,7 +230,6 @@ function SeasonsTab({ canManage, isMobile }) {
                 </div>
               </div>
 
-              {/* adjustment badge */}
               {s.adjustment_type && s.adjustment_value != null && (
                 <div style={{ marginTop: 8 }}>
                   <span style={badgeStyle(
@@ -256,7 +254,6 @@ function SeasonsTab({ canManage, isMobile }) {
         </div>
       )}
 
-      {/* Modal עריכה/יצירה */}
       <Modal open={form !== null} onClose={() => setForm(null)}
              title={form?.id ? "✏️ עדכון עונה" : "➕ עונה חדשה"}>
         {form && <SeasonForm form={form} setForm={setForm} saving={saving}
@@ -277,7 +274,6 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
                style={inp} placeholder="קיץ, חגי תשרי..." />
       </Field>
 
-      {/* סוג עונה */}
       <Field label="סוג עונה">
         <div style={{ display: "flex", gap: 12 }}>
           {[["peak", "⬆ עונת שיא"], ["low", "⬇ עונת שפל"]].map(([val, lbl]) => (
@@ -291,14 +287,12 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
         </div>
       </Field>
 
-      {/* toggle is_recurring */}
       <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer" }}>
         <ToggleSwitch checked={!!form.is_recurring}
                       onChange={v => f("is_recurring", v)} />
         <span style={{ fontSize: 13, color: "#374151" }}>חוזר שנתי (התעלם מהשנה)</span>
       </label>
 
-      {/* תאריכים */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
         <Field label="מתאריך *">
           <input type="date" value={form.valid_from || ""}
@@ -320,7 +314,6 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
         </Field>
       </div>
 
-      {/* adjustment */}
       <div style={{ background: "#f8fafc", borderRadius: 10, padding: 14 }}>
         <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", marginBottom: hasAdj ? 12 : 0 }}>
           <ToggleSwitch checked={hasAdj}
@@ -335,7 +328,6 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
 
         {hasAdj && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {/* כיוון */}
             <div style={{ display: "flex", gap: 16 }}>
               {[["add", "תוספת"], ["subtract", "הנחה"]].map(([val, lbl]) => (
                 <label key={val} style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer", fontSize: 13 }}>
@@ -346,7 +338,6 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
                 </label>
               ))}
             </div>
-            {/* סוג */}
             <div style={{ display: "flex", gap: 16 }}>
               {[["percent", "אחוזים (%)"], ["fixed", "סכום קבוע (₪)"]].map(([val, lbl]) => (
                 <label key={val} style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer", fontSize: 13 }}>
@@ -357,7 +348,6 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
                 </label>
               ))}
             </div>
-            {/* ערך */}
             <Field label={`ערך (${form.adjustment_type === "percent" ? "%" : "₪"})`}>
               <input type="number" min={0} step={form.adjustment_type === "percent" ? 1 : 0.01}
                      value={form.adjustment_value} onChange={e => f("adjustment_value", e.target.value)}
@@ -379,7 +369,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TAB 2 — כללי מחיר (עץ היררכי / accordion)
+// TAB 2 — כללי מחיר (עץ צדדי + פאנל עריכה)
 // ══════════════════════════════════════════════════════════════════════════════
 const EMPTY_RULE = {
   name: "", entity_type: "category", entity_value: "",
@@ -389,14 +379,15 @@ const EMPTY_RULE = {
 };
 
 function RulesTab({ canManage, isMobile }) {
-  const [rules,   setRules]   = useState([]);
-  const [seasons, setSeasons] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [form, setForm]       = useState(null);
-  const [saving, setSaving]   = useState(false);
-  const [openCats, setOpenCats] = useState({});
-  const [openGroups, setOpenGroups] = useState({});
-  const { carTree, allCars }  = useCarTree();
+  const [rules,       setRules]       = useState([]);
+  const [seasons,     setSeasons]     = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [form,        setForm]        = useState(null);
+  const [saving,      setSaving]      = useState(false);
+  const [openCats,    setOpenCats]    = useState({});
+  const [openGroups,  setOpenGroups]  = useState({});
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { carTree, allCars } = useCarTree();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -412,7 +403,6 @@ function RulesTab({ canManage, isMobile }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const openNew  = () => setForm({ ...EMPTY_RULE });
   const openEdit = (r) => setForm({
     ...r,
     price_half_day: r.price_half_day ?? "",
@@ -420,6 +410,8 @@ function RulesTab({ canManage, isMobile }) {
     price_week:     r.price_week     ?? "",
     price_month:    r.price_month    ?? "",
   });
+  const openNew   = (defaults = {}) => setForm({ ...EMPTY_RULE, ...defaults });
+  const closeForm = () => setForm(null);
 
   const save = async () => {
     if (form.entity_type !== "global_" && !form.entity_value?.trim())
@@ -462,222 +454,289 @@ function RulesTab({ canManage, isMobile }) {
     catch (e) { toast.error(e?.response?.data?.detail || "שגיאה"); }
   };
 
-  // ── build tree ──────────────────────────────────────────────────────────────
-  // find rule for entity
   const ruleFor = (type, val) =>
     rules.find(r => r.entity_type === type && r.entity_value === (val ?? null) && r.is_active);
   const globalRule = ruleFor("global_", null);
-
-  const toggleCat   = (cat)         => setOpenCats(prev => ({ ...prev, [cat]: !prev[cat] }));
-  const toggleGroup = (cat, grp)    => setOpenGroups(prev => ({
-    ...prev, [`${cat}|${grp}`]: !prev[`${cat}|${grp}`]
-  }));
-
-  // ── inherit placeholder ─────────────────────────────────────────────────────
-  const inheritedPrice = (car, priceKey) => {
-    const carRule = rules.find(r =>
-      r.entity_type === "car" && r.entity_value === String(car.id) && r.is_active);
-    if (carRule?.[priceKey] != null) return null; // has own
-    const grpRule = rules.find(r =>
-      r.entity_type === "model" && r.entity_value === car.name && r.is_active);
-    if (grpRule?.[priceKey] != null) return grpRule[priceKey];
-    const catRule = rules.find(r =>
-      r.entity_type === "category" && r.entity_value === car.category && r.is_active);
-    if (catRule?.[priceKey] != null) return catRule[priceKey];
-    return globalRule?.[priceKey] ?? null;
-  };
 
   const hasOverride = (type, val) => {
     const r = ruleFor(type, val);
     return !!(r && PRICE_FIELDS.some(f => r[f.key] != null));
   };
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
-    <div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-        {canManage && <button onClick={openNew} style={btn("#2563eb")}>+ כלל חדש</button>}
-        {/* כלל גלובלי quick access */}
-        {globalRule && (
-          <button onClick={() => openEdit(globalRule)}
-                  style={smallBtn("#fef9c3", "#854d0e")}>
-            🌐 גלובלי: {PRICE_FIELDS.filter(f => globalRule[f.key]).map(f => `${f.label} ₪${globalRule[f.key]}`).join(" · ")}
+    <div style={{
+      display: "flex", overflow: "hidden", position: "relative",
+      border: "1px solid #e2e8f0", borderRadius: 10,
+      height: "calc(100dvh - 190px)", minHeight: 460,
+    }}>
+      {/* Mobile overlay */}
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={closeSidebar}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 25 }}
+        />
+      )}
+
+      {/* ── LEFT: main panel ─────────────────────────────────────────────── */}
+      <div style={{ flex: 1, overflow: "hidden", position: "relative", background: "#f8fafc" }}>
+
+        {/* Mobile hamburger */}
+        {isMobile && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            style={{
+              position: "absolute", top: 12, right: 12, zIndex: 5,
+              background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6,
+              padding: "6px 10px", cursor: "pointer", fontSize: 13, color: "#374151",
+            }}
+          >
+            ☰ היררכיה
           </button>
         )}
-        {!globalRule && canManage && (
-          <button onClick={() => setForm({ ...EMPTY_RULE, entity_type: "global_", entity_value: "" })}
-                  style={smallBtn("#f1f5f9", "#64748b")}>
-            + כלל גלובלי
-          </button>
+
+        {form ? (
+          /* Edit / create panel */
+          <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "#fff" }}>
+            <div style={{
+              padding: "14px 20px", borderBottom: "1px solid #e2e8f0",
+              display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexShrink: 0,
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>
+                  {form.id ? "עריכת כלל מחיר" : "כלל מחיר חדש"}
+                </div>
+                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+                  {form.entity_type === "global_"
+                    ? "גלובלי"
+                    : `${ENTITY_HE[form.entity_type] || ""}: ${form.entity_value || ""}`}
+                </div>
+              </div>
+              <button
+                onClick={closeForm}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 4, borderRadius: 4, fontSize: 18, lineHeight: 1 }}
+              >✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+              <PriceRuleForm
+                form={form} setForm={setForm}
+                seasons={seasons} carTree={carTree} allCars={allCars}
+                saving={saving} onSave={save} onCancel={closeForm}
+                onDelete={form.id && canManage ? () => { remove(form); closeForm(); } : null}
+                isMobile={isMobile}
+              />
+            </div>
+          </div>
+        ) : (
+          /* Empty state */
+          <div style={{
+            height: "100%", display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            color: "#9ca3af", gap: 10,
+            paddingTop: isMobile ? 56 : 0,
+          }}>
+            <div style={{
+              width: 48, height: 48, border: "2px solid #e2e8f0", borderRadius: 8,
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+            }}>💰</div>
+            <p style={{ fontSize: 13, textAlign: "center", lineHeight: 1.7, margin: 0 }}>
+              בחר כלל מחיר מהעץ להצגה ועריכה
+              {canManage && <><br />או לחץ על "כלל חדש" להוספה</>}
+            </p>
+          </div>
         )}
       </div>
 
-      {loading ? <Spinner /> : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {Object.keys(carTree).length === 0 && (
-            <p style={{ color: "#94a3b8" }}>אין רכבים מוגדרים</p>
+      {/* ── RIGHT: sidebar tree ──────────────────────────────────────────── */}
+      <div style={{
+        width: 290, background: "#fff",
+        borderRight: "1px solid #e2e8f0",
+        display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden",
+        ...(isMobile ? {
+          position: "fixed", top: 0, bottom: 0,
+          right: sidebarOpen ? 0 : -300,
+          zIndex: 26,
+          transition: "right 0.25s cubic-bezier(0.4,0,0.2,1)",
+          boxShadow: sidebarOpen ? "-4px 0 20px rgba(0,0,0,0.15)" : "none",
+          width: 280,
+        } : {}),
+      }}>
+        {/* Sidebar header */}
+        <div style={{
+          padding: "12px 14px", borderBottom: "1px solid #e2e8f0",
+          display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+            הירכיה
+          </span>
+          {canManage && (
+            <button
+              onClick={() => { openNew(); closeSidebar(); }}
+              style={{ ...btn("#2563eb"), padding: "5px 10px", fontSize: 12 }}
+            >
+              + כלל חדש
+            </button>
           )}
-
-          {Object.entries(carTree).map(([cat, models]) => {
-            const catOverride = hasOverride("category", cat);
-            const isOpen = !!openCats[cat];
-
-            return (
-              <div key={cat} style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
-                {/* קטגוריה */}
-                <div
-                  onClick={() => toggleCat(cat)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    padding: "12px 16px", cursor: "pointer",
-                    background: isOpen ? "#eff6ff" : "#f8fafc",
-                    userSelect: "none",
-                  }}
-                >
-                  <span style={{ fontSize: 12, color: "#94a3b8", transition: "transform 0.2s",
-                                 transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
-                  <span style={{ fontWeight: 800, fontSize: 14, color: "#1e293b", flex: 1 }}>{cat}</span>
-                  <InheritBadge hasOverride={catOverride} />
-                  {canManage && (
-                    <button
-                      onClick={e => { e.stopPropagation(); openEdit(ruleFor("category", cat) || { ...EMPTY_RULE, entity_type: "category", entity_value: cat }); }}
-                      style={{ ...smallBtn("#e0f2fe", "#0369a1"), fontSize: 11, padding: "3px 8px" }}
-                    >
-                      ✏️
-                    </button>
-                  )}
-                </div>
-
-                {isOpen && (
-                  <div style={{ paddingRight: 16, paddingLeft: 8, paddingBottom: 8 }}>
-                    {Object.entries(models).map(([mdl, cars]) => {
-                      const grpOverride = hasOverride("model", mdl);
-                      const grpKey = `${cat}|${mdl}`;
-                      const isGrpOpen = !!openGroups[grpKey];
-
-                      return (
-                        <div key={mdl} style={{ marginTop: 6, border: "1px solid #f1f5f9", borderRadius: 8 }}>
-                          {/* דגם */}
-                          <div
-                            onClick={() => toggleGroup(cat, mdl)}
-                            style={{
-                              display: "flex", alignItems: "center", gap: 8,
-                              padding: "9px 12px", cursor: "pointer",
-                              background: isGrpOpen ? "#f0fdf4" : "#fff",
-                              userSelect: "none",
-                            }}
-                          >
-                            <span style={{ fontSize: 11, color: "#94a3b8", transition: "transform 0.2s",
-                                           transform: isGrpOpen ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
-                            <span style={{ fontWeight: 700, fontSize: 13, color: "#334155", flex: 1 }}>
-                              {mdl}
-                            </span>
-                            <InheritBadge hasOverride={grpOverride} />
-                            {canManage && (
-                              <button
-                                onClick={e => { e.stopPropagation(); openEdit(ruleFor("model", mdl) || { ...EMPTY_RULE, entity_type: "model", entity_value: mdl }); }}
-                                style={{ ...smallBtn("#e0f2fe", "#0369a1"), fontSize: 11, padding: "3px 8px" }}
-                              >
-                                ✏️
-                              </button>
-                            )}
-                          </div>
-
-                          {/* רכבים */}
-                          {isGrpOpen && (
-                            <div style={{ paddingRight: 12, paddingBottom: 6 }}>
-                              {cars.map(car => {
-                                const carRule     = ruleFor("car", String(car.id));
-                                const carOverride = !!(carRule && PRICE_FIELDS.some(f => carRule[f.key] != null));
-                                return (
-                                  <div key={car.id} style={{
-                                    display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
-                                    padding: "7px 8px", marginTop: 4,
-                                    background: "#fafafa", borderRadius: 7,
-                                  }}>
-                                    <span style={{ fontSize: 12, color: "#475569", flex: 1, minWidth: 120 }}>
-                                      🚗 {car.name}
-                                      <span style={{ color: "#94a3b8", marginRight: 4 }}>({car.plate})</span>
-                                    </span>
-                                    <InheritBadge hasOverride={carOverride} />
-                                    {/* מחירים יורשים */}
-                                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                      {PRICE_FIELDS.map(({ key, label }) => {
-                                        const own  = carRule?.[key];
-                                        const inh  = inheritedPrice(car, key);
-                                        const disp = own ?? inh;
-                                        if (disp == null) return null;
-                                        return (
-                                          <span key={key} style={badgeStyle(
-                                            own != null ? "#fef3c7" : "#f1f5f9",
-                                            own != null ? "#78350f" : "#64748b"
-                                          )}>
-                                            {label}: ₪{disp}
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                    {canManage && (
-                                      <button
-                                        onClick={() => openEdit(carRule || { ...EMPTY_RULE, entity_type: "car", entity_value: String(car.id) })}
-                                        style={{ ...smallBtn("#e0f2fe", "#0369a1"), fontSize: 11, padding: "3px 8px" }}
-                                      >
-                                        ✏️
-                                      </button>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </div>
-      )}
 
-      {/* Modal כלל מחיר */}
-      <Modal open={form !== null} onClose={() => setForm(null)}
-             title={form?.id ? "✏️ עדכון כלל מחיר" : "➕ כלל מחיר חדש"}
-             wide>
-        {form && (
-          <PriceRuleForm
-            form={form} setForm={setForm}
-            seasons={seasons} carTree={carTree} allCars={allCars}
-            saving={saving} onSave={save} onCancel={() => setForm(null)}
-            onDelete={form.id && canManage ? () => { remove(form); setForm(null); } : null}
-            isMobile={isMobile}
-          />
+        {/* Global rule quick row */}
+        {globalRule && (
+          <div
+            onClick={() => { openEdit(globalRule); closeSidebar(); }}
+            style={{
+              padding: "8px 14px", borderBottom: "1px solid #f3f4f6",
+              cursor: "pointer", background: "#fefce8",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "#fef9c3"}
+            onMouseLeave={e => e.currentTarget.style.background = "#fefce8"}
+          >
+            <span style={{ flex: 1, fontSize: 12, color: "#854d0e", fontWeight: 600 }}>🌐 כלל גלובלי</span>
+            <span style={{ fontSize: 10, color: "#92400e", background: "#fef3c7", padding: "1px 5px", borderRadius: 3 }}>עקיפה</span>
+          </div>
         )}
-      </Modal>
-    </div>
-  );
-}
 
-function InheritBadge({ hasOverride }) {
-  return (
-    <span style={badgeStyle(
-      hasOverride ? "#fef3c7" : "#f1f5f9",
-      hasOverride ? "#92400e" : "#94a3b8",
-    )}>
-      {hasOverride ? "עקיפה" : "יורש"}
-    </span>
+        {/* Tree */}
+        {loading ? (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Spinner />
+          </div>
+        ) : (
+          <div style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
+            {Object.keys(carTree).length === 0 && (
+              <p style={{ color: "#9ca3af", fontSize: 12, padding: 14 }}>אין רכבים מוגדרים</p>
+            )}
+
+            {Object.entries(carTree).map(([cat, models]) => {
+              const isOpen    = !!openCats[cat];
+              const catRule   = ruleFor("category", cat);
+              const totalCars = Object.values(models).reduce((s, cars) => s + cars.length, 0);
+
+              return (
+                <div key={cat} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  {/* Category row */}
+                  <div
+                    style={{ display: "flex", alignItems: "center", padding: "7px 14px", gap: 5, userSelect: "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                    onMouseLeave={e => e.currentTarget.style.background = ""}
+                  >
+                    <span
+                      style={{ flex: 1, fontWeight: 700, fontSize: 13, color: "#111827", cursor: "pointer" }}
+                      onClick={() => setOpenCats(p => ({ ...p, [cat]: !p[cat] }))}
+                    >
+                      {cat}
+                    </span>
+                    {canManage && (
+                      <>
+                        <button
+                          onClick={() => { openEdit(catRule || { ...EMPTY_RULE, entity_type: "category", entity_value: cat }); closeSidebar(); }}
+                          style={rowActionBtn} title="ערוך כלל קטגוריה"
+                        >✏️</button>
+                        <button
+                          onClick={() => { openNew({ entity_type: "category", entity_value: cat }); closeSidebar(); }}
+                          style={rowActionBtn} title="כלל חדש לקטגוריה"
+                        >＋</button>
+                      </>
+                    )}
+                    <span style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>
+                      {totalCars} כללים
+                    </span>
+                  </div>
+
+                  {/* Models */}
+                  {isOpen && Object.entries(models).map(([mdl, cars]) => {
+                    const grpKey    = `${cat}|${mdl}`;
+                    const isGrpOpen = !!openGroups[grpKey];
+                    const grpRule   = ruleFor("model", mdl);
+
+                    return (
+                      <div key={mdl}>
+                        {/* Model row */}
+                        <div
+                          style={{ display: "flex", alignItems: "center", padding: "6px 14px", paddingRight: 26, gap: 5, userSelect: "none" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                          onMouseLeave={e => e.currentTarget.style.background = ""}
+                        >
+                          <span
+                            style={{ flex: 1, fontSize: 13, color: "#374151", cursor: "pointer" }}
+                            onClick={() => setOpenGroups(p => ({ ...p, [grpKey]: !p[grpKey] }))}
+                          >
+                            {mdl}
+                          </span>
+                          {canManage && (
+                            <>
+                              <button
+                                onClick={() => { openEdit(grpRule || { ...EMPTY_RULE, entity_type: "model", entity_value: mdl }); closeSidebar(); }}
+                                style={rowActionBtn} title="ערוך כלל דגם"
+                              >✏️</button>
+                              <button
+                                onClick={() => { openNew({ entity_type: "model", entity_value: mdl }); closeSidebar(); }}
+                                style={rowActionBtn} title="כלל חדש לדגם"
+                              >＋</button>
+                            </>
+                          )}
+                          <span style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>{cars.length}</span>
+                        </div>
+
+                        {/* Car rows */}
+                        {isGrpOpen && cars.map(car => {
+                          const carRule       = ruleFor("car", String(car.id));
+                          const carHasOverride = !!(carRule && PRICE_FIELDS.some(f => carRule[f.key] != null));
+                          const isSelected    = form?.entity_type === "car" && form?.entity_value === String(car.id);
+
+                          return (
+                            <div
+                              key={car.id}
+                              onClick={() => { openEdit(carRule || { ...EMPTY_RULE, entity_type: "car", entity_value: String(car.id) }); closeSidebar(); }}
+                              style={{
+                                display: "flex", alignItems: "center", gap: 7,
+                                padding: "5px 14px", paddingRight: 38,
+                                cursor: "pointer", userSelect: "none",
+                                background: isSelected ? "#eff6ff" : "",
+                                borderRight: isSelected ? "2px solid #2563eb" : "2px solid transparent",
+                              }}
+                              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#f9fafb"; }}
+                              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = ""; }}
+                            >
+                              <div style={{
+                                width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+                                background: isSelected ? "#2563eb" : carHasOverride ? "#f59e0b" : "#d1d5db",
+                              }} />
+                              <span style={{
+                                flex: 1, fontSize: 12, minWidth: 0,
+                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                color: isSelected ? "#1d4ed8" : "#4b5563",
+                              }}>
+                                {car.plate}
+                              </span>
+                              <span style={{
+                                fontSize: 10, flexShrink: 0,
+                                color: carHasOverride ? "#92400e" : "#9ca3af",
+                                background: carHasOverride ? "#fef3c7" : "none",
+                                padding: carHasOverride ? "1px 5px" : 0,
+                                borderRadius: 3,
+                              }}>
+                                {carHasOverride ? "עקיפה" : "יורש"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
 function PriceRuleForm({ form, setForm, seasons, carTree, allCars, saving, onSave, onCancel, onDelete, isMobile }) {
   const f = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
-
-  // placeholder = inherited price
-  const getPlaceholder = (priceKey) => {
-    if (!form.entity_value) return "";
-    // simplified: just show "יורש" label
-    return "ריק = יורש מרמה גבוהה יותר";
-  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -1170,3 +1229,9 @@ const smallBtn = (bg, color) => ({
   borderRadius: 7, padding: "5px 10px", fontSize: 12, cursor: "pointer",
   fontWeight: 600, whiteSpace: "nowrap",
 });
+
+const rowActionBtn = {
+  background: "none", border: "none", cursor: "pointer",
+  color: "#9ca3af", padding: "2px 4px", borderRadius: 3,
+  fontSize: 12, lineHeight: 1, flexShrink: 0,
+};
