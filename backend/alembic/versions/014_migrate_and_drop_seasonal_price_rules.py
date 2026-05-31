@@ -12,7 +12,7 @@ Create Date: 2026-05-31
 from alembic import op
 import sqlalchemy as sa
 
-revision = "014_migrate_and_drop_seasonal_price_rules"
+revision = "014_drop_seasonal_price_rules"
 down_revision = "013_add_season_rules"
 branch_labels = None
 depends_on = None
