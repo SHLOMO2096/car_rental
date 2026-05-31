@@ -3,7 +3,6 @@ from sqlalchemy import Column, Integer, String, Float, Date, Text, ForeignKey, E
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import Base
-from app.models.pricing import PriceType
 
 class BookingStatus(str, enum.Enum):
     active    = "active"
@@ -41,7 +40,7 @@ class Booking(Base):
     # מחיר מחושב אוטומטית — ניתן לדריסה ידנית עם תיעוד ב-audit_log
     billable_days        = Column(Float, nullable=True)          # ימי חיוב (אחרי דילוג שבתות/חגים)
     actual_days          = Column(Integer, nullable=True)         # ימים קלנדריים בפועל
-    price_type_used      = Column(Enum(PriceType), nullable=True) # daily/half_day/weekly/monthly
+    price_type_used      = Column(String(20), nullable=True)       # half_day / day / week / month
     price_rule_id        = Column(Integer, ForeignKey("price_rules.id", ondelete="SET NULL"), nullable=True)
     price_breakdown_json = Column(Text, nullable=True)            # פירוט JSON לתצוגה
     # על כל שינוי ידני → נרשם ב-audit_log עם before/after

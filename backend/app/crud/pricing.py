@@ -1,5 +1,5 @@
 """
-CRUD operations עבור מודלי מחירים: Season, PriceRule, IsraeliHoliday.
+CRUD operations עבור מודלי מחירים: Season, PriceRule, SeasonRule, IsraeliHoliday.
 """
 from __future__ import annotations
 from datetime import date
@@ -7,13 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.pricing import (
-    Season, PriceRule, IsraeliHoliday, PriceEntityType, PriceType, SeasonalPriceRule
+    Season, PriceRule, SeasonRule, IsraeliHoliday, PriceEntityType,
 )
 from app.schemas.pricing import (
     SeasonCreate, SeasonUpdate,
     PriceRuleCreate, PriceRuleUpdate,
+    SeasonRuleCreate,
     IsraeliHolidayCreate, IsraeliHolidayUpdate,
-    SeasonalPriceRuleCreate, SeasonalPriceRuleUpdate
 )
 
 
@@ -22,7 +22,12 @@ from app.schemas.pricing import (
 class CRUDSeason(CRUDBase[Season, SeasonCreate, SeasonUpdate]):
 
     def get_active(self, db: Session) -> list[Season]:
-        return db.query(Season).filter(Season.is_active == True).order_by(Season.id).all()  # noqa: E712
+        return (
+            db.query(Season)
+            .filter(Season.is_active == True)   # noqa: E712
+            .order_by(Season.id)
+            .all()
+        )
 
     def create(self, db: Session, obj_in: SeasonCreate) -> Season:
         obj = Season(**obj_in.model_dump())
@@ -53,25 +58,21 @@ class CRUDPriceRule(CRUDBase[PriceRule, PriceRuleCreate, PriceRuleUpdate]):
         *,
         entity_type: PriceEntityType | None = None,
         entity_value: str | None = None,
-        price_type: PriceType | None = None,
         season_id: int | None = None,
         active_only: bool = True,
     ) -> list[PriceRule]:
         q = db.query(PriceRule)
         if active_only:
-            q = q.filter(PriceRule.is_active == True)  # noqa: E712
+            q = q.filter(PriceRule.is_active == True)   # noqa: E712
         if entity_type is not None:
-            q = q.filter(PriceRule.entity_type == entity_type)
+            q = q.filter(PriceRule.entity_type == entity_type.value)
         if entity_value is not None:
             q = q.filter(PriceRule.entity_value == entity_value)
-        if price_type is not None:
-            q = q.filter(PriceRule.price_type == price_type)
         if season_id is not None:
             q = q.filter(PriceRule.season_id == season_id)
         return q.order_by(
             PriceRule.entity_type,
             PriceRule.entity_value,
-            PriceRule.price_type,
             PriceRule.priority.desc(),
         ).all()
 
@@ -90,22 +91,30 @@ class CRUDPriceRule(CRUDBase[PriceRule, PriceRuleCreate, PriceRuleUpdate]):
         db.refresh(db_obj)
         return db_obj
 
-    def get_matrix(self, db: Session) -> list[PriceRule]:
-        """כל הכללים הפעילים ממוינים לתצוגת מטריצה."""
+
+crud_price_rule = CRUDPriceRule(PriceRule)
+
+
+# ── Season Rules ──────────────────────────────────────────────────────────────
+
+class CRUDSeasonRule(CRUDBase[SeasonRule, SeasonRuleCreate, SeasonRuleCreate]):
+
+    def get_by_season(self, db: Session, season_id: int) -> list[SeasonRule]:
         return (
-            db.query(PriceRule)
-            .filter(PriceRule.is_active == True)  # noqa: E712
-            .order_by(
-                PriceRule.entity_type,
-                PriceRule.entity_value,
-                PriceRule.season_id,
-                PriceRule.price_type,
-            )
+            db.query(SeasonRule)
+            .filter(SeasonRule.season_id == season_id)
             .all()
         )
 
+    def create(self, db: Session, obj_in: SeasonRuleCreate) -> SeasonRule:
+        obj = SeasonRule(**obj_in.model_dump())
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj
 
-crud_price_rule = CRUDPriceRule(PriceRule)
+
+crud_season_rule = CRUDSeasonRule(SeasonRule)
 
 
 # ── Israeli Holidays ──────────────────────────────────────────────────────────
@@ -113,7 +122,6 @@ crud_price_rule = CRUDPriceRule(PriceRule)
 class CRUDIsraeliHoliday(CRUDBase[IsraeliHoliday, IsraeliHolidayCreate, IsraeliHolidayUpdate]):
 
     def get_by_year(self, db: Session, year: int) -> list[IsraeliHoliday]:
-        """כל החגים שהתאריך שלהם נמצא בשנה גרגוריאנית נתונה."""
         return (
             db.query(IsraeliHoliday)
             .filter(
@@ -125,7 +133,6 @@ class CRUDIsraeliHoliday(CRUDBase[IsraeliHoliday, IsraeliHolidayCreate, IsraeliH
         )
 
     def get_in_range(self, db: Session, start: date, end: date) -> list[IsraeliHoliday]:
-        """חגים בטווח תאריכים."""
         return (
             db.query(IsraeliHoliday)
             .filter(IsraeliHoliday.date >= start, IsraeliHoliday.date <= end)
@@ -157,26 +164,20 @@ class CRUDIsraeliHoliday(CRUDBase[IsraeliHoliday, IsraeliHolidayCreate, IsraeliH
     def bulk_upsert_generated(
         self,
         db: Session,
-        holidays: list[dict],   # [{"name": str, "date": date, "hebrew_year": int}]
+        holidays: list[dict],
     ) -> tuple[int, int]:
-        """
-        מוסיף חגים שנוצרו אוטומטית.
-        מחזיר (created_count, skipped_count).
-        """
         created = 0
         skipped = 0
         for h in holidays:
-            existing = self.get_by_date(db, h["date"])
-            if existing:
+            if self.get_by_date(db, h["date"]):
                 skipped += 1
                 continue
-            obj = IsraeliHoliday(
+            db.add(IsraeliHoliday(
                 name=h["name"],
                 date=h["date"],
                 hebrew_year=h.get("hebrew_year"),
                 is_auto_generated=True,
-            )
-            db.add(obj)
+            ))
             created += 1
         if created:
             db.commit()
@@ -192,50 +193,3 @@ class CRUDIsraeliHoliday(CRUDBase[IsraeliHoliday, IsraeliHolidayCreate, IsraeliH
 
 
 crud_holiday = CRUDIsraeliHoliday(IsraeliHoliday)
-
-
-# ── Seasonal Price Rules ───────────────────────────────────────────────────────
-
-class CRUDSeasonalPriceRule(CRUDBase[SeasonalPriceRule, SeasonalPriceRuleCreate, SeasonalPriceRuleUpdate]):
-
-    def get_filtered(
-        self,
-        db: Session,
-        *,
-        season_id: int | None = None,
-        entity_type: PriceEntityType | None = None,
-        entity_value: str | None = None,
-        active_only: bool = True,
-    ) -> list[SeasonalPriceRule]:
-        q = db.query(SeasonalPriceRule)
-        if active_only:
-            q = q.filter(SeasonalPriceRule.is_active == True)  # noqa: E712
-        if season_id is not None:
-            q = q.filter(SeasonalPriceRule.season_id == season_id)
-        if entity_type is not None:
-            q = q.filter(SeasonalPriceRule.entity_type == entity_type)
-        if entity_value is not None:
-            q = q.filter(SeasonalPriceRule.entity_value == entity_value)
-        return q.order_by(
-            SeasonalPriceRule.entity_type,
-            SeasonalPriceRule.entity_value,
-            SeasonalPriceRule.rule_type,
-        ).all()
-
-    def create(self, db: Session, obj_in: SeasonalPriceRuleCreate) -> SeasonalPriceRule:
-        obj = SeasonalPriceRule(**obj_in.model_dump())
-        db.add(obj)
-        db.commit()
-        db.refresh(obj)
-        return obj
-
-    def update(self, db: Session, db_obj: SeasonalPriceRule, obj_in: SeasonalPriceRuleUpdate) -> SeasonalPriceRule:
-        data = obj_in.model_dump(exclude_none=True)
-        for k, v in data.items():
-            setattr(db_obj, k, v)
-        db.commit()
-        db.refresh(db_obj)
-        return db_obj
-
-
-crud_seasonal_price_rule = CRUDSeasonalPriceRule(SeasonalPriceRule)

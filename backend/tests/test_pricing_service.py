@@ -4,9 +4,9 @@
 """
 import pytest
 from datetime import date, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-from app.models.pricing import PriceType, Season
+from app.models.pricing import Season
 from app.services.pricing import (
     is_half_day,
     is_shabbat,
@@ -14,7 +14,7 @@ from app.services.pricing import (
     calculate_billable_days,
     split_by_seasons,
     _date_in_season,
-    WEEKLY_BILLABLE_PER_WEEK,
+    MONTHLY_THRESHOLD_DAYS,
 )
 
 
@@ -24,38 +24,33 @@ class TestIsHalfDay:
     def test_same_day(self):
         assert is_half_day(date(2026, 6, 1), "10:00", date(2026, 6, 1), "16:00") is True
 
-    def test_overnight_valid(self):
-        # 15:30 עד 09:00 למחרת → חצי יום
-        assert is_half_day(date(2026, 6, 1), "15:30", date(2026, 6, 2), "09:00") is True
+    def test_overnight_16h_exactly(self):
+        # 10:00 → 02:00 למחרת = 16 שעות בדיוק → חצי יום
+        assert is_half_day(date(2026, 6, 1), "10:00", date(2026, 6, 2), "02:00") is True
 
-    def test_overnight_too_early_pickup(self):
-        # 14:00 — לפני ה-cutoff 15:00
-        assert is_half_day(date(2026, 6, 1), "14:00", date(2026, 6, 2), "09:00") is False
+    def test_overnight_under_16h(self):
+        # 15:00 → 09:00 למחרת = 18 שעות → לא חצי יום
+        assert is_half_day(date(2026, 6, 1), "15:00", date(2026, 6, 2), "09:00") is False
 
-    def test_overnight_too_late_return(self):
-        # החזרה ב-10:00 — אחרי ה-cutoff 09:30
-        assert is_half_day(date(2026, 6, 1), "15:30", date(2026, 6, 2), "10:00") is False
-
-    def test_two_days_not_half(self):
-        assert is_half_day(date(2026, 6, 1), "15:30", date(2026, 6, 3), "09:00") is False
-
-    def test_overnight_exact_cutoff(self):
-        # בדיוק על ה-cutoff
-        assert is_half_day(date(2026, 6, 1), "15:00", date(2026, 6, 2), "09:30") is True
-
-    def test_no_times_same_day(self):
-        assert is_half_day(date(2026, 6, 1), None, date(2026, 6, 1), None) is True
-
-    def test_no_times_overnight(self):
+    def test_overnight_no_times(self):
         # ללא שעות — לילה אחד לא נחשב חצי יום
         assert is_half_day(date(2026, 6, 1), None, date(2026, 6, 2), None) is False
+
+    def test_two_days_not_half(self):
+        assert is_half_day(date(2026, 6, 1), "10:00", date(2026, 6, 3), "10:00") is False
+
+    def test_same_day_no_times(self):
+        assert is_half_day(date(2026, 6, 1), None, date(2026, 6, 1), None) is True
+
+    def test_overnight_exactly_at_boundary(self):
+        # 10:00 → 01:59 = 15h59m < 16h → חצי יום
+        assert is_half_day(date(2026, 6, 1), "10:00", date(2026, 6, 2), "01:59") is True
 
 
 # ── is_shabbat ────────────────────────────────────────────────────────────────
 
 class TestIsShabbat:
     def test_saturday_is_shabbat(self):
-        # 2026-06-06 הוא שבת
         assert is_shabbat(date(2026, 6, 6)) is True
 
     def test_friday_not_shabbat(self):
@@ -68,191 +63,165 @@ class TestIsShabbat:
 # ── calculate_billable_days ───────────────────────────────────────────────────
 
 class TestCalculateBillableDays:
-    """
-    2026-06-01 (Mon) → 2026-06-07 (Sun) = 6 days
-    הכולל: 2, 3, 4, 5 (Mon-Thu) + 6 (Sat) + ...
-    2026-06-06 = שבת
-    """
-
-    def test_daily_skips_shabbat(self):
+    def test_exclude_shabbat(self):
         # Mon 1 → Sun 7 = 6 ימים. שבת 6/6 מדולגת → 5 ימי חיוב
-        result = calculate_billable_days(
-            date(2026, 6, 1), date(2026, 6, 7), PriceType.daily, set()
+        billable, skipped = calculate_billable_days(
+            date(2026, 6, 1), date(2026, 6, 7), exclude_sabbath=True, holidays=set()
         )
-        assert result.billable_days == 5.0
-        assert date(2026, 6, 6) in result.skipped_dates
-        assert result.skipped_days == 1
+        assert billable == 5.0
+        assert date(2026, 6, 6) in skipped
 
-    def test_daily_skips_holiday(self):
-        # Mon 1 → Fri 5 = 4 ימים. חג ב-3/6 → 3 ימי חיוב
-        result = calculate_billable_days(
-            date(2026, 6, 1), date(2026, 6, 5), PriceType.daily, {date(2026, 6, 3)}
+    def test_exclude_holiday(self):
+        billable, skipped = calculate_billable_days(
+            date(2026, 6, 1), date(2026, 6, 5), exclude_sabbath=True,
+            holidays={date(2026, 6, 3)}
         )
-        assert result.billable_days == 3.0
-        assert date(2026, 6, 3) in result.skipped_dates
+        assert billable == 3.0
+        assert date(2026, 6, 3) in skipped
 
-    def test_monthly_counts_all(self):
-        # חודשי: אותו טווח — ספירת כל הימים כולל שבת, ללא דילוג
-        result = calculate_billable_days(
-            date(2026, 6, 1), date(2026, 6, 7), PriceType.monthly, set()
+    def test_no_exclude_counts_all(self):
+        # monthly: לא מדלג שבתות
+        billable, skipped = calculate_billable_days(
+            date(2026, 6, 1), date(2026, 6, 7), exclude_sabbath=False, holidays=set()
         )
-        assert result.billable_days == 6.0
-        assert result.skipped_days == 0
+        assert billable == 6.0
+        assert skipped == []
 
-    def test_half_day_returns_05(self):
-        result = calculate_billable_days(
-            date(2026, 6, 1), date(2026, 6, 2), PriceType.half_day, set()
+    def test_empty_range(self):
+        billable, _ = calculate_billable_days(
+            date(2026, 6, 1), date(2026, 6, 1), exclude_sabbath=True, holidays=set()
         )
-        assert result.billable_days == 0.5
-        assert result.is_half_day_flag is True
-
-    def test_weekly_skips_shabbat(self):
-        # אותו כלל כמו daily — dilling שבתות גם ב-weekly
-        result = calculate_billable_days(
-            date(2026, 6, 1), date(2026, 6, 8), PriceType.weekly, set()
-        )
-        # 7 ימים: Mon-Sun. שבת 6/6 דולג → 6 ימי חיוב
-        assert result.billable_days == 6.0
-
-    def test_no_days(self):
-        result = calculate_billable_days(
-            date(2026, 6, 1), date(2026, 6, 1), PriceType.daily, set()
-        )
-        assert result.billable_days == 0.0
+        assert billable == 0.0
 
 
-# ── date_in_season ────────────────────────────────────────────────────────────
+# ── _date_in_season ───────────────────────────────────────────────────────────
 
 class TestDateInSeason:
-    def _season(self, sm, sd, em, ed) -> Season:
+    def _season(self, vf: date, vu: date, recurring: bool = True) -> Season:
         s = MagicMock(spec=Season)
-        s.start_month = sm; s.start_day = sd
-        s.end_month = em;   s.end_day   = ed
+        s.valid_from = vf
+        s.valid_until = vu
+        s.is_recurring = recurring
         s.is_active = True
         return s
 
-    def test_regular_season(self):
-        s = self._season(7, 1, 8, 31)  # יולי-אוגוסט
+    def test_recurring_regular(self):
+        # עונת קיץ: 1 יולי – 31 אוגוסט (חוזרת שנתית)
+        s = self._season(date(2000, 7, 1), date(2000, 8, 31), recurring=True)
         assert _date_in_season(date(2026, 7, 15), s) is True
         assert _date_in_season(date(2026, 6, 30), s) is False
-        assert _date_in_season(date(2026, 9, 1), s)  is False
+        assert _date_in_season(date(2026, 9, 1),  s) is False
 
-    def test_wrap_around_season(self):
-        s = self._season(12, 25, 1, 5)  # 25 דצמ – 5 ינו
+    def test_recurring_wrap_around(self):
+        # 25 דצמ – 5 ינו (חוצת שנה, חוזרת)
+        s = self._season(date(2000, 12, 25), date(2001, 1, 5), recurring=True)
         assert _date_in_season(date(2026, 12, 30), s) is True
         assert _date_in_season(date(2027, 1, 3),   s) is True
         assert _date_in_season(date(2026, 12, 24), s) is False
         assert _date_in_season(date(2027, 1, 6),   s) is False
 
+    def test_non_recurring_uses_year(self):
+        # עונה ספציפית לשנת 2026 בלבד
+        s = self._season(date(2026, 7, 1), date(2026, 8, 31), recurring=False)
+        assert _date_in_season(date(2026, 7, 15), s) is True
+        assert _date_in_season(date(2027, 7, 15), s) is False
+
     def test_boundary_inclusive(self):
-        s = self._season(7, 1, 7, 31)
+        s = self._season(date(2000, 7, 1), date(2000, 7, 31), recurring=True)
         assert _date_in_season(date(2026, 7, 1),  s) is True
         assert _date_in_season(date(2026, 7, 31), s) is True
+
+    def test_no_dates_returns_false(self):
+        s = MagicMock(spec=Season)
+        s.valid_from = None
+        s.valid_until = None
+        s.is_recurring = True
+        s.is_active = True
+        assert _date_in_season(date(2026, 7, 1), s) is False
 
 
 # ── split_by_seasons ──────────────────────────────────────────────────────────
 
 class TestSplitBySeasons:
-    def _season(self, sid, sm, sd, em, ed, name="עונה") -> Season:
+    def _season(self, sid: int, vf: date, vu: date, name: str = "עונה",
+                recurring: bool = True) -> Season:
         s = MagicMock(spec=Season)
-        s.id = sid; s.name = name
-        s.start_month = sm; s.start_day = sd
-        s.end_month = em;   s.end_day   = ed
+        s.id = sid
+        s.name = name
+        s.valid_from = vf
+        s.valid_until = vu
+        s.is_recurring = recurring
         s.is_active = True
         return s
 
     def test_no_seasons(self):
-        segments = split_by_seasons(date(2026, 6, 1), date(2026, 6, 8), [])
-        assert len(segments) == 1
-        assert segments[0].season_id is None
+        segs = split_by_seasons(date(2026, 6, 1), date(2026, 6, 8), [])
+        assert len(segs) == 1
+        assert segs[0].season_id is None
 
     def test_single_season_full_overlap(self):
-        s = self._season(1, 6, 1, 6, 30, "קיץ")
-        segments = split_by_seasons(date(2026, 6, 5), date(2026, 6, 10), [s])
-        assert len(segments) == 1
-        assert segments[0].season_id == 1
+        s = self._season(1, date(2000, 6, 1), date(2000, 6, 30), "קיץ")
+        segs = split_by_seasons(date(2026, 6, 5), date(2026, 6, 10), [s])
+        assert len(segs) == 1
+        assert segs[0].season_id == 1
 
-    def test_booking_crosses_season_boundary(self):
-        # עונת קיץ: 1/7–31/8
-        s = self._season(1, 7, 1, 8, 31, "קיץ")
-        # הזמנה 28/6 → 10/7 חוצת את תחילת העונה
-        segments = split_by_seasons(date(2026, 6, 28), date(2026, 7, 10), [s])
-        # 3 ימים ללא עונה (28,29,30 יוני) + 9 ימים עם עונה (1-9 יולי)
-        assert len(segments) == 2
-        no_s = next(seg for seg in segments if seg.season_id is None)
-        yes_s = next(seg for seg in segments if seg.season_id == 1)
-        assert no_s.calendar_days == 3
-        assert yes_s.calendar_days == 9
+    def test_crosses_season_boundary(self):
+        # עונה: 1/7–31/8 (recurring)
+        s = self._season(1, date(2000, 7, 1), date(2000, 8, 31), "קיץ")
+        segs = split_by_seasons(date(2026, 6, 28), date(2026, 7, 10), [s])
+        assert len(segs) == 2
+        no_s  = next(seg for seg in segs if seg.season_id is None)
+        yes_s = next(seg for seg in segs if seg.season_id == 1)
+        assert no_s.calendar_days  == 3   # 28,29,30 יוני
+        assert yes_s.calendar_days == 9   # 1–9 יולי
 
     def test_empty_range(self):
-        segments = split_by_seasons(date(2026, 6, 1), date(2026, 6, 1), [])
-        assert segments == []
+        assert split_by_seasons(date(2026, 6, 1), date(2026, 6, 1), []) == []
 
 
-# ── weekly_price_logic ────────────────────────────────────────────────────────
+# ── monthly_algorithm ─────────────────────────────────────────────────────────
 
-class TestWeeklyPriceLogic:
-    """בדיקת הכלל: שבוע = 6 ימי חיוב"""
-
-    def test_one_full_week(self):
-        assert 6 // WEEKLY_BILLABLE_PER_WEEK == 1
-        assert 6 % WEEKLY_BILLABLE_PER_WEEK == 0
-
-    def test_week_with_holiday(self):
-        assert 5 // WEEKLY_BILLABLE_PER_WEEK == 0
-
-    def test_week_plus_days(self):
-        assert 8 // WEEKLY_BILLABLE_PER_WEEK == 1
-        assert 8 % WEEKLY_BILLABLE_PER_WEEK == 2
-
-    def test_two_weeks(self):
-        assert 12 // WEEKLY_BILLABLE_PER_WEEK == 2
-        assert 12 % WEEKLY_BILLABLE_PER_WEEK == 0
-
-
-# ── monthly_remainder_logic ───────────────────────────────────────────────────
-
-class TestMonthlyRemainderLogic:
-    """בדיקת הכלל: שארית = monthly_price / 30 ליום"""
-
+class TestMonthlyAlgorithm:
     def test_35_days(self):
         monthly = 3000.0
         days = 35
-        months    = days // 30   # = 1
-        remaining = days % 30    # = 5
-        day_rate  = monthly / 30  # = 100.0
-        total = months * monthly + remaining * day_rate
-        assert total == 3000.0 + 5 * 100.0   # = 3500.0
+        months, remaining = divmod(days, MONTHLY_THRESHOLD_DAYS)
+        day_rate = monthly / MONTHLY_THRESHOLD_DAYS
+        assert months * monthly + remaining * day_rate == 3500.0
 
     def test_exactly_30_days(self):
         monthly = 3000.0
-        days = 30
-        assert days // 30 == 1
-        assert days % 30 == 0
-        total = 1 * monthly + 0
-        assert total == 3000.0
-
-    def test_60_days(self):
-        monthly = 3000.0
-        days = 60
-        assert days // 30 == 2
-        assert days % 30 == 0
-        total = 2 * monthly
-        assert total == 6000.0
+        months, remaining = divmod(30, MONTHLY_THRESHOLD_DAYS)
+        assert months * monthly == 3000.0
+        assert remaining == 0
 
     def test_65_days(self):
         monthly = 3000.0
-        days = 65
-        months    = days // 30   # = 2
-        remaining = days % 30    # = 5
-        day_rate  = monthly / 30  # = 100.0
-        total = 2 * monthly + 5 * day_rate
-        assert total == 6000.0 + 500.0   # = 6500.0
-
-    def test_day_rate_is_monthly_divided_by_30(self):
-        """מחיר יומי לשארית = monthly / 30, לא מחיר יומי עצמאי"""
-        monthly = 2700.0
-        day_rate = monthly / 30
-        assert day_rate == 90.0   # ולא בהכרח מחיר יומי אחר
+        months, remaining = divmod(65, MONTHLY_THRESHOLD_DAYS)
+        day_rate = monthly / MONTHLY_THRESHOLD_DAYS
+        assert months * monthly + remaining * day_rate == 6500.0
 
 
+# ── weekly_algorithm ──────────────────────────────────────────────────────────
+
+class TestWeeklyAlgorithm:
+    """שבוע = 7 ימי חיוב (billable days אחרי דילוג שבתות/חגים)."""
+
+    def test_7_billable_days_is_one_week(self):
+        weeks, rem = divmod(7, 7)
+        assert weeks == 1
+        assert rem == 0
+
+    def test_6_billable_days_is_less_than_week(self):
+        weeks, rem = divmod(6, 7)
+        assert weeks == 0
+
+    def test_10_billable_days(self):
+        weeks, rem = divmod(10, 7)
+        assert weeks == 1
+        assert rem == 3
+
+    def test_14_billable_days(self):
+        weeks, rem = divmod(14, 7)
+        assert weeks == 2
+        assert rem == 0

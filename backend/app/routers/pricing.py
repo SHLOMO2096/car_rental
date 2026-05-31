@@ -2,16 +2,16 @@
 Router למערכת המחירים.
 
 Endpoints:
-    Seasons  : GET /seasons, POST /seasons, PATCH /seasons/{id}, DELETE /seasons/{id}
-    Rules    : GET /rules, POST /rules, GET /rules/matrix,
-               PATCH /rules/{id}, DELETE /rules/{id}
-    Holidays : GET /holidays, POST /holidays, PATCH /holidays/{id},
-               DELETE /holidays/{id}, POST /holidays/generate/{year}
-    Calc     : POST /calculate, GET /effective/{car_id}
+    Seasons     : GET /seasons, POST /seasons, PUT /seasons/{id}, DELETE /seasons/{id}
+    Rules       : GET /rules, POST /rules, PUT /rules/{id}, DELETE /rules/{id}
+    Season-Rules: POST /season-rules, DELETE /season-rules/{id}
+    Holidays    : GET /holidays, POST /holidays, PUT /holidays/{id},
+                  DELETE /holidays/{id}, POST /holidays/generate/{year}
+    Calc        : POST /calculate, GET /effective/{car_id}
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Body
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from datetime import date
 
@@ -19,17 +19,17 @@ from app.db.session import get_db
 from app.core.permissions import Permissions
 from app.core.security import require_permission
 from app.crud.audit_log import log_audit_event
-from app.crud.pricing import crud_season, crud_price_rule, crud_holiday, crud_seasonal_price_rule
+from app.crud.pricing import crud_season, crud_price_rule, crud_season_rule, crud_holiday
 from app.models.audit_log import AuditSeverity
 from app.models.car import Car
-from app.models.pricing import PriceEntityType, PriceType
+from app.models.pricing import PriceEntityType
 from app.schemas.pricing import (
     SeasonCreate, SeasonUpdate, SeasonOut,
     PriceRuleCreate, PriceRuleUpdate, PriceRuleOut,
+    SeasonRuleCreate, SeasonRuleOut,
     IsraeliHolidayCreate, IsraeliHolidayUpdate, IsraeliHolidayOut,
     PriceCalculateRequest, PriceCalculateResponse,
     HolidayGenerateResponse,
-    SeasonalPriceRuleCreate, SeasonalPriceRuleUpdate, SeasonalPriceRuleOut
 )
 from app.services.pricing import calculate_total_price
 from app.services.holiday_generator import generate_holidays_for_year
@@ -47,7 +47,6 @@ def list_seasons(
     db: Session = Depends(get_db),
     _=Depends(require_permission(Permissions.PRICING_VIEW)),
 ):
-    """רשימת עונות מחיר."""
     if active_only:
         return crud_season.get_active(db)
     return crud_season.get_multi(db, limit=500)
@@ -60,7 +59,6 @@ def create_season(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """יצירת עונת מחיר חדשה."""
     season = crud_season.create(db, obj_in=data)
     log_audit_event(
         db, actor_user_id=current_user.id,
@@ -71,7 +69,7 @@ def create_season(
     return season
 
 
-@router.patch("/seasons/{season_id}", response_model=SeasonOut)
+@router.put("/seasons/{season_id}", response_model=SeasonOut)
 def update_season(
     season_id: int,
     data: SeasonUpdate,
@@ -79,7 +77,6 @@ def update_season(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """עדכון עונת מחיר."""
     season = crud_season.get(db, season_id)
     if not season:
         raise HTTPException(404, "עונה לא נמצאה")
@@ -100,16 +97,14 @@ def delete_season(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """מחיקת עונת מחיר (soft — מבטל is_active)."""
     season = crud_season.get(db, season_id)
     if not season:
         raise HTTPException(404, "עונה לא נמצאה")
-    # בדוק האם יש כללי מחיר שמשתמשים בעונה
-    rules_count = len([r for r in season.price_rules if r.is_active])
-    if rules_count:
+    active_rules = [r for r in season.price_rules if r.is_active]
+    if active_rules:
         raise HTTPException(
             400,
-            f"לא ניתן למחוק עונה עם {rules_count} כללי מחיר פעילים. "
+            f"לא ניתן למחוק עונה עם {len(active_rules)} כללי מחיר פעילים. "
             "בטל תחילה את כל הכללים המשויכים לעונה זו."
         )
     crud_season.update(db, db_obj=season, obj_in=SeasonUpdate(is_active=False))
@@ -130,30 +125,18 @@ def delete_season(
 def list_rules(
     entity_type: PriceEntityType | None = Query(None),
     entity_value: str | None = Query(None),
-    price_type: PriceType | None = Query(None),
     season_id: int | None = Query(None),
     active_only: bool = Query(True),
     db: Session = Depends(get_db),
     _=Depends(require_permission(Permissions.PRICING_VIEW)),
 ):
-    """רשימת כללי מחיר עם אפשרות סינון."""
     return crud_price_rule.get_filtered(
         db,
         entity_type=entity_type,
         entity_value=entity_value,
-        price_type=price_type,
         season_id=season_id,
         active_only=active_only,
     )
-
-
-@router.get("/rules/matrix", response_model=list[PriceRuleOut])
-def get_price_matrix(
-    db: Session = Depends(get_db),
-    _=Depends(require_permission(Permissions.PRICING_VIEW)),
-):
-    """טבלת מחירים מלאה — כל הכללים הפעילים לתצוגת מטריצה."""
-    return crud_price_rule.get_matrix(db)
 
 
 @router.post("/rules", response_model=PriceRuleOut, status_code=201)
@@ -163,18 +146,13 @@ def create_rule(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """יצירת כלל מחיר חדש."""
-    # אמת שהעונה קיימת (אם הוגדרה)
     if data.season_id:
-        season = crud_season.get(db, data.season_id)
-        if not season:
+        if not crud_season.get(db, data.season_id):
             raise HTTPException(404, f"עונה {data.season_id} לא נמצאה")
 
     try:
         rule = crud_price_rule.create(db, obj_in=data)
     except Exception as e:
-        if "uq_price_rule_entity_type_season" in str(e):
-            raise HTTPException(409, "כלל מחיר זהה כבר קיים (אותה ישות, סוג מחיר ועונה)")
         raise HTTPException(400, str(e))
 
     log_audit_event(
@@ -186,7 +164,7 @@ def create_rule(
     return rule
 
 
-@router.patch("/rules/{rule_id}", response_model=PriceRuleOut)
+@router.put("/rules/{rule_id}", response_model=PriceRuleOut)
 def update_rule(
     rule_id: int,
     data: PriceRuleUpdate,
@@ -194,11 +172,13 @@ def update_rule(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """עדכון כלל מחיר."""
     rule = crud_price_rule.get(db, rule_id)
     if not rule:
         raise HTTPException(404, "כלל מחיר לא נמצא")
-    before = {"price": rule.price, "is_active": rule.is_active, "priority": rule.priority}
+    before = {
+        "price_day": rule.price_day, "price_week": rule.price_week,
+        "price_month": rule.price_month, "is_active": rule.is_active,
+    }
     updated = crud_price_rule.update(db, db_obj=rule, obj_in=data)
     log_audit_event(
         db, actor_user_id=current_user.id,
@@ -216,7 +196,6 @@ def delete_rule(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """מחיקת כלל מחיר."""
     rule = crud_price_rule.get(db, rule_id)
     if not rule:
         raise HTTPException(404, "כלל מחיר לא נמצא")
@@ -231,16 +210,61 @@ def delete_rule(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Season Rules
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/season-rules", response_model=SeasonRuleOut, status_code=201)
+def create_season_rule(
+    data: SeasonRuleCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
+    request: Request = None,
+):
+    if not crud_season.get(db, data.season_id):
+        raise HTTPException(404, f"עונה {data.season_id} לא נמצאה")
+    if data.price_rule_id and not crud_price_rule.get(db, data.price_rule_id):
+        raise HTTPException(404, f"כלל מחיר {data.price_rule_id} לא נמצא")
+
+    rule = crud_season_rule.create(db, obj_in=data)
+    log_audit_event(
+        db, actor_user_id=current_user.id,
+        action="pricing.season_rule.create", entity_type="season_rule",
+        entity_id=str(rule.id), after_obj=rule,
+        ip_address=request.client.host if request and request.client else None,
+    )
+    return rule
+
+
+@router.delete("/season-rules/{rule_id}", status_code=204)
+def delete_season_rule(
+    rule_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
+    request: Request = None,
+):
+    rule = crud_season_rule.get(db, rule_id)
+    if not rule:
+        raise HTTPException(404, "כלל עונה לא נמצא")
+    crud_season_rule.delete(db, rule_id)
+    log_audit_event(
+        db, actor_user_id=current_user.id,
+        action="pricing.season_rule.delete", entity_type="season_rule",
+        entity_id=str(rule_id),
+        ip_address=request.client.host if request and request.client else None,
+        severity=AuditSeverity.warning,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Israeli Holidays
 # ══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/holidays", response_model=list[IsraeliHolidayOut])
 def list_holidays(
-    year: int | None = Query(None, description="שנה גרגוריאנית"),
+    year: int | None = Query(None),
     db: Session = Depends(get_db),
     _=Depends(require_permission(Permissions.PRICING_VIEW)),
 ):
-    """רשימת חגים — לפי שנה או כולם."""
     if year:
         return crud_holiday.get_by_year(db, year)
     return crud_holiday.get_multi(db, limit=1000)
@@ -253,7 +277,6 @@ def create_holiday(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """הוספת חג ידנית."""
     existing = crud_holiday.get_by_date(db, data.date)
     if existing:
         raise HTTPException(409, f"חג בתאריך {data.date} כבר קיים: {existing.name}")
@@ -269,7 +292,7 @@ def create_holiday(
     return holiday
 
 
-@router.patch("/holidays/{holiday_id}", response_model=IsraeliHolidayOut)
+@router.put("/holidays/{holiday_id}", response_model=IsraeliHolidayOut)
 def update_holiday(
     holiday_id: int,
     data: IsraeliHolidayUpdate,
@@ -277,11 +300,9 @@ def update_holiday(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """עדכון פרטי חג."""
     holiday = crud_holiday.get(db, holiday_id)
     if not holiday:
         raise HTTPException(404, "חג לא נמצא")
-    # אם משנים תאריך — בדוק שלא קיים
     if data.date and data.date != holiday.date:
         existing = crud_holiday.get_by_date(db, data.date)
         if existing:
@@ -304,7 +325,6 @@ def delete_holiday(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """מחיקת חג."""
     holiday = crud_holiday.get(db, holiday_id)
     if not holiday:
         raise HTTPException(404, "חג לא נמצא")
@@ -325,10 +345,6 @@ def generate_holidays(
     current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
     request: Request = None,
 ):
-    """
-    ייבוא אוטומטי של חגי ישראל לשנה נתונה דרך `hdate`.
-    תאריכים שכבר קיימים ב-DB ידולגו (לא ידרסו).
-    """
     if year < 1900 or year > 2100:
         raise HTTPException(400, "שנה לא תקינה (1900–2100)")
 
@@ -342,8 +358,6 @@ def generate_holidays(
         for h in generated
     ]
     created_count, skipped_count = crud_holiday.bulk_upsert_generated(db, holidays_to_insert)
-
-    # שלוף את כל החגים שנוצרו/קיימים לשנה זו להחזרה
     saved = crud_holiday.get_by_year(db, year)
 
     log_audit_event(
@@ -353,7 +367,6 @@ def generate_holidays(
         after_obj={"year": year, "created": created_count, "skipped": skipped_count},
         ip_address=request.client.host if request and request.client else None,
     )
-
     return HolidayGenerateResponse(
         year=year,
         created=created_count,
@@ -372,22 +385,22 @@ def calculate_price(
     db: Session = Depends(get_db),
     _=Depends(require_permission(Permissions.PRICING_VIEW)),
 ):
-    """
-    חישוב מחיר לפי רכב + תאריכים.
-    משמש גם לתצוגה מקדימה בטופס הזמנה.
-    """
-    car = db.query(Car).filter(Car.id == data.car_id, Car.is_active == True).first()  # noqa: E712
+    """חישוב מחיר לפי רכב + תאריכים."""
+    car = db.query(Car).filter(Car.id == data.vehicle_id, Car.is_active == True).first()  # noqa: E712
     if not car:
         raise HTTPException(404, "רכב לא נמצא")
 
-    result = calculate_total_price(
-        db=db,
-        car=car,
-        start_date=data.start_date,
-        end_date=data.end_date,
-        pickup_time=data.pickup_time,
-        return_time=data.return_time,
-    )
+    try:
+        result = calculate_total_price(
+            db=db,
+            car=car,
+            start_date=data.rental_start,
+            end_date=data.rental_end,
+            pickup_time=data.pickup_time,
+            return_time=data.return_time,
+        )
+    except ValueError as e:
+        raise HTTPException(422, str(e))
     return result
 
 
@@ -401,171 +414,22 @@ def get_effective_price(
     db: Session = Depends(get_db),
     _=Depends(require_permission(Permissions.PRICING_VIEW)),
 ):
-    """
-    המחיר האפקטיבי לרכב ספציפי לטווח תאריכים נתון.
-    נוח לשימוש מה-UI ישירות (GET עם query params).
-    """
+    """המחיר האפקטיבי לרכב ספציפי לטווח תאריכים נתון (GET עם query params)."""
     car = db.query(Car).filter(Car.id == car_id, Car.is_active == True).first()  # noqa: E712
     if not car:
         raise HTTPException(404, "רכב לא נמצא")
-
     if end_date < start_date:
         raise HTTPException(400, "תאריך סיום חייב להיות אחרי תאריך התחלה")
 
-    result = calculate_total_price(
-        db=db,
-        car=car,
-        start_date=start_date,
-        end_date=end_date,
-        pickup_time=pickup_time,
-        return_time=return_time,
-    )
-    return result
-
-
-@router.post("/effective-entity", response_model=PriceCalculateResponse)
-def get_effective_price_by_entity(
-    data: dict = Body(...),
-    db: Session = Depends(get_db),
-    _=Depends(require_permission(Permissions.PRICING_VIEW)),
-):
-    """
-    חישוב מחיר אפקטיבי לפי entity_type, entity_value, season_id (לא רק לפי רכב).
-    מחזיר את המחיר המשוקלל לפי הכללים הרלוונטיים.
-    """
-    entity_type = data.get("entity_type")
-    entity_value = data.get("entity_value")
-    season_id = data.get("season_id")
-    # כאן יש לממש את הלוגיקה למציאת הכלל הרלוונטי (eonתי/רגיל)
-    # דוגמה בסיסית:
-    from app.crud.pricing import crud_price_rule, crud_seasonal_price_rule
-    from app.schemas.pricing import PriceCalculateResponse
-    # שלוף כלל עונתי רלוונטי
-    rule = None
-    # 2. חפש כלל מחיר בסיסי (רגיל)
-    base_rule = None
-    base_rules = crud_price_rule.get_filtered(db, entity_type=entity_type, entity_value=entity_value, season_id=season_id, active_only=True)
-    if base_rules:
-        base_rule = base_rules[0]
-
-    # אם אין כלל בסיסי, נסה כלל גלובלי
-    if not base_rule:
-        base_rules = crud_price_rule.get_filtered(db, entity_type=entity_type, entity_value=None, season_id=season_id, active_only=True)
-        if base_rules:
-            base_rule = base_rules[0]
-
-    from app.models.pricing import PriceType
-
-    # אם אין כלל בסיסי — לא להפעיל כלל עונתי, להחזיר 0
-    if not base_rule:
-        return PriceCalculateResponse(
-            total_price=0,
-            price_type_used=PriceType.daily,
-            billable_days=0,
-            actual_days=0,
-            price_rule_id=None,
-            breakdown=[],
-            note="לא נמצא כלל מחיר בסיסי — כלל עונתי לא הופעל"
+    try:
+        result = calculate_total_price(
+            db=db,
+            car=car,
+            start_date=start_date,
+            end_date=end_date,
+            pickup_time=pickup_time,
+            return_time=return_time,
         )
-
-    # 3. חשב מחיר בסיסי
-    base_price = base_rule.price
-    price_type = base_rule.price_type
-    breakdown = [{
-        "label": f"מחיר בסיסי ({base_price}₪)",
-        "season_name": str(season_id) if season_id else None,
-        "days": 1,
-        "billable_days": 1,
-        "skipped_dates": [],
-        "price_type": price_type,
-        "unit_price": base_price,
-        "subtotal": base_price,
-    }]
-
-    # 4. אם יש כלל עונתי — הפעל אותו
-    total_price = base_price
-    note = None
-    if seasonal_rule:
-        rt = seasonal_rule.rule_type
-        val = seasonal_rule.value
-        if rt == "discount_percent":
-            diff = -base_price * (val / 100)
-            total_price = base_price + diff
-            label = f"הנחה עונתית {val}% (-{abs(diff):.2f}₪)"
-        elif rt == "discount_fixed":
-            diff = -val
-            total_price = base_price + diff
-            label = f"הנחה עונתית {val}₪ (-{abs(diff):.2f}₪)"
-        elif rt == "surcharge_percent":
-            diff = base_price * (val / 100)
-            total_price = base_price + diff
-            label = f"תוספת עונתית {val}% (+{diff:.2f}₪)"
-        elif rt == "surcharge_fixed":
-            diff = val
-            total_price = base_price + diff
-            label = f"תוספת עונתית {val}₪ (+{diff:.2f}₪)"
-        else:
-            diff = 0
-            label = f"כלל עונתי לא ידוע"
-        breakdown.append({
-            "label": label,
-            "season_name": str(season_id) if season_id else None,
-            "days": 1,
-            "billable_days": 1,
-            "skipped_dates": [],
-            "price_type": price_type,
-            "unit_price": diff,
-            "subtotal": total_price,
-        })
-        note = f"הופעל כלל עונתי: {rt} ({val})"
-
-    return PriceCalculateResponse(
-        total_price=total_price,
-        price_type_used=price_type,
-        billable_days=1,
-        actual_days=1,
-        price_rule_id=base_rule.id,
-        breakdown=breakdown,
-        note=note
-    )
-
-@router.patch("/seasonal-rules/{rule_id}", response_model=SeasonalPriceRuleOut)
-def update_seasonal_rule(
-    rule_id: int,
-    data: SeasonalPriceRuleUpdate,
-    db: Session = Depends(get_db),
-    current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
-):
-    rule = db.query(crud_seasonal_price_rule.model).get(rule_id)
-    if not rule:
-        raise HTTPException(404, "Seasonal price rule not found")
-    updated = crud_seasonal_price_rule.update(db, db_obj=rule, obj_in=data)
-    log_audit_event(
-        db,
-        actor_user_id=current_user.id,
-        action="pricing.seasonal_rule.update",
-        entity_type="seasonal_price_rule",
-        entity_id=str(rule_id),
-        after_obj=updated,
-        severity=AuditSeverity.info
-    )
-    return updated
-
-@router.get("/seasonal-rules", response_model=list[SeasonalPriceRuleOut])
-def list_seasonal_rules(
-    season_id: int | None = Query(None),
-    entity_type: PriceEntityType | None = Query(None),
-    entity_value: str | None = Query(None),
-    active_only: bool = Query(True),
-    db: Session = Depends(get_db),
-    _=Depends(require_permission(Permissions.PRICING_VIEW)),
-):
-    """רשימת כללי מחיר עונתיים."""
-    return crud_seasonal_price_rule.get_filtered(
-        db,
-        season_id=season_id,
-        entity_type=entity_type,
-        entity_value=entity_value,
-        active_only=active_only,
-    )
-
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    return result

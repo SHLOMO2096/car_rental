@@ -1,7 +1,7 @@
 import enum
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, Date, DateTime,
-    ForeignKey, Enum, Text, UniqueConstraint, Index
+    ForeignKey, Text, Index
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -15,93 +15,93 @@ class PriceEntityType(str, enum.Enum):
     global_  = "global"
 
 
-class PriceType(str, enum.Enum):
-    daily    = "daily"
-    half_day = "half_day"
-    weekly   = "weekly"
-    monthly  = "monthly"
-
-
 class Season(Base):
-    """עונת מחיר — תקופה עם שמות בשנה (תומכת ב-wrap-around כגון 25/12–2/1)"""
+    """עונת מחיר — תקופה עם תאריכי DATE + אפשרות חזרה שנתית."""
     __tablename__ = "seasons"
 
-    id          = Column(Integer, primary_key=True, index=True)
-    name        = Column(String(100), nullable=False)      # "קיץ", "חגי תשרי"
-    start_month = Column(Integer, nullable=False)           # 1–12
-    start_day   = Column(Integer, nullable=False)           # 1–31
-    end_month   = Column(Integer, nullable=False)           # 1–12
-    end_day     = Column(Integer, nullable=False)           # 1–31
-    # אם (end_month, end_day) < (start_month, start_day) → עונה חוצת שנה
-    is_active   = Column(Boolean, default=True, nullable=False)
-    created_at  = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at  = Column(DateTime(timezone=True), onupdate=func.now())
+    id                   = Column(Integer, primary_key=True, index=True)
+    name                 = Column(String(100), nullable=False)
+    season_type          = Column(String(10), nullable=True)   # peak / low
+    valid_from           = Column(Date, nullable=True)
+    valid_until          = Column(Date, nullable=True)
+    # כשמסומן — המערכת מתעלמת מהשנה ומשווה חודש+יום בלבד
+    is_recurring         = Column(Boolean, default=False, nullable=False)
+    # adjustment חל על כלל המחיר שמשויך לעונה דרך season_rules
+    adjustment_type      = Column(String(10), nullable=True)   # percent / fixed
+    adjustment_direction = Column(String(10), nullable=True)   # add / subtract
+    adjustment_value     = Column(Float, nullable=True)
+    is_active            = Column(Boolean, default=True, nullable=False)
+    created_at           = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at           = Column(DateTime(timezone=True), onupdate=func.now())
 
-    price_rules = relationship("PriceRule", back_populates="season")
+    price_rules  = relationship("PriceRule", back_populates="season")
+    season_rules = relationship("SeasonRule", back_populates="season",
+                                cascade="all, delete-orphan")
 
 
 class PriceRule(Base):
-    """כלל מחיר — ברמת רכב / קבוצה / קטגוריה / גלובלי, לסוג מחיר ועונה ספציפית"""
+    """
+    כלל מחיר — ברמת רכב / קבוצה / קטגוריה / גלובלי.
+    4 שדות מחיר נפרדים (nullable) במקום שורה לכל price_type.
+    """
     __tablename__ = "price_rules"
 
-    id           = Column(Integer, primary_key=True, index=True)
-    name         = Column(String(100), nullable=True)       # תיאור ידידותי (אופציונלי)
-    entity_type  = Column(Enum(PriceEntityType), nullable=False, index=True)
-    # entity_value: car_id (as str) / group letter / category name / None for global
-    entity_value = Column(String(100), nullable=True, index=True)
-    price_type   = Column(Enum(PriceType), nullable=False)
-    price        = Column(Float, nullable=False)
-    season_id    = Column(Integer, ForeignKey("seasons.id", ondelete="SET NULL"), nullable=True, index=True)
-    priority     = Column(Integer, default=0, nullable=False)  # גבוה יותר ינצח בחפיפות
-    is_active    = Column(Boolean, default=True, nullable=False)
-    created_at   = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
+    id                       = Column(Integer, primary_key=True, index=True)
+    name                     = Column(String(100), nullable=True)
+    entity_type              = Column(String(20), nullable=False, index=True)
+    entity_value             = Column(String(100), nullable=True, index=True)
+    # 4 שדות מחיר — null = לא מוגדר, יורש מרמה גבוהה יותר
+    price_half_day           = Column(Float, nullable=True)
+    price_day                = Column(Float, nullable=True)
+    price_week               = Column(Float, nullable=True)
+    price_month              = Column(Float, nullable=True)
+    exclude_sabbath_holidays = Column(Boolean, default=True, nullable=False)
+    season_id                = Column(Integer, ForeignKey("seasons.id", ondelete="SET NULL"),
+                                      nullable=True, index=True)
+    priority                 = Column(Integer, default=0, nullable=False)
+    is_active                = Column(Boolean, default=True, nullable=False)
+    created_at               = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at               = Column(DateTime(timezone=True), onupdate=func.now())
 
-    season = relationship("Season", back_populates="price_rules")
+    season       = relationship("Season", back_populates="price_rules")
+    season_rules = relationship("SeasonRule", back_populates="price_rule")
 
     __table_args__ = (
-        UniqueConstraint(
-            "entity_type", "entity_value", "price_type", "season_id",
-            name="uq_price_rule_entity_type_season"
-        ),
-        Index("ix_price_rules_entity", "entity_type", "entity_value", "price_type"),
+        Index("ix_price_rules_entity", "entity_type", "entity_value"),
     )
 
 
-class SeasonalPriceRuleType(str, enum.Enum):
-    discount_percent = "discount_percent"
-    discount_fixed = "discount_fixed"
-    surcharge_percent = "surcharge_percent"
-    surcharge_fixed = "surcharge_fixed"
+class SeasonRule(Base):
+    """
+    קישור עונה → כלל מחיר ספציפי (או לכל הכללים אם price_rule_id=NULL).
+    מגדיר אילו סוגי מחיר מקבלים את ה-adjustment של העונה.
+    """
+    __tablename__ = "season_rules"
 
+    id                  = Column(Integer, primary_key=True, index=True)
+    season_id           = Column(Integer, ForeignKey("seasons.id", ondelete="CASCADE"),
+                                 nullable=False, index=True)
+    price_rule_id       = Column(Integer, ForeignKey("price_rules.id", ondelete="CASCADE"),
+                                 nullable=True, index=True)
+    applies_to_half_day = Column(Boolean, default=True, nullable=False)
+    applies_to_day      = Column(Boolean, default=True, nullable=False)
+    applies_to_week     = Column(Boolean, default=True, nullable=False)
+    applies_to_month    = Column(Boolean, default=True, nullable=False)
+    created_at          = Column(DateTime(timezone=True), server_default=func.now())
 
-class SeasonalPriceRule(Base):
-    """כלל מחיר עונתי — הנחה/תוספת לעונה, ברמת רכב/קבוצה/קטגוריה/גלובלי"""
-    __tablename__ = "seasonal_price_rules"
-
-    id           = Column(Integer, primary_key=True, index=True)
-    season_id    = Column(Integer, ForeignKey("seasons.id", ondelete="CASCADE"), nullable=False, index=True)
-    entity_type  = Column(Enum(PriceEntityType), nullable=False, index=True)
-    entity_value = Column(String(100), nullable=True, index=True)
-    rule_type    = Column(Enum(SeasonalPriceRuleType), nullable=False)
-    value        = Column(Float, nullable=False)
-    is_active    = Column(Boolean, default=True, nullable=False)
-    created_at   = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
-
-    season = relationship("Season")
+    season     = relationship("Season", back_populates="season_rules")
+    price_rule = relationship("PriceRule", back_populates="season_rules")
 
 
 class IsraeliHoliday(Base):
-    """חג ישראלי — תאריך גרגוריאני של חגי ישראל שלא נחשבים בחיוב יומי/שבועי"""
+    """חג ישראלי — תאריך גרגוריאני של חגי ישראל שלא נחשבים בחיוב יומי/שבועי."""
     __tablename__ = "israeli_holidays"
 
     id                = Column(Integer, primary_key=True, index=True)
-    name              = Column(String(100), nullable=False)   # "ראש השנה", "יום כיפור"
+    name              = Column(String(100), nullable=False)
     date              = Column(Date, unique=True, nullable=False, index=True)
-    hebrew_year       = Column(Integer, nullable=True)        # שנה עברית
+    hebrew_year       = Column(Integer, nullable=True)
     is_auto_generated = Column(Boolean, default=False, nullable=False)
-    # מי הוסיף ידנית (null = ייבוא אוטומטי)
     created_by        = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at        = Column(DateTime(timezone=True), server_default=func.now())
 

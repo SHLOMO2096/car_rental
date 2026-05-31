@@ -3,7 +3,6 @@ from pydantic import BaseModel, EmailStr, model_validator
 from datetime import date, datetime
 from typing import Optional, Any
 from app.models.booking import BookingStatus
-from app.models.pricing import PriceType
 from app.schemas.car import CarOut
 
 
@@ -106,7 +105,7 @@ class BookingOut(BaseModel):
     # ── Pricing details ────────────────────────────────────────────────────────
     billable_days:           Optional[float]     = None   # ימי חיוב (אחרי דילוג שבת/חג)
     actual_days:             Optional[int]        = None   # ימים קלנדריים
-    price_type_used:         Optional[PriceType]  = None   # daily/half_day/weekly/monthly
+    price_type_used:         Optional[str]         = None   # half_day / day / week / month
     price_rule_id:           Optional[int]        = None   # id הכלל שהופעל
     price_breakdown_json:    Optional[str]        = None   # פירוט JSON
     # ── Price Override ─────────────────────────────────────────────────────────

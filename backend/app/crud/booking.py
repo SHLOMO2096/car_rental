@@ -81,7 +81,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                 pickup_time=payload.get("pickup_time"),
                 return_time=payload.get("return_time"),
             )
-            total_price       = pricing_result.total_price
+            total_price       = pricing_result.total
             billable_days     = pricing_result.billable_days
             actual_days       = pricing_result.actual_days
             price_type_used   = pricing_result.price_type_used
@@ -248,7 +248,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                     pickup_time=db_obj.pickup_time,
                     return_time=db_obj.return_time,
                 )
-                db_obj.total_price         = result.total_price
+                db_obj.total_price         = result.total
                 db_obj.billable_days       = result.billable_days
                 db_obj.actual_days         = result.actual_days
                 db_obj.price_type_used     = result.price_type_used

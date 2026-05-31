@@ -1,34 +1,32 @@
 import api from "./client";
 
 export const pricingAPI = {
-  // ── Seasons ──────────────────────────────────────────────────────────────
-  listSeasons:    (params)   => api.get("/pricing/seasons", { params }).then(r => r.data),
-  createSeason:   (data)     => api.post("/pricing/seasons", data).then(r => r.data),
-  updateSeason:   (id, data) => api.patch(`/pricing/seasons/${id}`, data).then(r => r.data),
-  deleteSeason:   (id)       => api.delete(`/pricing/seasons/${id}`),
+  // ── Seasons ───────────────────────────────────────────────────────────────
+  listSeasons:   (params)   => api.get("/pricing/seasons", { params }).then(r => r.data),
+  createSeason:  (data)     => api.post("/pricing/seasons", data).then(r => r.data),
+  updateSeason:  (id, data) => api.put(`/pricing/seasons/${id}`, data).then(r => r.data),
+  deleteSeason:  (id)       => api.delete(`/pricing/seasons/${id}`),
 
   // ── Price Rules ───────────────────────────────────────────────────────────
-  listRules:   (params)   => api.get("/pricing/rules", { params }).then(r => r.data),
-  getMatrix:   ()         => api.get("/pricing/rules/matrix").then(r => r.data),
-  createRule:  (data)     => api.post("/pricing/rules", data).then(r => r.data),
-  updateRule:  (id, data) => api.patch(`/pricing/rules/${id}`, data).then(r => r.data),
-  deleteRule:  (id)       => api.delete(`/pricing/rules/${id}`),
+  listRules:  (params)   => api.get("/pricing/rules", { params }).then(r => r.data),
+  createRule: (data)     => api.post("/pricing/rules", data).then(r => r.data),
+  updateRule: (id, data) => api.put(`/pricing/rules/${id}`, data).then(r => r.data),
+  deleteRule: (id)       => api.delete(`/pricing/rules/${id}`),
+
+  // ── Season Rules (קישור עונה ↔ כלל מחיר) ─────────────────────────────────
+  listSeasonRules:  (params) => api.get("/pricing/season-rules", { params }).then(r => r.data),
+  createSeasonRule: (data)   => api.post("/pricing/season-rules", data).then(r => r.data),
+  deleteSeasonRule: (id)     => api.delete(`/pricing/season-rules/${id}`),
 
   // ── Holidays ──────────────────────────────────────────────────────────────
-  listHolidays:   (year)     => api.get("/pricing/holidays", { params: year ? { year } : {} }).then(r => r.data),
-  createHoliday:  (data)     => api.post("/pricing/holidays", data).then(r => r.data),
-  updateHoliday:  (id, data) => api.patch(`/pricing/holidays/${id}`, data).then(r => r.data),
-  deleteHoliday:  (id)       => api.delete(`/pricing/holidays/${id}`),
-  generateHolidays: (year)   => api.post(`/pricing/holidays/generate/${year}`).then(r => r.data),
+  listHolidays:     (year)     => api.get("/pricing/holidays", { params: year ? { year } : {} }).then(r => r.data),
+  createHoliday:    (data)     => api.post("/pricing/holidays", data).then(r => r.data),
+  updateHoliday:    (id, data) => api.put(`/pricing/holidays/${id}`, data).then(r => r.data),
+  deleteHoliday:    (id)       => api.delete(`/pricing/holidays/${id}`),
+  generateHolidays: (year)     => api.post(`/pricing/holidays/generate/${year}`).then(r => r.data),
 
   // ── Calculation ───────────────────────────────────────────────────────────
-  calculate:      (data)     => api.post("/pricing/calculate", data).then(r => r.data),
-  effectivePrice: (carId, params) => api.get(`/pricing/effective/${carId}`, { params }).then(r => r.data),
-  effectiveEntityPrice: (data) => api.post("/pricing/effective-entity", data).then(r => r.data),
-
-  // ── Seasonal Price Rules ───────────────────────────────────────────────
-  listSeasonalRules:   (params)   => api.get("/pricing/seasonal-rules", { params }).then(r => r.data),
-  createSeasonalRule:  (data)     => api.post("/pricing/seasonal-rules", data).then(r => r.data),
-  updateSeasonalRule:  (id, data) => api.patch(`/pricing/seasonal-rules/${id}`, data).then(r => r.data),
-  deleteSeasonalRule:  (id)       => api.delete(`/pricing/seasonal-rules/${id}`),
+  // body: { vehicle_id, rental_start, rental_end, pickup_time?, return_time? }
+  calculate:     (data)            => api.post("/pricing/calculate", data).then(r => r.data),
+  effectivePrice: (carId, params)  => api.get(`/pricing/effective/${carId}`, { params }).then(r => r.data),
 };
