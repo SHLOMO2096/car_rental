@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { pricingAPI } from "../api/pricing";
 import { carsAPI } from "../api/cars";
 import { toast } from "../store/toast";
@@ -171,10 +171,11 @@ function SeasonsTab({ canManage, isMobile }) {
     } catch (e) { toast.error(e?.response?.data?.detail || "שגיאה במחיקה"); }
   };
 
-  const fmtDate = (d) => {
+  const currentYear = new Date().getFullYear();
+  const fmtDateCurrentYear = (d) => {
     if (!d) return "—";
     const dt = new Date(d);
-    return `${dt.getDate()}/${dt.getMonth() + 1}`;
+    return `${dt.getDate()}/${dt.getMonth() + 1}/${currentYear}`;
   };
   const fmtDateFull = (d) => {
     if (!d) return "—";
@@ -211,7 +212,7 @@ function SeasonsTab({ canManage, isMobile }) {
                   </div>
                   <div style={{ fontSize: 12, color: "#64748b" }}>
                     {s.is_recurring
-                      ? `${fmtDate(s.valid_from)} – ${fmtDate(s.valid_until)} (חוזר שנתי)`
+                      ? `${fmtDateCurrentYear(s.valid_from)} – ${fmtDateCurrentYear(s.valid_until)} (חוזר שנתי)`
                       : `${fmtDateFull(s.valid_from)} – ${fmtDateFull(s.valid_until)}`
                     }
                   </div>
@@ -891,17 +892,20 @@ function SeasonRulesTab({ canManage, isMobile }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // רשימת כללים מ-deduplicated: מסיר כללי-רכב שהדגם שלהם כבר מכוסה בכלל-דגם
-  const deduplicatedRules = (() => {
+  // מסיר כללי-רכב שהדגם שלהם כבר מכוסה בכלל-דגם
+  const deduplicatedRules = useMemo(() => {
     const modelRuleValues = new Set(
       prules.filter(r => r.entity_type === "model").map(r => r.entity_value)
     );
     return prules.filter(r => {
       if (r.entity_type !== "car") return true;
+      // כשallCars עדיין לא נטען — מסתיר כל כלל-רכב (safe fallback)
+      if (allCars.length === 0) return false;
       const car = allCars.find(c => String(c.id) === r.entity_value);
-      return !car || !modelRuleValues.has(car.name);
+      if (!car) return true;
+      return !modelRuleValues.has(car.name || "");
     });
-  })();
+  }, [prules, allCars]);
 
   const openNew  = () => setForm({ mode: "create", ...EMPTY_SEASON_RULE });
   const openEdit = (sr) => setForm({
