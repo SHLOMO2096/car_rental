@@ -853,7 +853,7 @@ function PriceRuleForm({ form, setForm, seasons, carTree, allCars, saving, onSav
 // ══════════════════════════════════════════════════════════════════════════════
 const EMPTY_SEASON_RULE = {
   season_id: "",
-  price_rule_id: null,
+  price_rule_ids: [],   // מערך — multi-select בעת יצירה
   applies_to_half_day: true,
   applies_to_day:      true,
   applies_to_week:     true,
@@ -872,8 +872,9 @@ function SeasonRulesTab({ canManage, isMobile }) {
   const [seasons, setSeasons] = useState([]);
   const [prules,  setPrules]  = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm]       = useState(null);
-  const [saving, setSaving]   = useState(false);
+  const [form,    setForm]    = useState(null);  // null=סגור | {mode:'create'|'edit', ...}
+  const [saving,  setSaving]  = useState(false);
+  const { allCars } = useCarTree();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -890,19 +891,60 @@ function SeasonRulesTab({ canManage, isMobile }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // רשימת כללים מ-deduplicated: מסיר כללי-רכב שהדגם שלהם כבר מכוסה בכלל-דגם
+  const deduplicatedRules = (() => {
+    const modelRuleValues = new Set(
+      prules.filter(r => r.entity_type === "model").map(r => r.entity_value)
+    );
+    return prules.filter(r => {
+      if (r.entity_type !== "car") return true;
+      const car = allCars.find(c => String(c.id) === r.entity_value);
+      return !car || !modelRuleValues.has(car.name);
+    });
+  })();
+
+  const openNew  = () => setForm({ mode: "create", ...EMPTY_SEASON_RULE });
+  const openEdit = (sr) => setForm({
+    mode: "edit",
+    id:   sr.id,
+    season_id:           sr.season_id,
+    price_rule_ids:      sr.price_rule_id ? [sr.price_rule_id] : [],
+    applies_to_half_day: sr.applies_to_half_day,
+    applies_to_day:      sr.applies_to_day,
+    applies_to_week:     sr.applies_to_week,
+    applies_to_month:    sr.applies_to_month,
+  });
+
+  const applyPayload = (overrides = {}) => ({
+    season_id:           +form.season_id,
+    applies_to_half_day: !!form.applies_to_half_day,
+    applies_to_day:      !!form.applies_to_day,
+    applies_to_week:     !!form.applies_to_week,
+    applies_to_month:    !!form.applies_to_month,
+    ...overrides,
+  });
+
   const save = async () => {
     if (!form.season_id) return toast.error("חובה לבחור עונה");
     setSaving(true);
     try {
-      await pricingAPI.createSeasonRule({
-        season_id:           +form.season_id,
-        price_rule_id:       form.price_rule_id ? +form.price_rule_id : null,
-        applies_to_half_day: !!form.applies_to_half_day,
-        applies_to_day:      !!form.applies_to_day,
-        applies_to_week:     !!form.applies_to_week,
-        applies_to_month:    !!form.applies_to_month,
-      });
-      toast.success("כלל עונה נוצר");
+      if (form.mode === "edit") {
+        const prId = form.price_rule_ids[0] ?? null;
+        await pricingAPI.updateSeasonRule(form.id, applyPayload({ price_rule_id: prId ? +prId : null }));
+        toast.success("כלל עונה עודכן");
+      } else {
+        // יצירה: אם אין בחירה ספציפית → null (כל הכללים), אחרת שורה לכל כלל נבחר
+        if (form.price_rule_ids.length === 0) {
+          await pricingAPI.createSeasonRule(applyPayload({ price_rule_id: null }));
+        } else {
+          await Promise.all(
+            form.price_rule_ids.map(rid =>
+              pricingAPI.createSeasonRule(applyPayload({ price_rule_id: +rid }))
+            )
+          );
+        }
+        toast.success("כלל עונה נוצר");
+      }
       setForm(null); load();
     } catch (e) {
       toast.error(e?.response?.data?.detail || "שגיאה בשמירה");
@@ -915,19 +957,29 @@ function SeasonRulesTab({ canManage, isMobile }) {
     catch (e) { toast.error(e?.response?.data?.detail || "שגיאה"); }
   };
 
-  const seasonName  = id => seasons.find(s => s.id === id)?.name  || `עונה ${id}`;
-  const ruleName    = id => {
+  const seasonName = id => seasons.find(s => s.id === id)?.name || `עונה ${id}`;
+  const ruleName   = id => {
     const r = prules.find(r => r.id === id);
     if (!r) return `כלל ${id}`;
     return `${ENTITY_HE[r.entity_type] || r.entity_type}: ${r.entity_value || "גלובלי"}`;
   };
 
+  const toggleRuleId = (id) => {
+    const sid = String(id);
+    setForm(p => ({
+      ...p,
+      price_rule_ids: p.price_rule_ids.includes(sid)
+        ? p.price_rule_ids.filter(x => x !== sid)
+        : [...p.price_rule_ids, sid],
+    }));
+  };
+
+  const isCreateMode = form?.mode === "create";
+
   return (
     <div>
       {canManage && (
-        <button onClick={() => setForm({ ...EMPTY_SEASON_RULE })} style={btn("#2563eb")}>
-          + כלל עונה חדש
-        </button>
+        <button onClick={openNew} style={btn("#2563eb")}>+ כלל עונה חדש</button>
       )}
 
       {loading ? <Spinner /> : (
@@ -951,13 +1003,14 @@ function SeasonRulesTab({ canManage, isMobile }) {
                   <td style={tdStyle}><span style={badgeStyle("#fef3c7", "#92400e")}>{seasonName(sr.season_id)}</span></td>
                   <td style={tdStyle}>{sr.price_rule_id ? ruleName(sr.price_rule_id) : <em style={{ color: "#94a3b8" }}>כל הכללים</em>}</td>
                   {APPLIES_FIELDS.map(({ key }) => (
-                    <td key={key} style={{ ...tdStyle, textAlign: "center" }}>
-                      {sr[key] ? "✅" : "—"}
-                    </td>
+                    <td key={key} style={{ ...tdStyle, textAlign: "center" }}>{sr[key] ? "✅" : "—"}</td>
                   ))}
                   <td style={tdStyle}>
                     {canManage && (
-                      <button onClick={() => remove(sr.id)} style={smallBtn("#fef2f2", "#dc2626")}>🗑</button>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => openEdit(sr)} style={smallBtn("#e0f2fe", "#0369a1")}>✏️</button>
+                        <button onClick={() => remove(sr.id)} style={smallBtn("#fef2f2", "#dc2626")}>🗑</button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -967,25 +1020,72 @@ function SeasonRulesTab({ canManage, isMobile }) {
         </div>
       )}
 
-      <Modal open={form !== null} onClose={() => setForm(null)} title="➕ כלל עונה חדש">
+      <Modal open={form !== null} onClose={() => setForm(null)}
+             title={isCreateMode ? "➕ כלל עונה חדש" : "✏️ עדכון כלל עונה"}>
         {form && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* עונה */}
             <Field label="עונה *">
-              <select value={form.season_id} onChange={e => setForm(p => ({ ...p, season_id: e.target.value }))} style={inp}>
+              <select value={form.season_id}
+                      onChange={e => setForm(p => ({ ...p, season_id: e.target.value }))}
+                      style={inp}>
                 <option value="">בחר עונה</option>
                 {seasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </Field>
-            <Field label="כלל מחיר (ריק = חל על כל הכללים)">
-              <select value={form.price_rule_id || ""} onChange={e => setForm(p => ({ ...p, price_rule_id: e.target.value || null }))} style={inp}>
-                <option value="">כל הכללים</option>
-                {prules.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {ENTITY_HE[r.entity_type] || r.entity_type}: {r.entity_value || "גלובלי"}
-                  </option>
-                ))}
-              </select>
+
+            {/* בחירת כללי מחיר */}
+            <Field label={isCreateMode ? "כללי מחיר (ריק = כל הכללים)" : "כלל מחיר"}>
+              <div style={{
+                border: "1px solid #d1d5db", borderRadius: 7, maxHeight: 220,
+                overflowY: "auto", background: "#fff",
+              }}>
+                {/* "כל הכללים" — רק בעת יצירה */}
+                {isCreateMode && (
+                  <label style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    padding: "8px 12px", cursor: "pointer", fontSize: 13,
+                    borderBottom: "1px solid #f1f5f9",
+                    background: form.price_rule_ids.length === 0 ? "#eff6ff" : "",
+                  }}>
+                    <input type="checkbox"
+                           checked={form.price_rule_ids.length === 0}
+                           onChange={() => setForm(p => ({ ...p, price_rule_ids: [] }))} />
+                    <em style={{ color: "#6b7280" }}>כל הכללים</em>
+                  </label>
+                )}
+                {deduplicatedRules.map(r => {
+                  const sid = String(r.id);
+                  const checked = form.price_rule_ids.includes(sid);
+                  return (
+                    <label key={r.id} style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "8px 12px", cursor: "pointer", fontSize: 13,
+                      borderBottom: "1px solid #f1f5f9",
+                      background: checked ? "#eff6ff" : "",
+                    }}>
+                      <input
+                        type={isCreateMode ? "checkbox" : "radio"}
+                        checked={checked}
+                        onChange={() => isCreateMode
+                          ? toggleRuleId(r.id)
+                          : setForm(p => ({ ...p, price_rule_ids: [sid] }))}
+                      />
+                      <span style={{ color: "#374151" }}>
+                        {ENTITY_HE[r.entity_type] || r.entity_type}: {r.entity_value || "גלובלי"}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {isCreateMode && form.price_rule_ids.length > 0 && (
+                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+                  {form.price_rule_ids.length} נבחרו — ייווצרו {form.price_rule_ids.length} רשומות
+                </div>
+              )}
             </Field>
+
+            {/* סוגי מחיר */}
             <Field label="חל על סוגי מחיר">
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                 {APPLIES_FIELDS.map(({ key, label }) => (
@@ -997,6 +1097,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
                 ))}
               </div>
             </Field>
+
             <FormFooter saving={saving} onCancel={() => setForm(null)} onSave={save} />
           </div>
         )}

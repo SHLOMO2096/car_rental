@@ -14,9 +14,10 @@ export const pricingAPI = {
   deleteRule: (id)       => api.delete(`/pricing/rules/${id}`),
 
   // ── Season Rules (קישור עונה ↔ כלל מחיר) ─────────────────────────────────
-  listSeasonRules:  (params) => api.get("/pricing/season-rules", { params }).then(r => r.data),
-  createSeasonRule: (data)   => api.post("/pricing/season-rules", data).then(r => r.data),
-  deleteSeasonRule: (id)     => api.delete(`/pricing/season-rules/${id}`),
+  listSeasonRules:  (params)   => api.get("/pricing/season-rules", { params }).then(r => r.data),
+  createSeasonRule: (data)     => api.post("/pricing/season-rules", data).then(r => r.data),
+  updateSeasonRule: (id, data) => api.put(`/pricing/season-rules/${id}`, data).then(r => r.data),
+  deleteSeasonRule: (id)       => api.delete(`/pricing/season-rules/${id}`),
 
   // ── Holidays ──────────────────────────────────────────────────────────────
   listHolidays:     (year)     => api.get("/pricing/holidays", { params: year ? { year } : {} }).then(r => r.data),

@@ -247,6 +247,29 @@ def create_season_rule(
     return rule
 
 
+@router.put("/season-rules/{rule_id}", response_model=SeasonRuleOut)
+def update_season_rule(
+    rule_id: int,
+    data: SeasonRuleCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_permission(Permissions.PRICING_MANAGE)),
+    request: Request = None,
+):
+    rule = crud_season_rule.get(db, rule_id)
+    if not rule:
+        raise HTTPException(404, "כלל עונה לא נמצא")
+    if data.price_rule_id and not crud_price_rule.get(db, data.price_rule_id):
+        raise HTTPException(404, f"כלל מחיר {data.price_rule_id} לא נמצא")
+    updated = crud_season_rule.update(db, db_obj=rule, obj_in=data)
+    log_audit_event(
+        db, actor_user_id=current_user.id,
+        action="pricing.season_rule.update", entity_type="season_rule",
+        entity_id=str(rule_id), after_obj=updated,
+        ip_address=request.client.host if request and request.client else None,
+    )
+    return updated
+
+
 @router.delete("/season-rules/{rule_id}", status_code=204)
 def delete_season_rule(
     rule_id: int,
