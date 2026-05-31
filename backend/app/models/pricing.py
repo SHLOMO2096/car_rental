@@ -10,7 +10,7 @@ from app.db.session import Base
 
 class PriceEntityType(str, enum.Enum):
     car      = "car"
-    group    = "group"
+    model    = "model"
     category = "category"
     global_  = "global"
 

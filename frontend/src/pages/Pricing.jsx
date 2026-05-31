@@ -10,7 +10,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 // ── קבועים ────────────────────────────────────────────────────────────────────
 const ENTITY_HE = {
   car: "רכב ספציפי",
-  group: "קבוצה/דגם",
+  model: "דגם",
   category: "קטגוריה",
   global_: "גלובלי",
 };
@@ -32,10 +32,10 @@ function useCarTree() {
       const tree = {};
       data.forEach(car => {
         const cat   = car.category || "ללא קטגוריה";
-        const group = car.group    || "ללא קבוצה";
+        const model = car.name    || "ללא דגם";
         if (!tree[cat]) tree[cat] = {};
-        if (!tree[cat][group]) tree[cat][group] = [];
-        tree[cat][group].push(car);
+        if (!tree[cat][model]) tree[cat][model] = [];
+        tree[cat][model].push(car);
       });
       setCarTree(tree);
     }).catch(() => {});
@@ -479,7 +479,7 @@ function RulesTab({ canManage, isMobile }) {
       r.entity_type === "car" && r.entity_value === String(car.id) && r.is_active);
     if (carRule?.[priceKey] != null) return null; // has own
     const grpRule = rules.find(r =>
-      r.entity_type === "group" && r.entity_value === car.group && r.is_active);
+      r.entity_type === "model" && r.entity_value === car.name && r.is_active);
     if (grpRule?.[priceKey] != null) return grpRule[priceKey];
     const catRule = rules.find(r =>
       r.entity_type === "category" && r.entity_value === car.category && r.is_active);
@@ -517,7 +517,7 @@ function RulesTab({ canManage, isMobile }) {
             <p style={{ color: "#94a3b8" }}>אין רכבים מוגדרים</p>
           )}
 
-          {Object.entries(carTree).map(([cat, groups]) => {
+          {Object.entries(carTree).map(([cat, models]) => {
             const catOverride = hasOverride("category", cat);
             const isOpen = !!openCats[cat];
 
@@ -549,16 +549,16 @@ function RulesTab({ canManage, isMobile }) {
 
                 {isOpen && (
                   <div style={{ paddingRight: 16, paddingLeft: 8, paddingBottom: 8 }}>
-                    {Object.entries(groups).map(([grp, cars]) => {
-                      const grpOverride = hasOverride("group", grp);
-                      const grpKey = `${cat}|${grp}`;
+                    {Object.entries(models).map(([mdl, cars]) => {
+                      const grpOverride = hasOverride("model", mdl);
+                      const grpKey = `${cat}|${mdl}`;
                       const isGrpOpen = !!openGroups[grpKey];
 
                       return (
-                        <div key={grp} style={{ marginTop: 6, border: "1px solid #f1f5f9", borderRadius: 8 }}>
-                          {/* קבוצה/דגם */}
+                        <div key={mdl} style={{ marginTop: 6, border: "1px solid #f1f5f9", borderRadius: 8 }}>
+                          {/* דגם */}
                           <div
-                            onClick={() => toggleGroup(cat, grp)}
+                            onClick={() => toggleGroup(cat, mdl)}
                             style={{
                               display: "flex", alignItems: "center", gap: 8,
                               padding: "9px 12px", cursor: "pointer",
@@ -569,12 +569,12 @@ function RulesTab({ canManage, isMobile }) {
                             <span style={{ fontSize: 11, color: "#94a3b8", transition: "transform 0.2s",
                                            transform: isGrpOpen ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
                             <span style={{ fontWeight: 700, fontSize: 13, color: "#334155", flex: 1 }}>
-                              קבוצה {grp}
+                              {mdl}
                             </span>
                             <InheritBadge hasOverride={grpOverride} />
                             {canManage && (
                               <button
-                                onClick={e => { e.stopPropagation(); openEdit(ruleFor("group", grp) || { ...EMPTY_RULE, entity_type: "group", entity_value: grp }); }}
+                                onClick={e => { e.stopPropagation(); openEdit(ruleFor("model", mdl) || { ...EMPTY_RULE, entity_type: "model", entity_value: mdl }); }}
                                 style={{ ...smallBtn("#e0f2fe", "#0369a1"), fontSize: 11, padding: "3px 8px" }}
                               >
                                 ✏️
@@ -704,12 +704,12 @@ function PriceRuleForm({ form, setForm, seasons, carTree, allCars, saving, onSav
           </select>
         </Field>
       )}
-      {form.entity_type === "group" && (
-        <Field label="קבוצה *">
+      {form.entity_type === "model" && (
+        <Field label="דגם *">
           <select value={form.entity_value || ""} onChange={e => f("entity_value", e.target.value)} style={inp}>
-            <option value="">בחר קבוצה</option>
-            {[...new Set(allCars.map(c => c.group).filter(Boolean))].sort().map(g => (
-              <option key={g} value={g}>קבוצה {g}</option>
+            <option value="">בחר דגם</option>
+            {[...new Set(allCars.map(c => c.name).filter(Boolean))].sort().map(m => (
+              <option key={m} value={m}>{m}</option>
             ))}
           </select>
         </Field>

@@ -216,7 +216,7 @@ def split_by_seasons(
 
 _ENTITY_LEVELS = [
     PriceEntityType.car,
-    PriceEntityType.group,
+    PriceEntityType.model,
     PriceEntityType.category,
     PriceEntityType.global_,
 ]
@@ -228,19 +228,19 @@ def _resolve_rule(
     season_id: Optional[int],
 ) -> Optional[PriceRule]:
     """
-    מחפש PriceRule לפי ירושה: רכב → קבוצה → קטגוריה → גלובלי.
+    מחפש PriceRule לפי ירושה: רכב → דגם → קטגוריה → גלובלי.
     לכל רמה — קודם עם season_id, אחר כך ללא עונה.
     מחזיר None אם לא נמצא כלום.
     """
     candidates: list[tuple[PriceEntityType, Optional[str], Optional[int]]] = [
-        (PriceEntityType.car,      str(car.id),       season_id),
-        (PriceEntityType.car,      str(car.id),       None),
-        (PriceEntityType.group,    car.group,          season_id),
-        (PriceEntityType.group,    car.group,          None),
-        (PriceEntityType.category, car.category,       season_id),
-        (PriceEntityType.category, car.category,       None),
-        (PriceEntityType.global_,  None,               season_id),
-        (PriceEntityType.global_,  None,               None),
+        (PriceEntityType.car,      str(car.id),   season_id),
+        (PriceEntityType.car,      str(car.id),   None),
+        (PriceEntityType.model,    car.name,       season_id),
+        (PriceEntityType.model,    car.name,       None),
+        (PriceEntityType.category, car.category,   season_id),
+        (PriceEntityType.category, car.category,   None),
+        (PriceEntityType.global_,  None,           season_id),
+        (PriceEntityType.global_,  None,           None),
     ]
 
     for entity_type, entity_value, s_id in candidates:
@@ -308,8 +308,8 @@ def resolve_prices(
     for entity_type, entity_value, s_id in [
         (PriceEntityType.car,      str(car.id),  season_id),
         (PriceEntityType.car,      str(car.id),  None),
-        (PriceEntityType.group,    car.group,     season_id),
-        (PriceEntityType.group,    car.group,     None),
+        (PriceEntityType.model,    car.name,      season_id),
+        (PriceEntityType.model,    car.name,      None),
         (PriceEntityType.category, car.category,  season_id),
         (PriceEntityType.category, car.category,  None),
         (PriceEntityType.global_,  None,          season_id),
@@ -532,7 +532,7 @@ def _calc_segment(
         if car.price_per_day and price_type == "day":
             unit_price = float(car.price_per_day)
         else:
-            missing_chain = f"רכב {car.id} → קבוצה {car.group} → קטגוריה {car.category} → גלובלי"
+            missing_chain = f"רכב {car.id} → דגם {car.name} → קטגוריה {car.category} → גלובלי"
             raise ValueError(
                 f"לא נמצא מחיר לסוג '{price_type}' לאחר חיפוש בכל רמות הירושה: {missing_chain}"
             )
