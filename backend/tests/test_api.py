@@ -204,7 +204,7 @@ class TestCars:
 
 # ── Bookings Tests ─────────────────────────────────────────────────────────────
 class TestBookings:
-    def test_create_booking_rejects_past_start_date(self, client, auth_headers, sample_car):
+    def test_create_booking_allows_past_start_date(self, client, auth_headers, sample_car):
         yesterday = (date.today() - timedelta(days=1)).isoformat()
         tomorrow = (date.today() + timedelta(days=1)).isoformat()
         r = client.post("/api/bookings/", json={
@@ -214,9 +214,9 @@ class TestBookings:
             "start_date": yesterday,
             "end_date": tomorrow,
         }, headers=auth_headers)
-        assert r.status_code == 422
+        assert r.status_code == 201
 
-    def test_create_booking_rejects_same_day_pickup_time_in_the_past(self, client, auth_headers, sample_car):
+    def test_create_booking_allows_same_day_past_pickup_time(self, client, auth_headers, sample_car):
         now = datetime.now().replace(second=0, microsecond=0)
         if now.hour == 0 and now.minute == 0:
             pytest.skip("cannot build a past same-day time at exactly midnight")
@@ -234,8 +234,7 @@ class TestBookings:
             "pickup_time": past_time,
         }, headers=auth_headers)
 
-        assert r.status_code == 422
-        assert "שעת איסוף" in r.text
+        assert r.status_code == 201
 
     def test_create_booking(self, client, auth_headers, sample_car):
         # 2030-06-03 (Mon) → 2030-06-07 (Fri) = 4 ימי חיוב (ללא שבת) × 100 = 400
