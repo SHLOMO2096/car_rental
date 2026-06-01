@@ -40,9 +40,6 @@ class BookingCreate(BaseModel):
 
     @model_validator(mode="after")
     def dates_valid(self):
-        if self.start_date < date.today():
-            raise ValueError("לא ניתן ליצור הזמנה לתאריך עבר")
-        ensure_booking_start_not_in_past(self.start_date, self.pickup_time)
         if self.end_date < self.start_date:
             raise ValueError("תאריך סיום חייב להיות אחרי תאריך התחלה")
         if self.customer_has_no_email and self.customer_email:

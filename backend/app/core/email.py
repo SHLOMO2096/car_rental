@@ -286,6 +286,65 @@ def send_missing_customer_email_alert(
     return success
 
 
+def send_past_booking_alert(
+    *,
+    booking_id: int,
+    customer_name: str,
+    car_name: str,
+    start: str,
+    end: str,
+    pickup_time: str | None,
+    hours_in_past: float,
+    actor_email: str,
+    actor_role: str,
+) -> bool:
+    recipients = _parse_recipients(settings.SECURITY_ALERT_RECIPIENTS)
+    if not recipients:
+        logger.info("[ALERT EMAIL SKIPPED] No SECURITY_ALERT_RECIPIENTS configured")
+        return False
+
+    pickup_str = f" {pickup_time}" if pickup_time else ""
+    body = f"""
+    <p><strong>התראת תפעול:</strong> נוצרה הזמנה חדשה שתאריך ההתחלה שלה עבר לפני יותר מ-5 שעות.</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0">
+      <tr style="background:#fef2f2">
+        <td style="padding:10px;font-weight:bold">מספר הזמנה</td>
+        <td style="padding:10px">#{booking_id}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">לקוח</td>
+        <td style="padding:10px">{customer_name}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">רכב</td>
+        <td style="padding:10px">{car_name}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">מתאריך</td>
+        <td style="padding:10px">{start}{pickup_str}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">עד תאריך</td>
+        <td style="padding:10px">{end}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">עיכוב רישום</td>
+        <td style="padding:10px;color:#dc2626;font-weight:bold">{hours_in_past:.1f} שעות</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">בוצע ע"י</td>
+        <td style="padding:10px">{actor_email} ({actor_role})</td>
+      </tr>
+    </table>
+    <p style="color:#dc2626;font-weight:bold">ההזמנה נרשמה באיחור משמעותי — יש לוודא שהרכב אכן יצא בזמן ולתעד בהתאם.</p>"""
+
+    subject = f"[ALERT] Booking #{booking_id} registered {hours_in_past:.1f}h after start — {settings.APP_NAME}"
+    success = True
+    for recipient in recipients:
+        success = _send(recipient, subject, _base_template("התראת רישום הזמנה באיחור", body)) and success
+    return success
+
+
 def send_booking_edit_alert(
     *,
     booking_id: int,

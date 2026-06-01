@@ -22,6 +22,7 @@ from app.core.email import (
     send_booking_delete_alert,
     send_booking_edit_alert,
     send_missing_customer_email_alert,
+    send_past_booking_alert,
 )
 from app.crud.audit_log import log_audit_event, list_entity_audit_events
 from app.models.audit_log import AuditSeverity
@@ -186,6 +187,28 @@ def create_booking(
 
     booking = crud_booking.create_booking(db, payload, current_user.id, car)
 
+    # ── התראה אם ההזמנה נרשמה יותר מ-5 שעות אחרי תאריך ההתחלה ──────────────
+    _pickup = data.pickup_time or "00:00"
+    try:
+        _h, _m = map(int, _pickup.split(":"))
+    except ValueError:
+        _h, _m = 0, 0
+    _start_dt = datetime.combine(data.start_date, datetime.min.time().replace(hour=_h, minute=_m))
+    _hours_late = (datetime.now() - _start_dt).total_seconds() / 3600
+    if _hours_late > 5:
+        bg.add_task(
+            send_past_booking_alert,
+            booking_id=booking.id,
+            customer_name=data.customer_name,
+            car_name=_car_category_label(car),
+            start=str(data.start_date),
+            end=str(data.end_date),
+            pickup_time=data.pickup_time,
+            hours_in_past=_hours_late,
+            actor_email=current_user.email,
+            actor_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
+        )
+
     if data.customer_email:
         bg.add_task(
             send_booking_confirmation,
@@ -257,16 +280,8 @@ def update_booking(
 
     # ── ולידציה: שינוי תאריכים ────────────────────────────────────────────────
     if data.start_date or data.end_date or data.pickup_time:
-        if data.start_date and data.start_date < Date.today():
-            raise HTTPException(422, "לא ניתן לעדכן הזמנה לתאריך התחלה בעבר")
-        if data.end_date and data.end_date < Date.today():
-            raise HTTPException(422, "לא ניתן לעדכן הזמנה לתאריך סיום בעבר")
         if new_end < new_start:
             raise HTTPException(422, "תאריך סיום חייב להיות אחרי תאריך התחלה")
-        try:
-            ensure_booking_start_not_in_past(new_start, new_pickup_time)
-        except ValueError as exc:
-            raise HTTPException(422, str(exc)) from exc
         if crud_booking.has_overlap(db, new_car_id, new_start, new_end, data.pickup_time or b.pickup_time, data.return_time or b.return_time, exclude_id=b.id):
             raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
 

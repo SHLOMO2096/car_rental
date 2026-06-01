@@ -173,7 +173,7 @@ export default function BookingFormModal({
             <input
               type="date"
               value={form.start_date}
-              min={isCreate ? todayISO() : undefined}
+              min={undefined}
               onChange={(e) =>
                 setForm((f) => {
                   const newPickupTime = getEarliestAllowedPickupTime(e.target.value, new Date(), f.start_time);
@@ -190,7 +190,7 @@ export default function BookingFormModal({
             <input
               type="time"
               value={form.start_time}
-              min={isCreate && form.start_date === todayISO() ? earliestStartTime : undefined}
+              min={undefined}
               onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
               style={{ ...s.input, flex: 1 }}
             />
