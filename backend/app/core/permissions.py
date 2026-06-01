@@ -53,6 +53,7 @@ ROLE_PERMISSIONS = {
         Permissions.ATTENDANCE_VIEW,
 
         Permissions.PRICING_VIEW,        # agent רואה מחירים
+        Permissions.PRICING_MANAGE,      # TODO: temporary until RBAC v2 - agent מנהל מחירים
     },
     UserRole.admin: {
         Permissions.BOOKINGS_VIEW,
