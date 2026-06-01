@@ -381,7 +381,6 @@ const EMPTY_RULE = {
 
 function RulesTab({ canManage, isMobile }) {
   const [rules,       setRules]       = useState([]);
-  const [seasons,     setSeasons]     = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [form,        setForm]        = useState(null);
   const [saving,      setSaving]      = useState(false);
@@ -393,11 +392,8 @@ function RulesTab({ canManage, isMobile }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [r, s] = await Promise.all([
-        pricingAPI.listRules({ active_only: false }),
-        pricingAPI.listSeasons(),
-      ]);
-      setRules(r); setSeasons(s);
+      const r = await pricingAPI.listRules({ active_only: false });
+      setRules(r);
     } catch { toast.error("נכשל בטעינת כללי מחיר"); }
     finally { setLoading(false); }
   }, []);
@@ -522,7 +518,7 @@ function RulesTab({ canManage, isMobile }) {
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
               <PriceRuleForm
                 form={form} setForm={setForm}
-                seasons={seasons} carTree={carTree} allCars={allCars}
+                carTree={carTree} allCars={allCars}
                 saving={saving} onSave={save} onCancel={closeForm}
                 onDelete={form.id && canManage ? () => { remove(form); closeForm(); } : null}
                 isMobile={isMobile}
@@ -736,7 +732,7 @@ function RulesTab({ canManage, isMobile }) {
   );
 }
 
-function PriceRuleForm({ form, setForm, seasons, carTree, allCars, saving, onSave, onCancel, onDelete, isMobile }) {
+function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCancel, onDelete, isMobile }) {
   const f = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
   return (
@@ -815,19 +811,6 @@ function PriceRuleForm({ form, setForm, seasons, carTree, allCars, saving, onSav
         </div>
       </div>
 
-      {/* שורת הגדרות */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-        <Field label="עונה (ריק = ברירת מחדל)">
-          <select value={form.season_id || ""} onChange={e => f("season_id", e.target.value ? +e.target.value : null)} style={inp}>
-            <option value="">ברירת מחדל</option>
-            {seasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </Field>
-        <Field label="עדיפות">
-          <input type="number" min={0} value={form.priority || 0}
-                 onChange={e => f("priority", +e.target.value)} style={inp} />
-        </Field>
-      </div>
 
       {/* exclude_sabbath_holidays */}
       <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer" }}>
