@@ -4,6 +4,23 @@ import { s } from "../styles";
 import { addDays, formatDateTime, todayISO } from "../utils/dates";
 import { getEarliestAllowedPickupTime, subtractMinutes } from "../utils/form";
 
+function getEffectivePriceDay(car, priceRules) {
+  if (!priceRules?.length) return null;
+  const active = priceRules.filter((r) => r.is_active);
+  const levels = [
+    active.filter((r) => r.entity_type === "car" && r.entity_value === String(car.id)),
+    active.filter((r) => r.entity_type === "model" && r.entity_value === car.name),
+    active.filter((r) => r.entity_type === "category" && r.entity_value === car.category),
+    active.filter((r) => r.entity_type === "global_"),
+  ];
+  for (const candidates of levels) {
+    if (!candidates.length) continue;
+    const best = candidates.reduce((a, b) => (b.priority > a.priority ? b : a));
+    if (best.price_day != null) return best.price_day;
+  }
+  return null;
+}
+
 export default function BookingFormModal({
   open,
   mode,
@@ -11,6 +28,7 @@ export default function BookingFormModal({
   setForm,
   cars,
   categories,
+  priceRules,
   customersLoading,
   customerMatches,
   onPickCustomer,
@@ -79,16 +97,10 @@ export default function BookingFormModal({
               return (
                 <optgroup key={cat.name} label={cat.name}>
                   {catCars.map((c) => {
-                    let effectivePrice = c.price_per_day;
-                    if (!effectivePrice) {
-                      const carCat = categories.find((cc) => cc.name === c.category);
-                      if (carCat) {
-                        effectivePrice = c.is_hybrid ? carCat.hybrid_price || carCat.base_price : carCat.base_price;
-                      }
-                    }
+                    const effectivePrice = getEffectivePriceDay(c, priceRules);
                     return (
                       <option key={c.id} value={c.id}>
-                        {c.name} ({c.plate}) {c.is_hybrid ? "🌿" : ""} — ₪{effectivePrice}/יום
+                        {c.name} ({c.plate}) {c.is_hybrid ? "🌿" : ""}{effectivePrice != null ? ` — ₪${effectivePrice}/יום` : ""}
                       </option>
                     );
                   })}

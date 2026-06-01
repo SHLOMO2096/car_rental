@@ -5,6 +5,7 @@ import { bookingsAPI } from "../../api/bookings";
 import { carsAPI } from "../../api/cars";
 import { customersAPI } from "../../api/customers";
 import { settingsAPI } from "../../api/settings";
+import { pricingAPI } from "../../api/pricing";
 import { getUserFacingErrorMessage } from "../../api/errors";
 import { Permissions } from "../../permissions";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -51,6 +52,11 @@ export default function BookingsPage() {
     carsAPI,
     settingsAPI,
   });
+
+  const [priceRules, setPriceRules] = useState([]);
+  useEffect(() => {
+    pricingAPI.listRules({ is_active: true }).then(setPriceRules).catch(() => {});
+  }, []);
 
   const [form, setForm] = useState(() => makeEmptyForm({}));
   const [saving, setSaving] = useState(false);
@@ -410,6 +416,7 @@ export default function BookingsPage() {
         setForm={setForm}
         cars={cars}
         categories={categories}
+        priceRules={priceRules}
         customersLoading={customersLoading}
         customerMatches={customerMatches}
         onPickCustomer={pickCustomer}
