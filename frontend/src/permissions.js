@@ -64,6 +64,7 @@ const ROLE_PERMISSIONS = {
     Permissions.ATTENDANCE_VIEW,
 
     Permissions.PRICING_VIEW,
+    Permissions.PRICING_MANAGE,  // TODO: temporary until proper RBAC v2
   ]),
 };
 
