@@ -2,7 +2,24 @@ import Modal from "../../../components/ui/Modal";
 
 import { s } from "../styles";
 import { addDays, formatDateTime, todayISO } from "../utils/dates";
-import { getEarliestAllowedPickupTime } from "../utils/form";
+import { getEarliestAllowedPickupTime, subtractMinutes } from "../utils/form";
+
+function getEffectivePriceDay(car, priceRules) {
+  if (!priceRules?.length) return null;
+  const active = priceRules.filter((r) => r.is_active);
+  const levels = [
+    active.filter((r) => r.entity_type === "car" && r.entity_value === String(car.id)),
+    active.filter((r) => r.entity_type === "model" && r.entity_value === car.name),
+    active.filter((r) => r.entity_type === "category" && r.entity_value === car.category),
+    active.filter((r) => r.entity_type === "global_"),
+  ];
+  for (const candidates of levels) {
+    if (!candidates.length) continue;
+    const best = candidates.reduce((a, b) => (b.priority > a.priority ? b : a));
+    if (best.price_day != null) return best.price_day;
+  }
+  return null;
+}
 
 export default function BookingFormModal({
   open,
@@ -11,6 +28,7 @@ export default function BookingFormModal({
   setForm,
   cars,
   categories,
+  priceRules,
   customersLoading,
   customerMatches,
   onPickCustomer,
@@ -79,16 +97,10 @@ export default function BookingFormModal({
               return (
                 <optgroup key={cat.name} label={cat.name}>
                   {catCars.map((c) => {
-                    let effectivePrice = c.price_per_day;
-                    if (!effectivePrice) {
-                      const carCat = categories.find((cc) => cc.name === c.category);
-                      if (carCat) {
-                        effectivePrice = c.is_hybrid ? carCat.hybrid_price || carCat.base_price : carCat.base_price;
-                      }
-                    }
+                    const effectivePrice = getEffectivePriceDay(c, priceRules);
                     return (
                       <option key={c.id} value={c.id}>
-                        {c.name} ({c.plate}) {c.is_hybrid ? "🌿" : ""} — ₪{effectivePrice}/יום
+                        {c.name} ({c.plate}) {c.is_hybrid ? "🌿" : ""}{effectivePrice != null ? ` — ₪${effectivePrice}/יום` : ""}
                       </option>
                     );
                   })}
@@ -173,20 +185,24 @@ export default function BookingFormModal({
             <input
               type="date"
               value={form.start_date}
-              min={todayISO()}
+              min={undefined}
               onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  start_date: e.target.value,
-                  start_time: getEarliestAllowedPickupTime(e.target.value, new Date(), f.start_time),
-                }))
+                setForm((f) => {
+                  const newPickupTime = getEarliestAllowedPickupTime(e.target.value, new Date(), f.start_time);
+                  return {
+                    ...f,
+                    start_date: e.target.value,
+                    start_time: newPickupTime,
+                    end_time: subtractMinutes(newPickupTime, 30),
+                  };
+                })
               }
               style={{ ...s.input, flex: 2 }}
             />
             <input
               type="time"
               value={form.start_time}
-              min={form.start_date === todayISO() ? earliestStartTime : undefined}
+              min={undefined}
               onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
               style={{ ...s.input, flex: 1 }}
             />
@@ -262,8 +278,29 @@ export default function BookingFormModal({
       {/* Price preview */}
       {preview?.show && (
         <div style={s.pricePreview}>
-          💰 {preview.days} ימים × ₪{preview.pricePerDay} = <strong>₪{preview.total.toLocaleString()}</strong>
-          {form.customer_email && <span style={{ marginRight: 12 }}>📧 אישור יישלח ללקוח</span>}
+          {preview.loading ? (
+            <span>⏳ מחשב מחיר...</span>
+          ) : preview.result ? (
+            <>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>💰 תחשיב מחיר:</div>
+              {preview.result.breakdown.map((line, i) => (
+                <div key={i} style={{ fontSize: 13, marginBottom: 2 }}>
+                  {line.label} — <strong>₪{line.subtotal.toLocaleString()}</strong>
+                </div>
+              ))}
+              {preview.result.note && (
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                  ℹ️ {preview.result.note}
+                </div>
+              )}
+              <div style={{ marginTop: 6, fontWeight: 700, fontSize: 15 }}>
+                סה&quot;כ: ₪{preview.result.total.toLocaleString()}
+              </div>
+              {form.customer_email && (
+                <span style={{ marginTop: 4, display: "block", fontSize: 12 }}>📧 אישור יישלח ללקוח</span>
+              )}
+            </>
+          ) : null}
         </div>
       )}
 

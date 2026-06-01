@@ -19,6 +19,9 @@ export const Permissions = {
 
   PAYROLL_VIEW: "payroll:view",
   PAYROLL_MANAGE: "payroll:manage",
+
+  PRICING_VIEW: "pricing:view",
+  PRICING_MANAGE: "pricing:manage",
 };
 
 const ROLE_PERMISSIONS = {
@@ -43,10 +46,14 @@ const ROLE_PERMISSIONS = {
 
     Permissions.PAYROLL_VIEW,
     Permissions.PAYROLL_MANAGE,
+
+    Permissions.PRICING_VIEW,
+    Permissions.PRICING_MANAGE,
   ]),
   agent: new Set([
     Permissions.BOOKINGS_CREATE,
     Permissions.BOOKINGS_UPDATE,
+    Permissions.CARS_MANAGE,
     Permissions.CUSTOMERS_VIEW,
     Permissions.CUSTOMERS_MANAGE,
     Permissions.BOOKINGS_DELETE,
@@ -55,6 +62,8 @@ const ROLE_PERMISSIONS = {
 
     Permissions.ATTENDANCE_CLOCK,
     Permissions.ATTENDANCE_VIEW,
+
+    Permissions.PRICING_VIEW,
   ]),
 };
 

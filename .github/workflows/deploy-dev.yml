@@ -1,30 +1,27 @@
-name: Deploy Production
+name: Deploy Development
 
 permissions:
   contents: read
 
 on:
-  # push:  # 🔒 DISABLED: Auto-deploy disabled for safety - use manual workflow_dispatch
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - development
   workflow_dispatch:
     inputs:
       git_ref:
-        description: "Commit SHA / tag / branch to deploy (default: main HEAD)"
+        description: "Commit SHA / tag / branch to deploy (default: development HEAD)"
         required: false
         type: string
 
 concurrency:
-  group: deploy-production
-  cancel-in-progress: false
+  group: deploy-development
+  cancel-in-progress: true   # newer pushes cancel in-flight deploys on dev
 
 jobs:
   verify:
     timeout-minutes: 20
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,9 +34,11 @@ jobs:
           cache-dependency-path: backend/requirements.txt
 
       - name: Install backend dependencies
+        working-directory: backend
         run: pip install -r requirements.txt
 
       - name: Run backend tests
+        working-directory: backend
         env:
           DATABASE_URL: sqlite:///./test_bootstrap.db
           SECRET_KEY: ci-secret-key
@@ -64,7 +63,7 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     needs: verify
-    environment: production
+    environment: development
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -89,14 +88,14 @@ jobs:
       - name: Start SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+          ssh-private-key: ${{ secrets.DEV_SSH_KEY }}
 
       - name: Configure SSH known_hosts
         shell: bash
         env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_PORT: ${{ secrets.PROD_PORT }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          DEV_HOST: ${{ secrets.DEV_HOST }}
+          DEV_PORT: ${{ secrets.DEV_PORT }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -104,22 +103,23 @@ jobs:
           if [ -n "${SSH_KNOWN_HOSTS:-}" ]; then
             printf '%s\n' "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
           else
-            ssh-keyscan -p "${PROD_PORT:-22}" -H "$PROD_HOST" >> ~/.ssh/known_hosts
+            ssh-keyscan -p "${DEV_PORT:-22}" -H "$DEV_HOST" >> ~/.ssh/known_hosts
           fi
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Deploy on VPS
+
+      - name: Deploy on dev server
         shell: bash
         env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_PORT: ${{ secrets.PROD_PORT }}
-          PROD_USER: ${{ secrets.PROD_USER }}
+          DEV_HOST: ${{ secrets.DEV_HOST }}
+          DEV_PORT: ${{ secrets.DEV_PORT }}
+          DEV_USER: ${{ secrets.DEV_USER }}
           TARGET_SHA: ${{ steps.resolve.outputs.sha }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
         run: |
           set -euo pipefail
-          PORT="${PROD_PORT:-22}"
-          ssh -p "$PORT" "${PROD_USER}@${PROD_HOST}" \
-            "TARGET_SHA='$TARGET_SHA' REPO_URL='$REPO_URL' REPO_DIR='/opt/car-rental' ENV_FILE='.env.production' COMPOSE_FILE='docker-compose.prod.yml' bash -s" \
-            < scripts/deploy_production.sh
+          PORT="${DEV_PORT:-22}"
+          ssh -p "$PORT" "${DEV_USER}@${DEV_HOST}" \
+            "TARGET_SHA='$TARGET_SHA' REPO_URL='$REPO_URL' REPO_DIR='/opt/car-rental-dev' ENV_FILE='.env.development' COMPOSE_FILE='docker-compose.yml' bash -l -s" \
+            < scripts/deploy_development.sh
 

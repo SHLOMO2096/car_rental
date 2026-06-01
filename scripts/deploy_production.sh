@@ -48,6 +48,9 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
 echo "Starting production stack..."
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build --remove-orphans
 
+echo "Running database migrations..."
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T backend alembic upgrade head
+
 echo "Waiting for backend container health..."
 for i in $(seq 1 15); do
   if docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" >/dev/null 2>&1; then

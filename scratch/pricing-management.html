@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול מחירים</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F6F3;
+  --surface:#FFFFFF;
+  --surface2:#F1F0ED;
+  --border:#E5E3DE;
+  --border2:#D3D1CB;
+  --text:#1A1916;
+  --text2:#6B6962;
+  --text3:#9E9B94;
+  --blue:#185FA5;
+  --blue-light:#E6F1FB;
+  --blue-mid:#378ADD;
+  --amber:#BA7517;
+  --amber-light:#FAEEDA;
+  --teal:#0F6E56;
+  --teal-light:#E1F5EE;
+  --red:#A32D2D;
+  --red-light:#FCEBEB;
+  --green:#3B6D11;
+  --green-light:#EAF3DE;
+  --radius:8px;
+  --radius-lg:12px;
+  --sidebar-w:300px;
+  --topbar-h:52px;
+}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;direction:rtl}
+
+/* LAYOUT */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:30}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap}
+.tabs{display:flex;gap:2px;margin-right:16px}
+.tab{padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;color:var(--text2);border:none;background:none;transition:all 0.15s;white-space:nowrap}
+.tab:hover{background:var(--surface2);color:var(--text)}
+.tab.active{background:var(--surface2);color:var(--text);font-weight:500}
+.topbar-right{margin-right:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.workspace{display:flex;flex:1;overflow:hidden;position:relative}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;z-index:10}
+.sidebar-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sidebar-header-label{font-size:12px;font-weight:600;color:var(--text2);letter-spacing:0.05em;text-transform:uppercase}
+.add-rule-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.add-rule-btn:hover{background:#0C447C}
+.tree{flex:1;overflow-y:auto;padding:6px 0}
+
+/* TREE ROWS */
+.tree-section{margin-bottom:0}
+
+.tree-cat-row{display:flex;align-items:center;padding:7px 14px;cursor:default;font-size:13px;font-weight:600;color:var(--text);transition:background 0.12s;user-select:none;gap:6px}
+.tree-cat-row:hover{background:var(--surface2)}
+.tree-cat-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.tree-cat-actions{display:flex;gap:2px;flex-shrink:0}
+.tree-count{font-size:11px;color:var(--text3);font-weight:400;white-space:nowrap;flex-shrink:0}
+
+.tree-model{display:none;flex-direction:column}
+.tree-section.open .tree-model{display:flex}
+
+.model-section{margin-bottom:0}
+.model-row{display:flex;align-items:center;padding:6px 14px 6px 14px;cursor:default;font-size:13px;color:var(--text2);transition:all 0.12s;gap:6px}
+.model-row:hover{background:var(--surface2);color:var(--text)}
+.model-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:12px;cursor:pointer}
+.model-actions{display:flex;gap:2px;flex-shrink:0}
+.model-count{font-size:11px;color:var(--text3);font-weight:400;white-space:nowrap;flex-shrink:0}
+
+.rule-rows{display:none;flex-direction:column}
+.model-section.open .rule-rows{display:flex}
+
+.rule-item{display:flex;align-items:center;gap:6px;padding:5px 14px 5px 14px;padding-right:26px;cursor:pointer;font-size:12px;color:var(--text2);transition:all 0.12s}
+.rule-item:hover{background:var(--surface2);color:var(--text)}
+.rule-item.active{background:var(--blue-light);color:var(--blue)}
+.rule-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0}
+.rule-item.active .rule-dot{background:var(--blue-mid)}
+.rule-item.has-override .rule-dot{background:var(--amber)}
+.rule-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rule-tag{font-size:10px;padding:1px 6px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.tag-inherited{color:var(--text3)}
+.tag-override{background:var(--amber-light);color:var(--amber)}
+
+/* ROW ACTION BUTTONS */
+.row-action{background:none;border:none;cursor:pointer;color:var(--text3);padding:2px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all 0.12s}
+.row-action:hover{background:var(--border);color:var(--text)}
+
+/* MAIN AREA */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative;background:var(--bg)}
+.main-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:10px}
+.main-empty-icon{width:48px;height:48px;border:2px solid var(--border2);border-radius:var(--radius);display:flex;align-items:center;justify-content:center}
+.main-empty-icon i{font-size:22px;opacity:0.4}
+.main-empty p{font-size:13px;text-align:center;line-height:1.6}
+
+/* DRAWER */
+.drawer{position:absolute;top:0;left:0;bottom:0;width:500px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(-100%);transition:transform 0.25s cubic-bezier(0.4,0,0.2,1);z-index:20;overflow:hidden}
+.drawer.open{transform:translateX(0)}
+.drawer-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.2);z-index:19}
+.drawer-overlay.show{display:block}
+.drawer-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}
+.drawer-title{font-size:15px;font-weight:600}
+.drawer-breadcrumb{font-size:11px;color:var(--text3);margin-top:2px}
+.drawer-close{background:none;border:none;cursor:pointer;color:var(--text2);padding:4px;border-radius:4px}
+.drawer-close:hover{background:var(--surface2)}
+.drawer-body{flex:1;overflow-y:auto;padding:20px}
+.drawer-section{margin-bottom:24px}
+.drawer-section-title{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.drawer-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* PRICE FIELDS */
+.price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.price-field{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.price-field.overridden{border-color:#EF9F27;background:#FAEEDA33}
+.price-field-label{font-size:11px;color:var(--text3);font-weight:500;display:flex;align-items:center;gap:5px;margin-bottom:8px}
+.price-field-label i{font-size:13px}
+.price-field-label .override-badge{margin-right:auto;font-size:10px;background:#EF9F27;color:#fff;padding:1px 5px;border-radius:3px}
+.price-input-row{display:flex;align-items:center;gap:6px}
+.price-currency{font-size:13px;color:var(--text2);font-weight:500}
+.price-input{width:100%;border:1px solid var(--border2);border-radius:6px;padding:6px 8px;font-size:15px;font-weight:600;background:var(--surface);color:var(--text);outline:none;transition:border-color 0.15s}
+.price-input:focus{border-color:var(--blue-mid);box-shadow:0 0 0 3px #378ADD18}
+.price-inherit{font-size:11px;color:var(--text3);margin-top:5px;display:flex;align-items:center;gap:3px}
+.price-inherit i{font-size:11px}
+
+/* SCOPE SELECTOR */
+.scope-row{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:all 0.12s}
+.scope-row:hover{border-color:var(--border2)}
+.scope-row.selected{border-color:var(--blue-mid);background:var(--blue-light)}
+.scope-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.12s}
+.scope-row.selected .scope-radio{border-color:var(--blue-mid);background:var(--blue-mid)}
+.scope-radio::after{content:'';width:6px;height:6px;border-radius:50%;background:#fff;display:none}
+.scope-row.selected .scope-radio::after{display:block}
+.scope-label{font-size:13px;font-weight:500}
+.scope-sub{font-size:11px;color:var(--text3);margin-top:1px}
+
+/* SABBATH TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)}
+.toggle-label{font-size:13px}
+.toggle-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.toggle-switch{width:36px;height:20px;border-radius:10px;background:var(--border2);position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0}
+.toggle-switch.on{background:var(--blue-mid)}
+.toggle-switch::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;right:3px;transition:transform 0.2s}
+.toggle-switch.on::after{transform:translateX(-16px)}
+
+/* DRAWER FOOTER */
+.drawer-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+.btn-primary{padding:8px 18px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer}
+.btn-primary:hover{background:#0C447C}
+.btn-ghost{padding:8px 14px;background:none;color:var(--text2);border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;cursor:pointer}
+.btn-ghost:hover{background:var(--surface2)}
+.btn-danger{padding:8px 14px;background:none;color:var(--red);border:1px solid #F09595;border-radius:var(--radius);font-size:13px;cursor:pointer;margin-right:auto}
+.btn-danger:hover{background:var(--red-light)}
+
+/* SEASONS TAB */
+.seasons-view{flex:1;overflow-y:auto;padding:20px}
+.seasons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:24px}
+.season-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:all 0.15s}
+.season-card:hover{border-color:var(--border2);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.season-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.season-name{font-size:14px;font-weight:600}
+.season-type-badge{font-size:11px;padding:3px 8px;border-radius:4px;font-weight:500}
+.season-type-badge.peak{background:var(--amber-light);color:var(--amber)}
+.season-type-badge.low{background:var(--teal-light);color:var(--teal)}
+.season-dates{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px;margin-bottom:10px}
+.season-rule-count{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.season-adjustment{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.adj-badge{font-size:12px;font-weight:600;padding:3px 8px;border-radius:4px}
+.adj-badge.up{background:var(--amber-light);color:var(--amber)}
+.adj-badge.down{background:var(--teal-light);color:var(--teal)}
+.season-actions{display:flex;gap:4px}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:3px;border-radius:4px}
+.icon-btn:hover{background:var(--surface2);color:var(--text)}
+.add-season-card{background:none;border:2px dashed var(--border2);border-radius:var(--radius-lg);padding:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text3);font-size:13px;transition:all 0.15s;min-height:110px}
+.add-season-card:hover{border-color:var(--blue-mid);color:var(--blue);background:var(--blue-light)}
+.section-label{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text)}
+.info-banner{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--blue-light);border:1px solid #B5D4F4;border-radius:var(--radius);font-size:12px;color:#185FA5;margin-bottom:16px}
+.info-banner i{font-size:15px;flex-shrink:0;margin-top:1px}
+
+/* SCOPE TREE */
+.scope-tree{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.scope-tree-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer;transition:background 0.12s}
+.scope-tree-row:last-child{border-bottom:none}
+.scope-tree-row:hover{background:var(--surface2)}
+.scope-tree-row.checked{background:var(--blue-light)}
+.scope-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.12s}
+.scope-tree-row.checked .scope-check{background:var(--blue-mid);border-color:var(--blue-mid)}
+.scope-check i{color:#fff;font-size:11px;display:none}
+.scope-tree-row.checked .scope-check i{display:block}
+.scope-indent-1{padding-right:24px}
+.scope-indent-2{padding-right:36px}
+.scope-cat-label{font-weight:600;color:var(--text)}
+.scope-model-label{color:var(--text2)}
+.scope-rule-label{color:var(--text3)}
+
+/* MOBILE SIDEBAR TOGGLE */
+.mobile-sidebar-btn{display:none;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;color:var(--text2);flex-shrink:0}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:25}
+.sidebar-overlay.show{display:block}
+
+/* ========================
+   RESPONSIVE / MOBILE
+   ======================== */
+@media (max-width: 768px) {
+  :root{--sidebar-w:280px}
+
+  /* topbar compact */
+  .topbar{padding:0 12px;gap:8px;flex-wrap:wrap;height:auto;min-height:var(--topbar-h)}
+  .topbar-title{font-size:14px}
+  .tabs{margin-right:8px;gap:1px}
+  .tab{padding:5px 10px;font-size:12px}
+  .topbar-right{gap:5px}
+  .topbar-right .toggle-label-text{display:none}
+  .topbar-right .toggle-prefix{display:none}
+
+  /* sidebar becomes overlay */
+  .sidebar{
+    position:fixed;
+    top:0;right:-100%;bottom:0;
+    width:var(--sidebar-w);
+    transition:right 0.25s cubic-bezier(0.4,0,0.2,1);
+    z-index:26;
+    box-shadow:-4px 0 16px rgba(0,0,0,0.12);
+  }
+  .sidebar.mobile-open{right:0}
+  .mobile-sidebar-btn{display:flex}
+
+  /* workspace takes full width */
+  .workspace{overflow:hidden}
+  .main{width:100%}
+
+  /* drawer full width on mobile */
+  .drawer{width:100%;left:0;right:0}
+
+  /* price grid 1 col on narrow */
+  .price-grid{grid-template-columns:1fr}
+
+  /* seasons grid 1 col */
+  .seasons-grid{grid-template-columns:1fr}
+  .seasons-view{padding:14px}
+}
+
+@media (max-width: 480px) {
+  .topbar{padding:0 10px}
+  .tabs{margin-right:4px}
+  .tab{padding:4px 8px;font-size:11px}
+  .topbar-title{font-size:13px}
+
+  .drawer-body{padding:14px}
+  .drawer-section{margin-bottom:18px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <!-- mobile sidebar toggle -->
+    <button class="mobile-sidebar-btn" onclick="toggleMobileSidebar()" title="תפריט היררכיה">
+      <i class="ti ti-layout-sidebar-right" style="font-size:16px"></i>
+    </button>
+
+    <span class="topbar-title"><i class="ti ti-currency-shekel" style="vertical-align:-2px"></i> ניהול מחירים</span>
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('rules')">כללי מחיר</button>
+      <button class="tab" onclick="showTab('seasons')">עונות וחגים</button>
+    </div>
+    <div class="topbar-right">
+      <span class="toggle-prefix" style="font-size:12px;color:var(--text3)">שבתות וחגים:</span>
+      <div class="toggle-switch on" id="sabbath-global" onclick="this.classList.toggle('on')" title="לא לחשב שבת/חג כיום"></div>
+      <span class="toggle-label-text" style="font-size:12px;color:var(--text2)">לא מחושבים (ברירת מחדל)</span>
+    </div>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div class="workspace">
+
+    <!-- RULES TAB -->
+    <div id="tab-rules" style="display:flex;flex:1;overflow:hidden">
+
+      <!-- MAIN AREA -->
+      <div class="main" id="main-area">
+        <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+        <div class="main-empty" id="empty-state">
+          <div class="main-empty-icon"><i class="ti ti-tournament"></i></div>
+          <p>בחר כלל מחיר מהעץ להצגה ועריכה<br>או לחץ על "כלל חדש" להוספה</p>
+        </div>
+
+        <!-- DRAWER -->
+        <div class="drawer" id="rule-drawer">
+          <div class="drawer-header">
+            <div>
+              <div class="drawer-title" id="drawer-title">כלל מחיר — Hyundai i10</div>
+              <div class="drawer-breadcrumb" id="drawer-breadcrumb">Economy › Hyundai i10 › כלל בסיס</div>
+            </div>
+            <button class="drawer-close" onclick="closeDrawer()"><i class="ti ti-x" style="font-size:16px"></i></button>
+          </div>
+
+          <div class="drawer-body">
+
+            <!-- SCOPE -->
+            <div class="drawer-section">
+              <div class="drawer-section-title">רמת תחולה</div>
+              <div class="scope-row selected" onclick="selectScope(this)">
+                <div class="scope-radio"></div>
+                <div>
+                  <div class="scope-label">רכב ספציפי</div>
+                  <div class="scope-sub">חל על רכב 123-45-678 בלבד</div>
+                </div>
+              </div>
+              <div class="scope-row" onclick="selectScope(this)">
+                <div class="scope-radio"></div>
+                <div>
+                  <div class="scope-label">דגם — Hyundai i10</div>
+                  <div class="scope-sub">חל על כל הרכבים מדגם זה</div>
+                </div>
+              </div>
+              <div class="scope-row" onclick="selectScope(this)">
+                <div class="scope-radio"></div>
+                <div>
+                  <div class="scope-label">קטגוריה — Economy</div>
+                  <div class="scope-sub">חל על כל הרכבים בקטגוריה</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BASE PRICES -->
+            <div class="drawer-section">
+              <div class="drawer-section-title">מחירי בסיס</div>
+              <div class="price-grid">
+                <div class="price-field">
+                  <div class="price-field-label"><i class="ti ti-sun-low"></i> חצי יום</div>
+                  <div class="price-input-row">
+                    <span class="price-currency">₪</span>
+                    <input class="price-input" type="number" placeholder="—" title="חצי יום">
+                  </div>
+                  <div class="price-inherit"><i class="ti ti-arrow-up"></i> יורש מדגם: ₪80</div>
+                </div>
+                <div class="price-field overridden">
+                  <div class="price-field-label"><i class="ti ti-calendar-event"></i> יום <span class="override-badge">עקיפה</span></div>
+                  <div class="price-input-row">
+                    <span class="price-currency">₪</span>
+                    <input class="price-input" type="number" value="125" title="יום">
+                  </div>
+                  <div class="price-inherit"><i class="ti ti-arrow-up"></i> ברירת מחדל: ₪140</div>
+                </div>
+                <div class="price-field">
+                  <div class="price-field-label"><i class="ti ti-calendar-week"></i> שבוע</div>
+                  <div class="price-input-row">
+                    <span class="price-currency">₪</span>
+                    <input class="price-input" type="number" placeholder="—" title="שבוע">
+                  </div>
+                  <div class="price-inherit"><i class="ti ti-arrow-up"></i> יורש מדגם: ₪840</div>
+                </div>
+                <div class="price-field">
+                  <div class="price-field-label"><i class="ti ti-calendar-month"></i> חודש</div>
+                  <div class="price-input-row">
+                    <span class="price-currency">₪</span>
+                    <input class="price-input" type="number" placeholder="—" title="חודש">
+                  </div>
+                  <div class="price-inherit"><i class="ti ti-arrow-up"></i> יורש מדגם: ₪2,800</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SABBATH -->
+            <div class="drawer-section">
+              <div class="drawer-section-title">שבתות וחגים</div>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">לא לחשב שבת/חג כיום לתשלום</div>
+                  <div class="scope-sub">בהזמנות מתחת ל-30 יום. מעל 30 יום — תמיד מחושב.</div>
+                </div>
+                <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+              </div>
+            </div>
+
+            <!-- LINKED SEASONS -->
+            <div class="drawer-section">
+              <div class="drawer-section-title">עונות מקושרות</div>
+              <div class="info-banner">
+                <i class="ti ti-info-circle"></i>
+                <span>עונות מנוהלות בטאב "עונות וחגים". כאן ניתן לבחור אילו עונות חלות על כלל זה.</span>
+              </div>
+              <div class="scope-tree">
+                <div class="scope-tree-row checked">
+                  <div class="scope-check"><i class="ti ti-check"></i></div>
+                  <span style="font-size:11px;background:var(--amber-light);color:var(--amber);padding:2px 6px;border-radius:3px;font-weight:500">פסח 2025</span>
+                  <span style="margin-right:auto;font-size:11px;color:var(--text3)">+20% • 13/04–21/04</span>
+                </div>
+                <div class="scope-tree-row checked">
+                  <div class="scope-check"><i class="ti ti-check"></i></div>
+                  <span style="font-size:11px;background:var(--amber-light);color:var(--amber);padding:2px 6px;border-radius:3px;font-weight:500">קיץ 2025</span>
+                  <span style="margin-right:auto;font-size:11px;color:var(--text3)">+15% • יול–אוג</span>
+                </div>
+                <div class="scope-tree-row">
+                  <div class="scope-check"><i class="ti ti-check"></i></div>
+                  <span style="font-size:11px;background:var(--teal-light);color:var(--teal);padding:2px 6px;border-radius:3px;font-weight:500">ינואר–פברואר</span>
+                  <span style="margin-right:auto;font-size:11px;color:var(--text3)">−10% • ינו–פבר</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="drawer-footer">
+            <button class="btn-primary">שמור</button>
+            <button class="btn-ghost" onclick="closeDrawer()">ביטול</button>
+            <button class="btn-danger"><i class="ti ti-trash" style="font-size:13px;vertical-align:-1px"></i> מחק כלל</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDEBAR TREE -->
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-header-label">הירכיה</span>
+          <button class="add-rule-btn" onclick="openDrawer('new')"><i class="ti ti-plus" style="font-size:13px"></i> כלל חדש</button>
+        </div>
+        <div class="tree">
+
+          <!-- Economy -->
+          <div class="tree-section open" id="sec-eco">
+            <div class="tree-cat-row">
+              <span class="tree-cat-name" onclick="toggleSection('sec-eco')">Economy</span>
+              <div class="tree-cat-actions">
+                <button class="row-action" title="ערוך קטגוריה"><i class="ti ti-edit"></i></button>
+                <button class="row-action" title="הוסף כלל לקטגוריה" onclick="openDrawer('new')"><i class="ti ti-plus"></i></button>
+              </div>
+              <span class="tree-count">3 כללים</span>
+            </div>
+            <div class="tree-model">
+
+              <!-- Hyundai i10 -->
+              <div class="model-section open" id="mod-i10">
+                <div class="model-row">
+                  <span class="model-name" onclick="toggleModel('mod-i10')">Hyundai i10</span>
+                  <div class="model-actions">
+                    <button class="row-action" title="ערוך דגם"><i class="ti ti-edit"></i></button>
+                    <button class="row-action" title="הוסף כלל לדגם" onclick="openDrawer('new')"><i class="ti ti-plus"></i></button>
+                  </div>
+                </div>
+                <div class="rule-rows">
+                  <div class="rule-item" onclick="openDrawer('eco-base')">
+                    <div class="rule-dot"></div>
+                    <span class="rule-name">כלל בסיס — דגם</span>
+                    <span class="rule-tag tag-inherited">יורש</span>
+                  </div>
+                  <div class="rule-item active has-override" onclick="openDrawer('i10-override')">
+                    <div class="rule-dot"></div>
+                    <span class="rule-name">123-45-678</span>
+                    <span class="rule-tag tag-override">עקיפה</span>
+                  </div>
+                  <div class="rule-item" onclick="openDrawer('i10-2')">
+                    <div class="rule-dot"></div>
+                    <span class="rule-name">123-45-999</span>
+                    <span class="rule-tag tag-inherited">יורש</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VW Polo -->
+              <div class="model-section" id="mod-polo">
+                <div class="model-row">
+                  <span class="model-name" onclick="toggleModel('mod-polo');openDrawer('polo')">VW Polo</span>
+                  <div class="model-actions">
+                    <button class="row-action" title="ערוך דגם"><i class="ti ti-edit"></i></button>
+                    <button class="row-action" title="הוסף כלל לדגם" onclick="openDrawer('new')"><i class="ti ti-plus"></i></button>
+                  </div>
+                  <span class="model-count">2</span>
+                </div>
+                <div class="rule-rows">
+                  <div class="rule-item" onclick="openDrawer('polo-base')">
+                    <div class="rule-dot"></div>
+                    <span class="rule-name">כלל בסיס — דגם</span>
+                    <span class="rule-tag tag-inherited">יורש</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUV -->
+          <div class="tree-section" id="sec-suv">
+            <div class="tree-cat-row">
+              <span class="tree-cat-name" onclick="toggleSection('sec-suv')">SUV</span>
+              <div class="tree-cat-actions">
+                <button class="row-action" title="ערוך קטגוריה"><i class="ti ti-edit"></i></button>
+                <button class="row-action" title="הוסף כלל לקטגוריה" onclick="openDrawer('new')"><i class="ti ti-plus"></i></button>
+              </div>
+              <span class="tree-count">2 כללים</span>
+            </div>
+            <div class="tree-model">
+              <div class="model-section" id="mod-cx5">
+                <div class="model-row">
+                  <span class="model-name" onclick="openDrawer('cx5')">Mazda CX-5</span>
+                  <div class="model-actions">
+                    <button class="row-action" title="ערוך דגם"><i class="ti ti-edit"></i></button>
+                    <button class="row-action" title="הוסף כלל לדגם" onclick="openDrawer('new')"><i class="ti ti-plus"></i></button>
+                  </div>
+                  <span class="model-count">2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Luxury -->
+          <div class="tree-section" id="sec-lux">
+            <div class="tree-cat-row">
+              <span class="tree-cat-name" onclick="toggleSection('sec-lux')">Luxury</span>
+              <div class="tree-cat-actions">
+                <button class="row-action" title="ערוך קטגוריה"><i class="ti ti-edit"></i></button>
+                <button class="row-action" title="הוסף כלל לקטגוריה" onclick="openDrawer('new')"><i class="ti ti-plus"></i></button>
+              </div>
+              <span class="tree-count">1 כלל</span>
+            </div>
+            <div class="tree-model">
+              <div class="model-section" id="mod-bmw">
+                <div class="model-row">
+                  <span class="model-name" onclick="openDrawer('bmw')">BMW 7 Series</span>
+                  <div class="model-actions">
+                    <button class="row-action" title="ערוך דגם"><i class="ti ti-edit"></i></button>
+                    <button class="row-action" title="הוסף כלל לדגם" onclick="openDrawer('new')"><i class="ti ti-plus"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- SEASONS TAB -->
+    <div id="tab-seasons" style="display:none;flex:1;overflow:hidden">
+      <div class="seasons-view">
+
+        <div class="info-banner" style="margin-bottom:20px">
+          <i class="ti ti-info-circle"></i>
+          <span>עונות מוגדרות פעם אחת ומקושרות לכללי מחיר. כל עונה מגדירה טווח תאריכים ותוספת/הנחה. ניתן להחיל עונה על כל הכללים, על קטגוריה, או על כלל ספציפי.</span>
+        </div>
+
+        <div class="section-label">עונות פעילות — 2025</div>
+        <div class="seasons-grid">
+
+          <div class="season-card">
+            <div class="season-card-header">
+              <div class="season-name">פסח תשפ״ה</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="season-type-badge peak">שיא</span>
+                <button class="icon-btn"><i class="ti ti-edit" style="font-size:14px"></i></button>
+                <button class="icon-btn"><i class="ti ti-trash" style="font-size:14px"></i></button>
+              </div>
+            </div>
+            <div class="season-dates"><i class="ti ti-calendar" style="font-size:13px"></i> 13/04/2025 – 21/04/2025</div>
+            <div class="season-rule-count"><i class="ti ti-link" style="font-size:12px"></i> מקושר ל-8 כללים</div>
+            <div class="season-adjustment">
+              <span class="adj-badge up">+20%</span>
+              <span style="font-size:11px;color:var(--text3)">על כל שיטות התמחור</span>
+            </div>
+          </div>
+
+          <div class="season-card">
+            <div class="season-card-header">
+              <div class="season-name">קיץ 2025</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="season-type-badge peak">שיא</span>
+                <button class="icon-btn"><i class="ti ti-edit" style="font-size:14px"></i></button>
+                <button class="icon-btn"><i class="ti ti-trash" style="font-size:14px"></i></button>
+              </div>
+            </div>
+            <div class="season-dates"><i class="ti ti-calendar" style="font-size:13px"></i> 01/07/2025 – 31/08/2025</div>
+            <div class="season-rule-count"><i class="ti ti-link" style="font-size:12px"></i> מקושר ל-12 כללים</div>
+            <div class="season-adjustment">
+              <span class="adj-badge up">+15%</span>
+              <span style="font-size:11px;color:var(--text3)">למעט תמחור חודשי</span>
+            </div>
+          </div>
+
+          <div class="season-card">
+            <div class="season-card-header">
+              <div class="season-name">ינואר–פברואר</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="season-type-badge low">שפל</span>
+                <button class="icon-btn"><i class="ti ti-edit" style="font-size:14px"></i></button>
+                <button class="icon-btn"><i class="ti ti-trash" style="font-size:14px"></i></button>
+              </div>
+            </div>
+            <div class="season-dates"><i class="ti ti-calendar" style="font-size:13px"></i> 01/01/2025 – 28/02/2025</div>
+            <div class="season-rule-count"><i class="ti ti-link" style="font-size:12px"></i> מקושר ל-5 כללים</div>
+            <div class="season-adjustment">
+              <span class="adj-badge down">−10%</span>
+              <span style="font-size:11px;color:var(--text3)">על כל שיטות התמחור</span>
+            </div>
+          </div>
+
+          <div class="season-card">
+            <div class="season-card-header">
+              <div class="season-name">ראש השנה תשפ״ו</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="season-type-badge peak">שיא</span>
+                <button class="icon-btn"><i class="ti ti-edit" style="font-size:14px"></i></button>
+                <button class="icon-btn"><i class="ti ti-trash" style="font-size:14px"></i></button>
+              </div>
+            </div>
+            <div class="season-dates"><i class="ti ti-calendar" style="font-size:13px"></i> 22/09/2025 – 24/09/2025</div>
+            <div class="season-rule-count"><i class="ti ti-link" style="font-size:12px"></i> מקושר ל-3 כללים</div>
+            <div class="season-adjustment">
+              <span class="adj-badge up">+₪50/יום</span>
+              <span style="font-size:11px;color:var(--text3)">קטגוריית Luxury בלבד</span>
+            </div>
+          </div>
+
+          <div class="add-season-card">
+            <i class="ti ti-plus" style="font-size:20px"></i>
+            הוסף עונה חדשה
+          </div>
+
+        </div>
+
+        <div class="section-label" style="margin-top:8px">הגדרת עונה — פסח תשפ״ה <span style="font-size:12px;color:var(--text3);font-weight:400">(דוגמה לטופס)</span></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-top:12px;max-width:560px">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500">שם העונה</div>
+              <input style="width:100%;border:1px solid var(--border2);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--surface);color:var(--text);outline:none" value="פסח תשפ״ה">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500">סוג</div>
+              <select style="width:100%;border:1px solid var(--border2);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--surface);color:var(--text);outline:none">
+                <option>עונת שיא</option>
+                <option>עונת שפל</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500">מתאריך</div>
+              <input type="date" style="width:100%;border:1px solid var(--border2);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--surface);color:var(--text);outline:none" value="2025-04-13">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:500">עד תאריך</div>
+              <input type="date" style="width:100%;border:1px solid var(--border2);border-radius:6px;padding:7px 10px;font-size:13px;background:var(--surface);color:var(--text);outline:none" value="2025-04-21">
+            </div>
+          </div>
+
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase">תוספת / הנחה</div>
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <div class="scope-row selected" style="flex:1;padding:8px 12px" onclick="selectScope(this)">
+              <div class="scope-radio"></div>
+              <div><div class="scope-label" style="font-size:12px">אחוז (%)</div></div>
+            </div>
+            <div class="scope-row" style="flex:1;padding:8px 12px" onclick="selectScope(this)">
+              <div class="scope-radio"></div>
+              <div><div class="scope-label" style="font-size:12px">סכום קבוע (₪)</div></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+            <div class="scope-row selected" style="padding:6px 12px;gap:6px" onclick="selectScope(this)">
+              <div class="scope-radio"></div>
+              <span style="font-size:12px">תוספת +</span>
+            </div>
+            <div class="scope-row" style="padding:6px 12px;gap:6px" onclick="selectScope(this)">
+              <div class="scope-radio"></div>
+              <span style="font-size:12px">הנחה −</span>
+            </div>
+            <input type="number" value="20" style="width:80px;border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:15px;font-weight:600;background:var(--surface);color:var(--text);outline:none">
+            <span style="font-size:14px;color:var(--text2)">%</span>
+          </div>
+
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase">על אילו שיטות תמחור חל</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px">
+            <div class="scope-tree-row checked" style="border-radius:6px;border:1px solid var(--border)">
+              <div class="scope-check"><i class="ti ti-check"></i></div>
+              <span style="font-size:12px">חצי יום</span>
+            </div>
+            <div class="scope-tree-row checked" style="border-radius:6px;border:1px solid var(--border)">
+              <div class="scope-check"><i class="ti ti-check"></i></div>
+              <span style="font-size:12px">יום</span>
+            </div>
+            <div class="scope-tree-row checked" style="border-radius:6px;border:1px solid var(--border)">
+              <div class="scope-check"><i class="ti ti-check"></i></div>
+              <span style="font-size:12px">שבוע</span>
+            </div>
+            <div class="scope-tree-row" style="border-radius:6px;border:1px solid var(--border)">
+              <div class="scope-check"><i class="ti ti-check"></i></div>
+              <span style="font-size:12px">חודש</span>
+            </div>
+          </div>
+
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase">החל על</div>
+          <div class="scope-tree">
+            <div class="scope-tree-row checked">
+              <div class="scope-check"><i class="ti ti-check"></i></div>
+              <span class="scope-cat-label">כל הכללים</span>
+            </div>
+            <div class="scope-tree-row scope-indent-1">
+              <div class="scope-check"><i class="ti ti-check"></i></div>
+              <span class="scope-model-label">Economy — כל הכללים</span>
+            </div>
+            <div class="scope-tree-row checked scope-indent-1">
+              <div class="scope-check"><i class="ti ti-check"></i></div>
+              <span class="scope-model-label">SUV — כל הכללים</span>
+            </div>
+            <div class="scope-tree-row scope-indent-1">
+              <div class="scope-check"><i class="ti ti-check"></i></div>
+              <span class="scope-model-label">Luxury — כל הכללים</span>
+            </div>
+            <div class="scope-tree-row checked scope-indent-2">
+              <div class="scope-check"><i class="ti ti-check"></i></div>
+              <span class="scope-rule-label">Hyundai i10 › 123-45-678</span>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:16px">
+            <button class="btn-primary">שמור עונה</button>
+            <button class="btn-ghost">ביטול</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MOBILE SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+<script>
+function showTab(tab) {
+  document.getElementById('tab-rules').style.display = tab==='rules' ? 'flex' : 'none';
+  document.getElementById('tab-seasons').style.display = tab==='seasons' ? 'flex' : 'none';
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='rules')||(i===1&&tab==='seasons')));
+}
+
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+function toggleModel(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+function openDrawer(ruleId) {
+  const titles = {
+    'i10-override': ['כלל מחיר — רכב ספציפי', 'Economy › Hyundai i10 › 123-45-678'],
+    'eco-base': ['כלל מחיר — דגם', 'Economy › Hyundai i10'],
+    'polo': ['כלל מחיר — דגם', 'Economy › VW Polo'],
+    'polo-base': ['כלל מחיר — דגם', 'Economy › VW Polo › כלל בסיס'],
+    'cx5': ['כלל מחיר — דגם', 'SUV › Mazda CX-5'],
+    'bmw': ['כלל מחיר — קטגוריה', 'Luxury › BMW 7 Series'],
+    'new': ['כלל מחיר חדש', 'בחר רמת תחולה'],
+    'i10-2': ['כלל מחיר — רכב ספציפי', 'Economy › Hyundai i10 › 123-45-999'],
+  };
+  const t = titles[ruleId] || ['כלל מחיר', ''];
+  document.getElementById('drawer-title').textContent = t[0];
+  document.getElementById('drawer-breadcrumb').textContent = t[1];
+  document.getElementById('rule-drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('show');
+  document.querySelectorAll('.rule-item').forEach(i => i.classList.remove('active'));
+}
+
+function closeDrawer() {
+  document.getElementById('rule-drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('show');
+}
+
+function selectScope(el) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.scope-row').forEach(r => r.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function toggleMobileSidebar() {
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+}
+
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+</script>
+</body>
+</html>

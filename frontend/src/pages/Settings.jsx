@@ -11,7 +11,7 @@ export default function Settings() {
   const can = useAuthStore((s) => s.can);
   const canManagePayroll = can(Permissions.PAYROLL_MANAGE);
 
-  const [categories, setCategories] = useState([]);
+  // קטגוריות ומחירים הוסרו
   const [general, setGeneral] = useState(() => ({ ...DEFAULT_GENERAL_SETTINGS }));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -22,11 +22,7 @@ export default function Settings() {
   const [savingRateUserId, setSavingRateUserId] = useState(null);
 
   useEffect(() => {
-    Promise.all([
-      settingsAPI.get("category_hierarchy").catch(() => ({ value: [] })),
-      settingsAPI.get("general_settings").catch(() => ({ value: null })),
-    ]).then(([cats, gen]) => {
-      setCategories(cats.value || []);
+    settingsAPI.get("general_settings").then((gen) => {
       if (gen.value) setGeneral(prev => ({ ...prev, ...gen.value }));
     })
       .catch(() => toast.error("נכשל בטעינת הגדרות"))
@@ -64,7 +60,6 @@ export default function Settings() {
   const save = async () => {
     setSaving(true);
     try {
-      await settingsAPI.update("category_hierarchy", categories);
       await settingsAPI.update("general_settings", general);
       toast.success("ההגדרות נשמרו בהצלחה");
     } catch (e) {
@@ -74,20 +69,7 @@ export default function Settings() {
     }
   };
 
-
-  const addCategory = () => {
-    setCategories([...categories, { name: "", base_price: "", hybrid_price: "" }]);
-  };
-
-  const updateCategory = (index, field, value) => {
-    const updated = [...categories];
-    updated[index][field] = value;
-    setCategories(updated);
-  };
-
-  const removeCategory = (index) => {
-    setCategories(categories.filter((_, i) => i !== index));
-  };
+  // addCategory, updateCategory, removeCategory הוסרו
 
   if (loading) return <div style={{ padding: 20 }}>טוען...</div>;
 
@@ -96,51 +78,7 @@ export default function Settings() {
       <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 24 }}>הגדרות מערכת</h1>
 
 
-      <div style={{ ...s.card, marginTop: 24 }}>
-        <h2 style={s.cardTitle}>היררכיית קטגוריות ומחירים</h2>
-        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
-          הגדר מחירי בסיס לכל קטגוריה. ניתן להגדיר מחיר שונה לרכב היברידי בתוך אותה קטגוריה.
-        </p>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {categories.map((c, i) => (
-            <div key={i} style={{ ...s.filterRow, background: "#fdf4ff" }}>
-              <div style={{ ...s.field, flex: 1.5 }}>
-                <label style={s.label}>שם הקטגוריה</label>
-                <input 
-                  value={c.name} 
-                  onChange={e => updateCategory(i, "name", e.target.value)} 
-                  style={s.input} 
-                  placeholder="למשל: מיני"
-                />
-              </div>
-              <div style={s.field}>
-                <label style={s.label}>מחיר בסיס (₪)</label>
-                <input 
-                  type="number" 
-                  value={c.base_price} 
-                  onChange={e => updateCategory(i, "base_price", e.target.value)} 
-                  style={s.input} 
-                />
-              </div>
-              <div style={s.field}>
-                <label style={s.label}>מחיר היברידי (₪)</label>
-                <input 
-                  type="number" 
-                  value={c.hybrid_price} 
-                  onChange={e => updateCategory(i, "hybrid_price", e.target.value)} 
-                  style={s.input} 
-                  placeholder="אופציונלי"
-                />
-              </div>
-              <button onClick={() => removeCategory(i)} style={s.btnRemove}>🗑</button>
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-          <button onClick={addCategory} style={s.btnAdd}>+ הוסף קבוצה</button>
-        </div>
-      </div>
+      {/* היררכיית קטגוריות ומחירים הוסרה */}
 
       <div style={{ ...s.card, marginTop: 24 }}>
         <h2 style={s.cardTitle}>הגדרות כלליות</h2>

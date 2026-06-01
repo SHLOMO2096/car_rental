@@ -1,7 +1,7 @@
 # ══════════════════════════════════════════════════════════════════════════════
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, UploadFile, File, Body
 from sqlalchemy.orm import Session
-from datetime import date as Date
+from datetime import date as Date, datetime, timezone
 from app.db.session import get_db
 from app.models.booking import Booking, BookingStatus
 from app.models.car import Car
@@ -22,6 +22,7 @@ from app.core.email import (
     send_booking_delete_alert,
     send_booking_edit_alert,
     send_missing_customer_email_alert,
+    send_past_booking_alert,
 )
 from app.crud.audit_log import log_audit_event, list_entity_audit_events
 from app.models.audit_log import AuditSeverity
@@ -41,6 +42,7 @@ SENSITIVE_BOOKING_UPDATE_FIELDS = {
     "pickup_time",
     "return_time",
     "status",
+    "price_override",   # שינוי מחיר ידני — רגיש
 }
 
 
@@ -74,6 +76,12 @@ def _booking_update_snapshot(booking: Booking) -> dict:
         "status": booking.status.value if hasattr(booking.status, "value") else str(booking.status),
         "total_price": booking.total_price,
         "notes": booking.notes,
+        # ── Pricing ──────────────────────────────────────────────────────────
+        "billable_days":        booking.billable_days,
+        "actual_days":          booking.actual_days,
+        "price_type_used":      booking.price_type_used.value if booking.price_type_used and hasattr(booking.price_type_used, "value") else booking.price_type_used,
+        "price_override":       booking.price_override,
+        "price_override_reason": booking.price_override_reason,
     }
 
 
@@ -179,6 +187,28 @@ def create_booking(
 
     booking = crud_booking.create_booking(db, payload, current_user.id, car)
 
+    # ── התראה אם ההזמנה נרשמה יותר מ-5 שעות אחרי תאריך ההתחלה ──────────────
+    _pickup = data.pickup_time or "00:00"
+    try:
+        _h, _m = map(int, _pickup.split(":"))
+    except ValueError:
+        _h, _m = 0, 0
+    _start_dt = datetime.combine(data.start_date, datetime.min.time().replace(hour=_h, minute=_m))
+    _hours_late = (datetime.now() - _start_dt).total_seconds() / 3600
+    if _hours_late > 5:
+        bg.add_task(
+            send_past_booking_alert,
+            booking_id=booking.id,
+            customer_name=data.customer_name,
+            car_name=_car_category_label(car),
+            start=str(data.start_date),
+            end=str(data.end_date),
+            pickup_time=data.pickup_time,
+            hours_in_past=_hours_late,
+            actor_email=current_user.email,
+            actor_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
+        )
+
     if data.customer_email:
         bg.add_task(
             send_booking_confirmation,
@@ -250,16 +280,8 @@ def update_booking(
 
     # ── ולידציה: שינוי תאריכים ────────────────────────────────────────────────
     if data.start_date or data.end_date or data.pickup_time:
-        if data.start_date and data.start_date < Date.today():
-            raise HTTPException(422, "לא ניתן לעדכן הזמנה לתאריך התחלה בעבר")
-        if data.end_date and data.end_date < Date.today():
-            raise HTTPException(422, "לא ניתן לעדכן הזמנה לתאריך סיום בעבר")
         if new_end < new_start:
             raise HTTPException(422, "תאריך סיום חייב להיות אחרי תאריך התחלה")
-        try:
-            ensure_booking_start_not_in_past(new_start, new_pickup_time)
-        except ValueError as exc:
-            raise HTTPException(422, str(exc)) from exc
         if crud_booking.has_overlap(db, new_car_id, new_start, new_end, data.pickup_time or b.pickup_time, data.return_time or b.return_time, exclude_id=b.id):
             raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
 
@@ -275,11 +297,51 @@ def update_booking(
 
     before_state = _booking_update_snapshot(b)
 
+    # ── הפרד price_override מהעדכון הרגיל ───────────────────────────────────
+    price_override        = data.price_override
+    price_override_reason = data.price_override_reason
+
     update_payload = data.model_dump(exclude_unset=True)
     update_payload.pop("operator_note", None)
+    update_payload.pop("price_override", None)
+    update_payload.pop("price_override_reason", None)
     update_payload["updated_by"] = current_user.id
 
     updated = crud_booking.update(db, b, update_payload)
+
+    # ── price override — תיעוד ב-audit_log ──────────────────────────────────
+    if price_override is not None:
+        before_price = {
+            "total_price":           updated.total_price,
+            "price_override":        updated.price_override,
+            "price_override_reason": updated.price_override_reason,
+            "price_override_by":     updated.price_override_by,
+        }
+        updated.price_override        = price_override
+        updated.price_override_reason = price_override_reason
+        updated.price_override_by     = current_user.id
+        updated.price_override_at     = datetime.now(timezone.utc)
+        updated.total_price           = price_override
+        db.commit()
+        db.refresh(updated)
+
+        log_audit_event(
+            db,
+            actor_user_id=current_user.id,
+            action="booking.price_override",
+            entity_type="booking",
+            entity_id=str(booking_id),
+            before_obj=before_price,
+            after_obj={
+                "price_override":        price_override,
+                "price_override_reason": price_override_reason,
+                "total_price":           price_override,
+                "override_by_user_id":   current_user.id,
+            },
+            ip_address=request.client.host if request and request.client else None,
+            severity=AuditSeverity.warning,
+        )
+
     after_state = _booking_update_snapshot(updated)
     changed_fields = _changed_booking_fields(before_state, after_state)
     has_sensitive_changes = any(field in SENSITIVE_BOOKING_UPDATE_FIELDS for field in changed_fields)

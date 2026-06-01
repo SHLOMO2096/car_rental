@@ -40,9 +40,6 @@ class BookingCreate(BaseModel):
 
     @model_validator(mode="after")
     def dates_valid(self):
-        if self.start_date < date.today():
-            raise ValueError("לא ניתן ליצור הזמנה לתאריך עבר")
-        ensure_booking_start_not_in_past(self.start_date, self.pickup_time)
         if self.end_date < self.start_date:
             raise ValueError("תאריך סיום חייב להיות אחרי תאריך התחלה")
         if self.customer_has_no_email and self.customer_email:
@@ -65,6 +62,21 @@ class BookingUpdate(BaseModel):
     operator_note:   Optional[str]           = None
     notes:           Optional[str]           = None
     status:          Optional[BookingStatus] = None
+    # ── Price Override ─────────────────────────────────────────────────────────
+    # שינוי ידני של מחיר — חייב ללוות תיעוד ב-price_override_reason
+    # כל שינוי נרשם ב-audit_log אוטומטית
+    price_override:        Optional[float] = None
+    price_override_reason: Optional[str]   = None
+
+    @model_validator(mode="after")
+    def validate_override(self) -> "BookingUpdate":
+        if self.price_override is not None and not self.price_override_reason:
+            raise ValueError(
+                "חובה לספק סיבה (price_override_reason) בעת שינוי מחיר ידני"
+            )
+        if self.price_override is not None and self.price_override <= 0:
+            raise ValueError("מחיר override חייב להיות חיובי")
+        return self
 
 
 class BookingDeleteRequest(BaseModel):
@@ -87,16 +99,29 @@ class BookingOut(BaseModel):
     notes:           Optional[str] = None
     drive_link:      Optional[str] = None
     email_sent:      bool
+    # ── Pricing details ────────────────────────────────────────────────────────
+    billable_days:           Optional[float]     = None   # ימי חיוב (אחרי דילוג שבת/חג)
+    actual_days:             Optional[int]        = None   # ימים קלנדריים
+    price_type_used:         Optional[str]         = None   # half_day / day / week / month
+    price_rule_id:           Optional[int]        = None   # id הכלל שהופעל
+    price_breakdown_json:    Optional[str]        = None   # פירוט JSON
+    # ── Price Override ─────────────────────────────────────────────────────────
+    # שינוי ידני מתועד — כל override נרשם ב-audit_log
+    price_override:          Optional[float]     = None
+    price_override_reason:   Optional[str]       = None
+    price_override_by:       Optional[int]       = None
+    price_override_at:       Optional[datetime]  = None
+    price_override_by_name:  Optional[str]       = None   # שם המשתמש שביצע override
     # ── Audit fields ──────────────────────────────────────────────────────────
     created_by:      Optional[int]      = None
-    created_by_name: Optional[str]      = None   # שם היוצר (מה-relation)
+    created_by_name: Optional[str]      = None
     updated_by:      Optional[int]      = None
     updated_by_name: Optional[str]      = None
     created_at:      datetime
     updated_at:      Optional[datetime] = None
     deleted_at:      Optional[datetime] = None
     deleted_by:      Optional[int]      = None
-    deleted_by_name: Optional[str]      = None   # שם המוחק (מה-relation)
+    deleted_by_name: Optional[str]      = None
     # ── Relations ─────────────────────────────────────────────────────────────
     car:             Optional[CarOut] = None
     model_config = {"from_attributes": True}
@@ -104,14 +129,14 @@ class BookingOut(BaseModel):
     @classmethod
     def model_validate(cls, obj: Any, **kwargs):
         instance = super().model_validate(obj, **kwargs)
-        # מלא created_by_name מה-agent relation אם קיים
         if hasattr(obj, "agent") and obj.agent:
             instance.created_by_name = obj.agent.full_name
         if hasattr(obj, "updated_by_user") and obj.updated_by_user:
             instance.updated_by_name = obj.updated_by_user.full_name
-        # מלא deleted_by_name מה-deleted_by_user relation אם קיים
         if hasattr(obj, "deleted_by_user") and obj.deleted_by_user:
             instance.deleted_by_name = obj.deleted_by_user.full_name
+        if hasattr(obj, "price_override_user") and obj.price_override_user:
+            instance.price_override_by_name = obj.price_override_user.full_name
         return instance
 
 
