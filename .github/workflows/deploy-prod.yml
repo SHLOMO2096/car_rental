@@ -4,9 +4,9 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches:
-      - main
+  # push:  # 🔒 DISABLED: Auto-deploy disabled for safety - use manual workflow_dispatch
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       git_ref:
