@@ -342,8 +342,6 @@ export default function BookingsPage() {
   const pricePreview = useBookingPricePreview({
     form,
     carsMap,
-    categories,
-    generalSettings,
   });
 
   if (loading) return <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>טוען...</div>;
@@ -431,9 +429,8 @@ export default function BookingsPage() {
         onSave={handleSave}
         preview={{
           show: pricePreview.show,
-          days: pricePreview.days,
-          pricePerDay: pricePreview.pricePerDay,
-          total: pricePreview.total,
+          loading: pricePreview.loading,
+          result: pricePreview.result,
         }}
       />
 

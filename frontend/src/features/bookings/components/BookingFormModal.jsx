@@ -266,8 +266,29 @@ export default function BookingFormModal({
       {/* Price preview */}
       {preview?.show && (
         <div style={s.pricePreview}>
-          💰 {preview.days} ימים × ₪{preview.pricePerDay} = <strong>₪{preview.total.toLocaleString()}</strong>
-          {form.customer_email && <span style={{ marginRight: 12 }}>📧 אישור יישלח ללקוח</span>}
+          {preview.loading ? (
+            <span>⏳ מחשב מחיר...</span>
+          ) : preview.result ? (
+            <>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>💰 תחשיב מחיר:</div>
+              {preview.result.breakdown.map((line, i) => (
+                <div key={i} style={{ fontSize: 13, marginBottom: 2 }}>
+                  {line.label} — <strong>₪{line.subtotal.toLocaleString()}</strong>
+                </div>
+              ))}
+              {preview.result.note && (
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                  ℹ️ {preview.result.note}
+                </div>
+              )}
+              <div style={{ marginTop: 6, fontWeight: 700, fontSize: 15 }}>
+                סה&quot;כ: ₪{preview.result.total.toLocaleString()}
+              </div>
+              {form.customer_email && (
+                <span style={{ marginTop: 4, display: "block", fontSize: 12 }}>📧 אישור יישלח ללקוח</span>
+              )}
+            </>
+          ) : null}
         </div>
       )}
 
