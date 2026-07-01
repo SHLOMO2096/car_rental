@@ -362,14 +362,72 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* ── Desktop: Original Filter Panel (unchanged for now) ── */}
+      {/* ── Desktop: Enhanced Filter Panel with Quick Search ── */}
       {!isMobile && (
         <div style={{ ...cardStyle, padding:16, marginBottom:20 }}>
-          <div style={{ display:"flex", gap:12, alignItems:"flex-start", flexWrap:"wrap" }}>
+          {/* Row 1: Quick Search + Clear button */}
+          <div style={{ display:"flex", gap:12, marginBottom:16, alignItems:"center" }}>
+            <div style={{ position:"relative", flex:1, maxWidth:400 }}>
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={quickSearch}
+                onChange={(e) => setQuickSearch(e.target.value)}
+                placeholder="🔍 חיפוש מהיר: דגם, יצרן, לוחית, מספר רכב..."
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+                style={{
+                  ...inputStyle,
+                  paddingLeft: quickSearch ? 45 : 12,
+                  width: "100%",
+                  fontSize: 14,
+                }}
+              />
+              {quickSearch && (
+                <button
+                  onClick={() => setQuickSearch("")}
+                  aria-label="נקה חיפוש"
+                  style={{
+                    position: "absolute",
+                    left: 10,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "#94a3b8",
+                    fontSize: 18,
+                    cursor: "pointer",
+                    padding: 4,
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
 
-            {/* Multi-category filter */}
+            {(quickSearch || activeFiltersCount > 0) && (
+              <button
+                onClick={clearAllFilters}
+                style={{
+                  ...chipStyle,
+                  background: "#fee2e2",
+                  color: "#dc2626",
+                  borderColor: "#fecaca",
+                  fontWeight: 600,
+                }}
+              >
+                ✕ נקה הכל
+              </button>
+            )}
+          </div>
+
+          {/* Row 2: Compact filters in one line */}
+          <div style={{ display:"flex", gap:12, alignItems:"flex-end", flexWrap:"wrap" }}>
+
+            {/* Categories - Compact dropdown style */}
             <div style={{ ...fieldWrap, minWidth: 180 }}>
-              <span style={fieldLabel}>סינון קטגוריות</span>
+              <span style={fieldLabel}>קטגוריות</span>
               <div style={multiSelectBox}>
                 <label style={multiSelectItem(selectedCategories.length === 0)}>
                   <input type="checkbox" checked={selectedCategories.length === 0} onChange={() => setSelectedCategories([])} />
@@ -386,9 +444,9 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* Multi-model filter */}
-            <div style={{ ...fieldWrap, minWidth: 220 }}>
-              <span style={fieldLabel}>סינון דגמים</span>
+            {/* Models - Compact dropdown style */}
+            <div style={{ ...fieldWrap, minWidth: 200 }}>
+              <span style={fieldLabel}>דגמים</span>
               <div style={multiSelectBox}>
                 <label style={multiSelectItem(selectedModels.length === 0)}>
                   <input type="checkbox" checked={selectedModels.length === 0} onChange={() => setSelectedModels([])} />
@@ -404,58 +462,84 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* Hybrid filter */}
-            <div style={{ ...fieldWrap, minWidth: 140 }}>
+            {/* Hybrid - Horizontal chips */}
+            <div style={{ ...fieldWrap, minWidth: 260 }}>
               <span style={fieldLabel}>סוג הנעה</span>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", gap: 6 }}>
                 {[
                   { value: "all",     label: "🚗 הכל" },
-                  { value: "hybrid",  label: "🌿 היברידי בלבד" },
-                  { value: "regular", label: "⛽ רגיל בלבד" },
+                  { value: "hybrid",  label: "🌿 היברידי" },
+                  { value: "regular", label: "⛽ רגיל" },
                 ].map(opt => (
-                  <label key={opt.value} style={multiSelectItem(hybridFilter === opt.value)}>
-                    <input type="radio" name="hybridFilter" value={opt.value}
-                      checked={hybridFilter === opt.value}
-                      onChange={() => setHybridFilter(opt.value)} />
+                  <button
+                    key={opt.value}
+                    onClick={() => setHybridFilter(opt.value)}
+                    style={{
+                      ...chipStyle,
+                      background: hybridFilter === opt.value ? "#2563eb" : "#fff",
+                      color: hybridFilter === opt.value ? "#fff" : "#334155",
+                      borderColor: hybridFilter === opt.value ? "#2563eb" : "#cbd5e1",
+                    }}
+                  >
                     {opt.label}
-                  </label>
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Date range */}
-            <label style={{ ...fieldWrap, minWidth:160 }}>
+            {/* Date range - Compact */}
+            <div style={{ ...fieldWrap, minWidth:150 }}>
               <span style={fieldLabel}>מתאריך</span>
-              <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} style={inputStyle} />
-            </label>
+              <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} style={{...inputStyle, fontSize:13}} />
+            </div>
 
-            <label style={{ ...fieldWrap, minWidth:160 }}>
+            <div style={{ ...fieldWrap, minWidth:150 }}>
               <span style={fieldLabel}>עד תאריך</span>
-              <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setEndWithGuard(e.target.value)} style={inputStyle} />
-            </label>
+              <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setEndWithGuard(e.target.value)} style={{...inputStyle, fontSize:13}} />
+            </div>
 
-            <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+            {/* Quick date range */}
+            <div style={{ ...fieldWrap }}>
               <span style={fieldLabel}>טווח מהיר</span>
-              {[7,14,30].map(days => (
-                <button key={days} onClick={() => applyPreset(days)} style={days === visibleDays ? activeChip : chipStyle}>
-                  {days} ימים
-                </button>
-              ))}
-              <button onClick={() => shiftRange(-7)} style={chipStyle}>◀ 7 ימים</button>
-              <button onClick={() => shiftRange(7)} style={chipStyle}>7 ימים ▶</button>
+              <div style={{ display:"flex", gap:6 }}>
+                {[7,14,30].map(days => (
+                  <button key={days} onClick={() => applyPreset(days)} style={days === visibleDays ? activeChip : chipStyle}>
+                    {days}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Navigation arrows */}
+            <div style={{ ...fieldWrap }}>
+              <span style={{ ...fieldLabel, visibility:"hidden" }}>ניווט</span>
+              <div style={{ display:"flex", gap:6 }}>
+                <button onClick={() => shiftRange(-7)} style={chipStyle} title="7 ימים אחורה">◀</button>
+                <button onClick={() => shiftRange(7)} style={chipStyle} title="7 ימים קדימה">▶</button>
+              </div>
             </div>
 
           </div>
 
-          <div style={{ marginTop:10, fontSize:12, color:"#64748b" }}>
-            מוצג כעת:
-            {selectedCategories.length === 0 ? "כל הקטגוריות" : selectedCategories.join(", ")}
-            {" · "}
-            {selectedModels.length === 0 ? "כל הדגמים" : selectedModels.join(", ")}
-            {hybridFilter !== "all" && <>{" · "}{hybridFilter === "hybrid" ? "🌿 היברידי בלבד" : "⛽ רגיל בלבד"}</>}
-            {" · "}
-            <strong>{filteredCars.length}</strong> רכבים ·
-            טווח: <strong>{visibleDays}</strong> ימים
+          {/* Results summary */}
+          <div style={{ marginTop:12, fontSize:12, color:"#64748b" }}>
+            {quickSearch && filteredCars.length === 0 && (
+              <span style={{ color: "#dc2626" }}>
+                ⚠️ לא נמצאו רכבים תואמים ל-"{quickSearch}"
+              </span>
+            )}
+            {(!quickSearch || filteredCars.length > 0) && (
+              <>
+                מוצג: <strong>{filteredCars.length}</strong> רכבים
+                {quickSearch && <> · "{quickSearch}"</>}
+                {selectedCategories.length > 0 && <> · {selectedCategories.join(", ")}</>}
+                {selectedModels.length > 0 && <> · {selectedModels.join(", ")}</>}
+                {hybridFilter !== "all" && <> · {hybridFilter === "hybrid" ? "🌿 היברידי" : "⛽ רגיל"}</>}
+                {" · "}
+                טווח: <strong>{visibleDays}</strong> ימים ({rangeStart} - {rangeEnd})
+                <span style={{ color: "#94a3b8", marginRight: 12 }}>· טיפ: Ctrl+F לחיפוש מהיר</span>
+              </>
+            )}
           </div>
         </div>
       )}
