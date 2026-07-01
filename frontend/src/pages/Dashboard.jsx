@@ -63,6 +63,16 @@ export function Dashboard() {
   const todayBase = new Date();
   todayBase.setHours(0,0,0,0);
 
+  // Quick Search state (with localStorage)
+  const [quickSearch, setQuickSearch] = useState(() => {
+    try {
+      return localStorage.getItem("dashboard_quick_search") || "";
+    } catch {
+      return "";
+    }
+  });
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [selectedModels, setSelectedModels] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [hybridFilter, setHybridFilter] = useState("all"); // "all" | "hybrid" | "regular"
@@ -72,14 +82,102 @@ export function Dashboard() {
   const [categories, setCategories] = useState([]);
   const [focusMode, setFocusMode]   = useState(false);
 
+  // Bottom Sheet state (mobile only)
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const [sheetStartY, setSheetStartY] = useState(0);
+  const [sheetCurrentY, setSheetCurrentY] = useState(0);
+  const [isDraggingSheet, setIsDraggingSheet] = useState(false);
+
+  // Ref for search input (keyboard shortcut)
+  const searchInputRef = useRef(null);
+
   const modelOptions = useMemo(
     () => [...new Set(cars.filter(c => c.is_active).map(c => c.name))].sort((a, b) => a.localeCompare(b, "he")),
     [cars]
   );
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(quickSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [quickSearch]);
+
+  // Save search to localStorage
+  useEffect(() => {
+    try {
+      if (quickSearch) {
+        localStorage.setItem("dashboard_quick_search", quickSearch);
+      } else {
+        localStorage.removeItem("dashboard_quick_search");
+      }
+    } catch (err) {
+      console.warn("Failed to save search to localStorage", err);
+    }
+  }, [quickSearch]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl+F or / = Focus search input
+      if ((e.ctrlKey && e.key === 'f') || (e.key === '/' && document.activeElement?.tagName !== 'INPUT')) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      // Escape = Clear search or close sheet
+      if (e.key === 'Escape') {
+        if (showFilterSheet) {
+          setShowFilterSheet(false);
+        } else if (document.activeElement === searchInputRef.current) {
+          setQuickSearch("");
+          searchInputRef.current?.blur();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showFilterSheet]);
+
+  // Quick search filter function
+  const quickSearchFilter = useMemo(() => {
+    return (car) => {
+      if (!debouncedSearch || debouncedSearch.trim() === "") return true;
+
+      const term = debouncedSearch.toLowerCase().trim();
+      const normalize = (str) => str?.toString().toLowerCase().replace(/[-\s#רכב]/g, '') || "";
+
+      // Search by ID
+      if (normalize(car.id) === normalize(term)) return true;
+
+      // Search by plate
+      if (normalize(car.plate).includes(normalize(term))) return true;
+
+      // Search by name (model)
+      if (normalize(car.name).includes(normalize(term))) return true;
+
+      // Search by make (manufacturer)
+      if (normalize(car.make).includes(normalize(term))) return true;
+
+      // Search by group
+      if (normalize(car.group) === normalize(term)) return true;
+
+      // Search by category
+      if (normalize(car.category).includes(normalize(term))) return true;
+
+      return false;
+    };
+  }, [debouncedSearch]);
+
   const filteredCars = useMemo(
     () => cars.filter(c => {
       if (!c.is_active) return false;
       
+      // Quick search filter (new!)
+      if (!quickSearchFilter(c)) return false;
+
       // Multi-category filter
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(c.category || "");
       if (!matchesCategory) return false;
@@ -94,7 +192,7 @@ export function Dashboard() {
 
       return true;
     }),
-    [cars, selectedModels, selectedCategories, hybridFilter]
+    [cars, quickSearchFilter, selectedModels, selectedCategories, hybridFilter]
   );
   const permissionModel = useMemo(
     () => createDashboardPermissionModel({ can, currentUser, isMobile }),
@@ -138,106 +236,229 @@ export function Dashboard() {
     setRangeEnd(prev => toISO(addDays(fromISO(prev), days)));
   }
 
+  function clearAllFilters() {
+    setQuickSearch("");
+    setSelectedModels([]);
+    setSelectedCategories([]);
+    setHybridFilter("all");
+  }
+
+  const activeFiltersCount =
+    (selectedCategories.length > 0 ? 1 : 0) +
+    (selectedModels.length > 0 ? 1 : 0) +
+    (hybridFilter !== "all" ? 1 : 0);
+
 
   return (
     <div dir="rtl">
       <h1 style={{ fontSize:isMobile ? 20 : 24, fontWeight:800, marginBottom:isMobile ? 14 : 20 }}>לוח בקרה</h1>
 
-      {/* ── Filter Panel ── */}
-      <div style={{ ...cardStyle, padding:isMobile ? 12 : 16, marginBottom:20 }}>
-        <div style={{ display:"flex", gap:12, alignItems:"flex-start", flexWrap:"wrap" }}>
-
-          {/* Multi-category filter */}
-          <div style={{ ...fieldWrap, minWidth: isMobile ? "100%" : 180 }}>
-            <span style={fieldLabel}>סינון קטגוריות</span>
-            <div style={multiSelectBox}>
-              <label style={multiSelectItem(selectedCategories.length === 0)}>
-                <input type="checkbox" checked={selectedCategories.length === 0} onChange={() => setSelectedCategories([])} />
-                כל הקטגוריות
-              </label>
-              <div style={separator} />
-              {categories.map(cat => (
-                <label key={cat.name} style={multiSelectItem(selectedCategories.includes(cat.name))}>
-                  <input type="checkbox" checked={selectedCategories.includes(cat.name)} 
-                    onChange={() => setSelectedCategories(prev => prev.includes(cat.name) ? prev.filter(c => c !== cat.name) : [...prev, cat.name])} />
-                  {cat.name}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Multi-model filter */}
-          <div style={{ ...fieldWrap, minWidth: isMobile ? "100%" : 220 }}>
-            <span style={fieldLabel}>סינון דגמים</span>
-            <div style={multiSelectBox}>
-              <label style={multiSelectItem(selectedModels.length === 0)}>
-                <input type="checkbox" checked={selectedModels.length === 0} onChange={() => setSelectedModels([])} />
-                כל הדגמים
-              </label>
-              <div style={separator} />
-              {modelOptions.map(model => (
-                <label key={model} style={multiSelectItem(selectedModels.includes(model))}>
-                  <input type="checkbox" checked={selectedModels.includes(model)} onChange={() => toggleModel(model)} />
-                  {model}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Hybrid filter */}
-          <div style={{ ...fieldWrap, minWidth: isMobile ? "100%" : 140 }}>
-            <span style={fieldLabel}>סוג הנעה</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {[
-                { value: "all",     label: "🚗 הכל" },
-                { value: "hybrid",  label: "🌿 היברידי בלבד" },
-                { value: "regular", label: "⛽ רגיל בלבד" },
-              ].map(opt => (
-                <label key={opt.value} style={multiSelectItem(hybridFilter === opt.value)}>
-                  <input type="radio" name="hybridFilter" value={opt.value}
-                    checked={hybridFilter === opt.value}
-                    onChange={() => setHybridFilter(opt.value)} />
-                  {opt.label}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Date range */}
-          <label style={{ ...fieldWrap, minWidth:isMobile ? "100%" : 160 }}>
-            <span style={fieldLabel}>מתאריך</span>
-            <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} style={inputStyle} />
-          </label>
-
-          <label style={{ ...fieldWrap, minWidth:isMobile ? "100%" : 160 }}>
-            <span style={fieldLabel}>עד תאריך</span>
-            <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setEndWithGuard(e.target.value)} style={inputStyle} />
-          </label>
-
-          <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", width:isMobile ? "100%" : "auto" }}>
-            <span style={fieldLabel}>טווח מהיר</span>
-            {[7,14,30].map(days => (
-              <button key={days} onClick={() => applyPreset(days)} style={days === visibleDays ? activeChip : chipStyle}>
-                {days} ימים
+      {/* ── Mobile: Quick Search + Filter Button ── */}
+      {isMobile && (
+        <div style={{ marginBottom: 16 }}>
+          {/* Quick Search */}
+          <div style={{ position: "relative", marginBottom: 10 }}>
+            <input
+              type="search"
+              value={quickSearch}
+              onChange={(e) => setQuickSearch(e.target.value)}
+              placeholder="🔍 חיפוש: דגם, יצרן, לוחית, מספר רכב..."
+              style={{
+                ...inputStyle,
+                paddingLeft: quickSearch ? 45 : 12,
+                width: "100%",
+                fontSize: 14,
+              }}
+            />
+            {quickSearch && (
+              <button
+                onClick={() => setQuickSearch("")}
+                aria-label="נקה חיפוש"
+                style={{
+                  position: "absolute",
+                  left: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: "#94a3b8",
+                  fontSize: 18,
+                  cursor: "pointer",
+                  padding: 4,
+                }}
+              >
+                ✕
               </button>
-            ))}
-            <button onClick={() => shiftRange(-7)} style={chipStyle}>◀ 7 ימים</button>
-            <button onClick={() => shiftRange(7)} style={chipStyle}>7 ימים ▶</button>
+            )}
           </div>
 
-        </div>
+          {/* Filter Sheet Button + Clear */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button
+              onClick={() => setShowFilterSheet(true)}
+              style={{
+                ...chipStyle,
+                flex: 1,
+                background: activeFiltersCount > 0 ? "#2563eb" : "#fff",
+                color: activeFiltersCount > 0 ? "#fff" : "#334155",
+                borderColor: activeFiltersCount > 0 ? "#2563eb" : "#cbd5e1",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                fontWeight: 700,
+              }}
+            >
+              🎚️ סינונים
+              {activeFiltersCount > 0 && (
+                <span style={{
+                  background: "#fff",
+                  color: "#2563eb",
+                  borderRadius: 999,
+                  padding: "2px 8px",
+                  fontSize: 11,
+                  fontWeight: 800,
+                }}>
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+            {(quickSearch || activeFiltersCount > 0) && (
+              <button
+                onClick={clearAllFilters}
+                style={{
+                  ...chipStyle,
+                  background: "#fee2e2",
+                  color: "#dc2626",
+                  borderColor: "#fecaca",
+                  fontWeight: 600,
+                }}
+              >
+                ✕ נקה
+              </button>
+            )}
+          </div>
 
-        <div style={{ marginTop:10, fontSize:12, color:"#64748b" }}>
-          מוצג כעת:
-          {selectedCategories.length === 0 ? "כל הקטגוריות" : selectedCategories.join(", ")}
-          {" · "}
-          {selectedModels.length === 0 ? "כל הדגמים" : selectedModels.join(", ")}
-          {hybridFilter !== "all" && <>{" · "}{hybridFilter === "hybrid" ? "🌿 היברידי בלבד" : "⛽ רגיל בלבד"}</>}
-          {" · "}
-          <strong>{filteredCars.length}</strong> רכבים ·
-          טווח: <strong>{visibleDays}</strong> ימים
+          {/* Results Indicator */}
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 10 }}>
+            {quickSearch && filteredCars.length === 0 && (
+              <span style={{ color: "#dc2626" }}>
+                ⚠️ לא נמצאו רכבים תואמים ל-"{quickSearch}"
+              </span>
+            )}
+            {(quickSearch || activeFiltersCount > 0) && filteredCars.length > 0 && (
+              <span>
+                מוצג: <strong>{filteredCars.length}</strong> רכבים
+                {quickSearch && <> · {quickSearch}</>}
+                {activeFiltersCount > 0 && <> · {activeFiltersCount} סינונים פעילים</>}
+              </span>
+            )}
+            {!quickSearch && activeFiltersCount === 0 && (
+              <span>
+                מוצג: <strong>{filteredCars.length}</strong> רכבים · טווח: <strong>{visibleDays}</strong> ימים
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Desktop: Original Filter Panel (unchanged for now) ── */}
+      {!isMobile && (
+        <div style={{ ...cardStyle, padding:16, marginBottom:20 }}>
+          <div style={{ display:"flex", gap:12, alignItems:"flex-start", flexWrap:"wrap" }}>
+
+            {/* Multi-category filter */}
+            <div style={{ ...fieldWrap, minWidth: 180 }}>
+              <span style={fieldLabel}>סינון קטגוריות</span>
+              <div style={multiSelectBox}>
+                <label style={multiSelectItem(selectedCategories.length === 0)}>
+                  <input type="checkbox" checked={selectedCategories.length === 0} onChange={() => setSelectedCategories([])} />
+                  כל הקטגוריות
+                </label>
+                <div style={separator} />
+                {categories.map(cat => (
+                  <label key={cat.name} style={multiSelectItem(selectedCategories.includes(cat.name))}>
+                    <input type="checkbox" checked={selectedCategories.includes(cat.name)}
+                      onChange={() => setSelectedCategories(prev => prev.includes(cat.name) ? prev.filter(c => c !== cat.name) : [...prev, cat.name])} />
+                    {cat.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Multi-model filter */}
+            <div style={{ ...fieldWrap, minWidth: 220 }}>
+              <span style={fieldLabel}>סינון דגמים</span>
+              <div style={multiSelectBox}>
+                <label style={multiSelectItem(selectedModels.length === 0)}>
+                  <input type="checkbox" checked={selectedModels.length === 0} onChange={() => setSelectedModels([])} />
+                  כל הדגמים
+                </label>
+                <div style={separator} />
+                {modelOptions.map(model => (
+                  <label key={model} style={multiSelectItem(selectedModels.includes(model))}>
+                    <input type="checkbox" checked={selectedModels.includes(model)} onChange={() => toggleModel(model)} />
+                    {model}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Hybrid filter */}
+            <div style={{ ...fieldWrap, minWidth: 140 }}>
+              <span style={fieldLabel}>סוג הנעה</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {[
+                  { value: "all",     label: "🚗 הכל" },
+                  { value: "hybrid",  label: "🌿 היברידי בלבד" },
+                  { value: "regular", label: "⛽ רגיל בלבד" },
+                ].map(opt => (
+                  <label key={opt.value} style={multiSelectItem(hybridFilter === opt.value)}>
+                    <input type="radio" name="hybridFilter" value={opt.value}
+                      checked={hybridFilter === opt.value}
+                      onChange={() => setHybridFilter(opt.value)} />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Date range */}
+            <label style={{ ...fieldWrap, minWidth:160 }}>
+              <span style={fieldLabel}>מתאריך</span>
+              <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} style={inputStyle} />
+            </label>
+
+            <label style={{ ...fieldWrap, minWidth:160 }}>
+              <span style={fieldLabel}>עד תאריך</span>
+              <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setEndWithGuard(e.target.value)} style={inputStyle} />
+            </label>
+
+            <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+              <span style={fieldLabel}>טווח מהיר</span>
+              {[7,14,30].map(days => (
+                <button key={days} onClick={() => applyPreset(days)} style={days === visibleDays ? activeChip : chipStyle}>
+                  {days} ימים
+                </button>
+              ))}
+              <button onClick={() => shiftRange(-7)} style={chipStyle}>◀ 7 ימים</button>
+              <button onClick={() => shiftRange(7)} style={chipStyle}>7 ימים ▶</button>
+            </div>
+
+          </div>
+
+          <div style={{ marginTop:10, fontSize:12, color:"#64748b" }}>
+            מוצג כעת:
+            {selectedCategories.length === 0 ? "כל הקטגוריות" : selectedCategories.join(", ")}
+            {" · "}
+            {selectedModels.length === 0 ? "כל הדגמים" : selectedModels.join(", ")}
+            {hybridFilter !== "all" && <>{" · "}{hybridFilter === "hybrid" ? "🌿 היברידי בלבד" : "⛽ רגיל בלבד"}</>}
+            {" · "}
+            <strong>{filteredCars.length}</strong> רכבים ·
+            טווח: <strong>{visibleDays}</strong> ימים
+          </div>
+        </div>
+      )}
 
       {/* ── Availability Grid (FIRST prominent element) ── */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:10, marginTop:10 }}>
@@ -309,6 +530,243 @@ export function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* ── Bottom Sheet (Mobile Only) ── */}
+      {isMobile && showFilterSheet && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setShowFilterSheet(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 9998,
+              animation: "fadeIn 0.3s ease-out",
+            }}
+          />
+
+          {/* Bottom Sheet */}
+          <div
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              maxHeight: "80vh",
+              background: "#fff",
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              boxShadow: "0 -4px 30px rgba(0,0,0,0.2)",
+              zIndex: 9999,
+              overflowY: "auto",
+              animation: "slideUp 0.3s ease-out",
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              position: "sticky",
+              top: 0,
+              background: "#fff",
+              borderBottom: "1px solid #e2e8f0",
+              padding: "16px 20px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              zIndex: 1,
+            }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#1e293b" }}>
+                🎚️ סינון ותצוגה
+              </h3>
+              <button
+                onClick={() => setShowFilterSheet(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: 24,
+                  color: "#64748b",
+                  cursor: "pointer",
+                  padding: 4,
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: "20px", paddingBottom: "100px" }}>
+
+              {/* Categories */}
+              <div style={{ marginBottom: 24 }}>
+                <span style={{ ...fieldLabel, display: "block", marginBottom: 8 }}>סינון קטגוריות</span>
+                <div style={multiSelectBox}>
+                  <label style={multiSelectItem(selectedCategories.length === 0)}>
+                    <input type="checkbox" checked={selectedCategories.length === 0} onChange={() => setSelectedCategories([])} />
+                    כל הקטגוריות
+                  </label>
+                  <div style={separator} />
+                  {categories.map(cat => (
+                    <label key={cat.name} style={multiSelectItem(selectedCategories.includes(cat.name))}>
+                      <input type="checkbox" checked={selectedCategories.includes(cat.name)}
+                        onChange={() => setSelectedCategories(prev => prev.includes(cat.name) ? prev.filter(c => c !== cat.name) : [...prev, cat.name])} />
+                      {cat.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Models */}
+              <div style={{ marginBottom: 24 }}>
+                <span style={{ ...fieldLabel, display: "block", marginBottom: 8 }}>סינון דגמים</span>
+                <div style={multiSelectBox}>
+                  <label style={multiSelectItem(selectedModels.length === 0)}>
+                    <input type="checkbox" checked={selectedModels.length === 0} onChange={() => setSelectedModels([])} />
+                    כל הדגמים
+                  </label>
+                  <div style={separator} />
+                  {modelOptions.map(model => (
+                    <label key={model} style={multiSelectItem(selectedModels.includes(model))}>
+                      <input type="checkbox" checked={selectedModels.includes(model)} onChange={() => toggleModel(model)} />
+                      {model}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hybrid */}
+              <div style={{ marginBottom: 24 }}>
+                <span style={{ ...fieldLabel, display: "block", marginBottom: 8 }}>סוג הנעה</span>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {[
+                    { value: "all", label: "🚗 הכל" },
+                    { value: "hybrid", label: "🌿 היברידי" },
+                    { value: "regular", label: "⛽ רגיל" },
+                  ].map(opt => (
+                    <label
+                      key={opt.value}
+                      style={{
+                        ...chipStyle,
+                        background: hybridFilter === opt.value ? "#2563eb" : "#fff",
+                        color: hybridFilter === opt.value ? "#fff" : "#334155",
+                        borderColor: hybridFilter === opt.value ? "#2563eb" : "#cbd5e1",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="hybridFilterSheet"
+                        value={opt.value}
+                        checked={hybridFilter === opt.value}
+                        onChange={() => setHybridFilter(opt.value)}
+                        style={{ display: "none" }}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date Range */}
+              <div style={{ marginBottom: 24 }}>
+                <span style={{ ...fieldLabel, display: "block", marginBottom: 8 }}>טווח תאריכים</span>
+                <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                  <label style={{ flex: 1 }}>
+                    <span style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>מתאריך</span>
+                    <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} style={{ ...inputStyle, width: "100%" }} />
+                  </label>
+                  <label style={{ flex: 1 }}>
+                    <span style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>עד תאריך</span>
+                    <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setEndWithGuard(e.target.value)} style={{ ...inputStyle, width: "100%" }} />
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ ...fieldLabel, width: "100%", marginBottom: 4 }}>טווח מהיר:</span>
+                  {[7, 14, 30].map(days => (
+                    <button key={days} onClick={() => applyPreset(days)} style={days === visibleDays ? activeChip : chipStyle}>
+                      {days} ימים
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div style={{
+                background: "#f8fafc",
+                padding: "12px 16px",
+                borderRadius: 8,
+                fontSize: 12,
+                color: "#64748b",
+                marginBottom: 16,
+              }}>
+                <strong>מוצג:</strong> {filteredCars.length} רכבים · {visibleDays} ימים
+                {activeFiltersCount > 0 && <> · {activeFiltersCount} סינונים פעילים</>}
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: "#fff",
+              borderTop: "1px solid #e2e8f0",
+              padding: "16px 20px",
+              display: "flex",
+              gap: 10,
+              boxShadow: "0 -2px 10px rgba(0,0,0,0.05)",
+            }}>
+              <button
+                onClick={clearAllFilters}
+                style={{
+                  ...chipStyle,
+                  flex: 1,
+                  background: "#fff",
+                  color: "#64748b",
+                  border: "1px solid #cbd5e1",
+                }}
+              >
+                אפס הכל
+              </button>
+              <button
+                onClick={() => setShowFilterSheet(false)}
+                style={{
+                  ...chipStyle,
+                  flex: 2,
+                  background: "#2563eb",
+                  color: "#fff",
+                  border: "none",
+                  fontWeight: 700,
+                }}
+              >
+                ✓ החל והצג ({filteredCars.length})
+              </button>
+            </div>
+          </div>
+
+          {/* Animations */}
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes slideUp {
+              from { transform: translateY(100%); }
+              to { transform: translateY(0); }
+            }
+            @keyframes slideDown {
+              from { transform: translateY(0); }
+              to { transform: translateY(100%); }
+            }
+          `}</style>
+        </>
+      )}
 
     </div>
   );
