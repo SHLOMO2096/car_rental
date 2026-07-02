@@ -253,296 +253,126 @@ export function Dashboard() {
     <div dir="rtl">
       <h1 style={{ fontSize:isMobile ? 20 : 24, fontWeight:800, marginBottom:isMobile ? 14 : 20 }}>לוח בקרה</h1>
 
-      {/* ── Mobile: Quick Search + Filter Button ── */}
-      {isMobile && (
-        <div style={{ marginBottom: 16 }}>
-          {/* Quick Search */}
-          <div style={{ position: "relative", marginBottom: 10 }}>
-            <input
-              type="search"
-              value={quickSearch}
-              onChange={(e) => setQuickSearch(e.target.value)}
-              placeholder="🔍 חיפוש: דגם, יצרן, לוחית, מספר רכב..."
-              style={{
-                ...inputStyle,
-                paddingLeft: quickSearch ? 45 : 12,
-                width: "100%",
-                fontSize: 14,
-              }}
-            />
-            {quickSearch && (
-              <button
-                onClick={() => setQuickSearch("")}
-                aria-label="נקה חיפוש"
-                style={{
-                  position: "absolute",
-                  left: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  color: "#94a3b8",
-                  fontSize: 18,
-                  cursor: "pointer",
-                  padding: 4,
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Filter Sheet Button + Clear */}
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      {/* ── Universal: Quick Search + Filter Button (Mobile & Desktop) ── */}
+      <div style={{ marginBottom: 16 }}>
+        {/* Quick Search */}
+        <div style={{ position: "relative", marginBottom: 10 }}>
+          <input
+            ref={searchInputRef}
+            type="search"
+            value={quickSearch}
+            onChange={(e) => setQuickSearch(e.target.value)}
+            placeholder="🔍 חיפוש מהיר: דגם, יצרן, לוחית, מספר רכב..."
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
+            style={{
+              ...inputStyle,
+              paddingInlineEnd: quickSearch ? 45 : 12,
+              width: "100%",
+              maxWidth: isMobile ? "100%" : 600,
+              fontSize: 14,
+            }}
+          />
+          {quickSearch && (
             <button
-              onClick={() => setShowFilterSheet(true)}
+              onClick={() => setQuickSearch("")}
+              aria-label="נקה חיפוש"
               style={{
-                ...chipStyle,
-                flex: 1,
-                background: activeFiltersCount > 0 ? "#2563eb" : "#fff",
-                color: activeFiltersCount > 0 ? "#fff" : "#334155",
-                borderColor: activeFiltersCount > 0 ? "#2563eb" : "#cbd5e1",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                fontWeight: 700,
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                color: "#94a3b8",
+                fontSize: 18,
+                cursor: "pointer",
+                padding: 4,
               }}
             >
-              🎚️ סינונים
-              {activeFiltersCount > 0 && (
-                <span style={{
-                  background: "#fff",
-                  color: "#2563eb",
-                  borderRadius: 999,
-                  padding: "2px 8px",
-                  fontSize: 11,
-                  fontWeight: 800,
-                }}>
-                  {activeFiltersCount}
-                </span>
-              )}
+              ✕
             </button>
-            {(quickSearch || activeFiltersCount > 0) && (
-              <button
-                onClick={clearAllFilters}
-                style={{
-                  ...chipStyle,
-                  background: "#fee2e2",
-                  color: "#dc2626",
-                  borderColor: "#fecaca",
-                  fontWeight: 600,
-                }}
-              >
-                ✕ נקה
-              </button>
-            )}
-          </div>
-
-          {/* Results Indicator */}
-          <div style={{ fontSize: 12, color: "#64748b", marginTop: 10 }}>
-            {quickSearch && filteredCars.length === 0 && (
-              <span style={{ color: "#dc2626" }}>
-                ⚠️ לא נמצאו רכבים תואמים ל-"{quickSearch}"
-              </span>
-            )}
-            {(quickSearch || activeFiltersCount > 0) && filteredCars.length > 0 && (
-              <span>
-                מוצג: <strong>{filteredCars.length}</strong> רכבים
-                {quickSearch && <> · {quickSearch}</>}
-                {activeFiltersCount > 0 && <> · {activeFiltersCount} סינונים פעילים</>}
-              </span>
-            )}
-            {!quickSearch && activeFiltersCount === 0 && (
-              <span>
-                מוצג: <strong>{filteredCars.length}</strong> רכבים · טווח: <strong>{visibleDays}</strong> ימים
-              </span>
-            )}
-          </div>
+          )}
         </div>
-      )}
 
-      {/* ── Desktop: Enhanced Filter Panel with Quick Search ── */}
-      {!isMobile && (
-        <div style={{ ...cardStyle, padding:16, marginBottom:20 }}>
-          {/* Row 1: Quick Search + Clear button */}
-          <div style={{ display:"flex", gap:12, marginBottom:16, alignItems:"center" }}>
-            <div style={{ position:"relative", flex:1, maxWidth:400 }}>
-              <input
-                ref={searchInputRef}
-                type="search"
-                value={quickSearch}
-                onChange={(e) => setQuickSearch(e.target.value)}
-                placeholder="🔍 חיפוש מהיר: דגם, יצרן, לוחית, מספר רכב..."
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck="false"
-                style={{
-                  ...inputStyle,
-                  paddingLeft: quickSearch ? 45 : 12,
-                  width: "100%",
-                  fontSize: 14,
-                }}
-              />
-              {quickSearch && (
-                <button
-                  onClick={() => setQuickSearch("")}
-                  aria-label="נקה חיפוש"
-                  style={{
-                    position: "absolute",
-                    left: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "none",
-                    border: "none",
-                    color: "#94a3b8",
-                    fontSize: 18,
-                    cursor: "pointer",
-                    padding: 4,
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            {(quickSearch || activeFiltersCount > 0) && (
-              <button
-                onClick={clearAllFilters}
-                style={{
-                  ...chipStyle,
-                  background: "#fee2e2",
-                  color: "#dc2626",
-                  borderColor: "#fecaca",
-                  fontWeight: 600,
-                }}
-              >
-                ✕ נקה הכל
-              </button>
-            )}
-          </div>
-
-          {/* Row 2: Compact filters in one line */}
-          <div style={{ display:"flex", gap:12, alignItems:"flex-end", flexWrap:"wrap" }}>
-
-            {/* Categories - Compact dropdown style */}
-            <div style={{ ...fieldWrap, minWidth: 180 }}>
-              <span style={fieldLabel}>קטגוריות</span>
-              <div style={multiSelectBox}>
-                <label style={multiSelectItem(selectedCategories.length === 0)}>
-                  <input type="checkbox" checked={selectedCategories.length === 0} onChange={() => setSelectedCategories([])} />
-                  כל הקטגוריות
-                </label>
-                <div style={separator} />
-                {categories.map(cat => (
-                  <label key={cat.name} style={multiSelectItem(selectedCategories.includes(cat.name))}>
-                    <input type="checkbox" checked={selectedCategories.includes(cat.name)}
-                      onChange={() => setSelectedCategories(prev => prev.includes(cat.name) ? prev.filter(c => c !== cat.name) : [...prev, cat.name])} />
-                    {cat.name}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Models - Compact dropdown style */}
-            <div style={{ ...fieldWrap, minWidth: 200 }}>
-              <span style={fieldLabel}>דגמים</span>
-              <div style={multiSelectBox}>
-                <label style={multiSelectItem(selectedModels.length === 0)}>
-                  <input type="checkbox" checked={selectedModels.length === 0} onChange={() => setSelectedModels([])} />
-                  כל הדגמים
-                </label>
-                <div style={separator} />
-                {modelOptions.map(model => (
-                  <label key={model} style={multiSelectItem(selectedModels.includes(model))}>
-                    <input type="checkbox" checked={selectedModels.includes(model)} onChange={() => toggleModel(model)} />
-                    {model}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Hybrid - Horizontal chips */}
-            <div style={{ ...fieldWrap, minWidth: 260 }}>
-              <span style={fieldLabel}>סוג הנעה</span>
-              <div style={{ display: "flex", gap: 6 }}>
-                {[
-                  { value: "all",     label: "🚗 הכל" },
-                  { value: "hybrid",  label: "🌿 היברידי" },
-                  { value: "regular", label: "⛽ רגיל" },
-                ].map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setHybridFilter(opt.value)}
-                    style={{
-                      ...chipStyle,
-                      background: hybridFilter === opt.value ? "#2563eb" : "#fff",
-                      color: hybridFilter === opt.value ? "#fff" : "#334155",
-                      borderColor: hybridFilter === opt.value ? "#2563eb" : "#cbd5e1",
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Date range - Compact */}
-            <div style={{ ...fieldWrap, minWidth:150 }}>
-              <span style={fieldLabel}>מתאריך</span>
-              <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} style={{...inputStyle, fontSize:13}} />
-            </div>
-
-            <div style={{ ...fieldWrap, minWidth:150 }}>
-              <span style={fieldLabel}>עד תאריך</span>
-              <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setEndWithGuard(e.target.value)} style={{...inputStyle, fontSize:13}} />
-            </div>
-
-            {/* Quick date range */}
-            <div style={{ ...fieldWrap }}>
-              <span style={fieldLabel}>טווח מהיר</span>
-              <div style={{ display:"flex", gap:6 }}>
-                {[7,14,30].map(days => (
-                  <button key={days} onClick={() => applyPreset(days)} style={days === visibleDays ? activeChip : chipStyle}>
-                    {days}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Navigation arrows */}
-            <div style={{ ...fieldWrap }}>
-              <span style={{ ...fieldLabel, visibility:"hidden" }}>ניווט</span>
-              <div style={{ display:"flex", gap:6 }}>
-                <button onClick={() => shiftRange(-7)} style={chipStyle} title="7 ימים אחורה">◀</button>
-                <button onClick={() => shiftRange(7)} style={chipStyle} title="7 ימים קדימה">▶</button>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Results summary */}
-          <div style={{ marginTop:12, fontSize:12, color:"#64748b" }}>
-            {quickSearch && filteredCars.length === 0 && (
-              <span style={{ color: "#dc2626" }}>
-                ⚠️ לא נמצאו רכבים תואמים ל-"{quickSearch}"
+        {/* Filter Button + Clear */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            onClick={() => setShowFilterSheet(true)}
+            style={{
+              ...chipStyle,
+              flex: isMobile ? 1 : "0 0 auto",
+              background: activeFiltersCount > 0 ? "#2563eb" : "#fff",
+              color: activeFiltersCount > 0 ? "#fff" : "#334155",
+              borderColor: activeFiltersCount > 0 ? "#2563eb" : "#cbd5e1",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              fontWeight: 700,
+              minWidth: isMobile ? "auto" : 180,
+            }}
+          >
+            🎚️ סינונים מתקדמים
+            {activeFiltersCount > 0 && (
+              <span style={{
+                background: "#fff",
+                color: "#2563eb",
+                borderRadius: 999,
+                padding: "2px 8px",
+                fontSize: 11,
+                fontWeight: 800,
+              }}>
+                {activeFiltersCount}
               </span>
             )}
-            {(!quickSearch || filteredCars.length > 0) && (
-              <>
-                מוצג: <strong>{filteredCars.length}</strong> רכבים
-                {quickSearch && <> · "{quickSearch}"</>}
-                {selectedCategories.length > 0 && <> · {selectedCategories.join(", ")}</>}
-                {selectedModels.length > 0 && <> · {selectedModels.join(", ")}</>}
-                {hybridFilter !== "all" && <> · {hybridFilter === "hybrid" ? "🌿 היברידי" : "⛽ רגיל"}</>}
-                {" · "}
-                טווח: <strong>{visibleDays}</strong> ימים ({rangeStart} - {rangeEnd})
-                <span style={{ color: "#94a3b8", marginRight: 12 }}>· טיפ: Ctrl+F לחיפוש מהיר</span>
-              </>
-            )}
-          </div>
+          </button>
+          {(quickSearch || activeFiltersCount > 0) && (
+            <button
+              onClick={clearAllFilters}
+              style={{
+                ...chipStyle,
+                background: "#fee2e2",
+                color: "#dc2626",
+                borderColor: "#fecaca",
+                fontWeight: 600,
+              }}
+            >
+              ✕ נקה הכל
+            </button>
+          )}
         </div>
-      )}
+
+        {/* Results Indicator */}
+        <div style={{ fontSize: 12, color: "#64748b", marginTop: 10 }}>
+          {quickSearch && filteredCars.length === 0 && (
+            <span style={{ color: "#dc2626" }}>
+              ⚠️ לא נמצאו רכבים תואמים ל-"{quickSearch}"
+            </span>
+          )}
+          {!quickSearch && activeFiltersCount > 0 && filteredCars.length === 0 && (
+            <span style={{ color: "#dc2626" }}>
+              ⚠️ לא נמצאו רכבים תואמים לסינונים הנבחרים
+            </span>
+          )}
+          {(quickSearch || activeFiltersCount > 0) && filteredCars.length > 0 && (
+            <span>
+              מוצג: <strong>{filteredCars.length}</strong> רכבים
+              {quickSearch && <> · {quickSearch}</>}
+              {activeFiltersCount > 0 && <> · {activeFiltersCount} סינונים פעילים</>}
+              {" · "}
+              טווח: <strong>{visibleDays}</strong> ימים
+            </span>
+          )}
+          {!quickSearch && activeFiltersCount === 0 && (
+            <span>
+              מוצג: <strong>{filteredCars.length}</strong> רכבים · טווח: <strong>{visibleDays}</strong> ימים
+              <span style={{ color: "#94a3b8", marginRight: 12 }}>· טיפ: Ctrl+F לחיפוש מהיר</span>
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* ── Availability Grid (FIRST prominent element) ── */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:10, marginTop:10 }}>
@@ -615,8 +445,8 @@ export function Dashboard() {
         ))}
       </div>
 
-      {/* ── Bottom Sheet (Mobile Only) ── */}
-      {isMobile && showFilterSheet && (
+      {/* ── Filter Modal/Sheet (Universal: Mobile Bottom Sheet, Desktop Center Modal) ── */}
+      {showFilterSheet && (
         <>
           {/* Backdrop */}
           <div
@@ -630,36 +460,72 @@ export function Dashboard() {
             }}
           />
 
-          {/* Bottom Sheet */}
+          {/* Modal/Sheet Container */}
           <div
             dir="rtl"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={isMobile ? handleSheetTouchStart : undefined}
+            onTouchMove={isMobile ? handleSheetTouchMove : undefined}
+            onTouchEnd={isMobile ? handleSheetTouchEnd : undefined}
             style={{
               position: "fixed",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              maxHeight: "80vh",
+              ...(isMobile ? {
+                // Mobile: Bottom Sheet
+                bottom: 0,
+                left: 0,
+                right: 0,
+                maxHeight: "80vh",
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                animation: "slideUp 0.3s ease-out",
+                transform: isDraggingSheet ? `translateY(${sheetCurrentY}px)` : "translateY(0)",
+                transition: isDraggingSheet ? "none" : "transform 0.3s ease-out",
+              } : {
+                // Desktop: Center Modal
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "90%",
+                maxWidth: 700,
+                maxHeight: "85vh",
+                borderRadius: 16,
+                animation: "zoomIn 0.25s ease-out",
+              }),
               background: "#fff",
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
               boxShadow: "0 -4px 30px rgba(0,0,0,0.2)",
               zIndex: 9999,
               overflowY: "auto",
-              animation: "slideUp 0.3s ease-out",
             }}
           >
+            {/* Draggable Handle (Mobile Only) */}
+            {isMobile && (
+              <div style={{
+                display: "flex",
+                justifyContent: "center",
+                padding: "12px 0 8px",
+                cursor: "grab",
+              }}>
+                <div style={{
+                  width: 40,
+                  height: 4,
+                  background: "#cbd5e1",
+                  borderRadius: 999,
+                }} />
+              </div>
+            )}
+
             {/* Header */}
             <div style={{
               position: "sticky",
               top: 0,
               background: "#fff",
               borderBottom: "1px solid #e2e8f0",
-              padding: "16px 20px",
+              padding: isMobile ? "8px 20px 16px" : "20px 24px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
               zIndex: 1,
+              ...(isMobile ? {} : { borderTopLeftRadius: 16, borderTopRightRadius: 16 }),
             }}>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#1e293b" }}>
                 🎚️ סינון ותצוגה
