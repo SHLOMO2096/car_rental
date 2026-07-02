@@ -248,6 +248,25 @@ export function Dashboard() {
     (selectedModels.length > 0 ? 1 : 0) +
     (hybridFilter !== "all" ? 1 : 0);
 
+  function handleSheetTouchStart(e) {
+    setSheetStartY(e.touches[0].clientY);
+    setSheetCurrentY(0);
+    setIsDraggingSheet(true);
+  }
+
+  function handleSheetTouchMove(e) {
+    const delta = e.touches[0].clientY - sheetStartY;
+    if (delta > 0) setSheetCurrentY(delta);
+  }
+
+  function handleSheetTouchEnd() {
+    setIsDraggingSheet(false);
+    if (sheetCurrentY > 120) {
+      setShowFilterSheet(false);
+    }
+    setSheetCurrentY(0);
+  }
+
 
   return (
     <div dir="rtl">
@@ -713,6 +732,10 @@ export function Dashboard() {
             @keyframes slideDown {
               from { transform: translateY(0); }
               to { transform: translateY(100%); }
+            }
+            @keyframes zoomIn {
+              from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+              to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             }
           `}</style>
         </>
