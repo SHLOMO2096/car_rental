@@ -24,7 +24,7 @@ export default function Cars() {
   const [search, setSearch]     = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [modelFilter, setModelFilter] = useState("all");
-  const [activeFilter, setActiveFilter] = useState("all"); // "all" | "active" | "inactive"
+  const [activeFilter, setActiveFilter] = useState("active"); // "all" | "active" | "inactive"
   const [modal, setModal]       = useState(null);   // null | "create" | "edit"
   const [form, setForm]         = useState(EMPTY_FORM);
   const [saving, setSaving]     = useState(false);

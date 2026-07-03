@@ -55,6 +55,8 @@ class PriceRule(Base):
     price_day                = Column(Float, nullable=True)
     price_week               = Column(Float, nullable=True)
     price_month              = Column(Float, nullable=True)
+    # שעה נוספת — null = יחושב אוטומטית מ-price_half_day (ראו _default_price_hour)
+    price_hour               = Column(Float, nullable=True)
     exclude_sabbath_holidays = Column(Boolean, default=True, nullable=False)
     season_id                = Column(Integer, ForeignKey("seasons.id", ondelete="SET NULL"),
                                       nullable=True, index=True)
@@ -87,6 +89,7 @@ class SeasonRule(Base):
     applies_to_day      = Column(Boolean, default=True, nullable=False)
     applies_to_week     = Column(Boolean, default=True, nullable=False)
     applies_to_month    = Column(Boolean, default=True, nullable=False)
+    applies_to_hour     = Column(Boolean, default=True, nullable=False)
     created_at          = Column(DateTime(timezone=True), server_default=func.now())
 
     season     = relationship("Season", back_populates="season_rules")

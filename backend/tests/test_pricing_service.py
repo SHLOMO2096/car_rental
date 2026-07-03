@@ -14,7 +14,12 @@ from app.services.pricing import (
     calculate_billable_days,
     split_by_seasons,
     _date_in_season,
+    _total_hours,
+    _default_price_hour,
+    _apply_season_adjustment,
     MONTHLY_THRESHOLD_DAYS,
+    REMAINDER_HOUR_THRESHOLD,
+    REMAINDER_HALF_DAY_THRESHOLD,
 )
 
 
@@ -45,6 +50,11 @@ class TestIsHalfDay:
     def test_overnight_exactly_at_boundary(self):
         # 10:00 → 01:59 = 15h59m < 16h → חצי יום
         assert is_half_day(date(2026, 6, 1), "10:00", date(2026, 6, 2), "01:59") is True
+
+    def test_overnight_24_5_hours_bug_case(self):
+        # באג שדווח: 01/07/26 09:00 → 02/07/26 09:30 = 24.5 שעות → לא חצי יום!
+        # זה צריך להיות יום מלא כי מעל 16 שעות
+        assert is_half_day(date(2026, 7, 1), "09:00", date(2026, 7, 2), "09:30") is False
 
 
 # ── is_shabbat ────────────────────────────────────────────────────────────────
@@ -225,3 +235,89 @@ class TestWeeklyAlgorithm:
         weeks, rem = divmod(14, 7)
         assert weeks == 2
         assert rem == 0
+
+
+# ── _total_hours ──────────────────────────────────────────────────────────────
+
+class TestTotalHours:
+    def test_same_day(self):
+        assert _total_hours(date(2026, 6, 1), "10:00", date(2026, 6, 1), "16:00") == 6.0
+
+    def test_overnight(self):
+        assert _total_hours(date(2026, 6, 1), "10:00", date(2026, 6, 2), "10:00") == 24.0
+
+    def test_50_hours_case(self):
+        # דוגמה מהבקשה: 50 שעות = 2 ימים מלאים + 2 שעות שארית
+        total = _total_hours(date(2026, 7, 1), "09:00", date(2026, 7, 3), "11:00")
+        assert total == 50.0
+        full_days = int(total // 24)
+        remainder = total - full_days * 24
+        assert full_days == 2
+        assert remainder == 2.0
+
+
+# ── שארית שעות: קביעת bucket (שעה נוספת / חצי יום / יום מלא) ───────────────────
+
+class TestRemainderBucket:
+    def _bucket(self, hours: float) -> str:
+        if hours < REMAINDER_HOUR_THRESHOLD:
+            return "hour"
+        if hours < REMAINDER_HALF_DAY_THRESHOLD:
+            return "half_day"
+        return "day"
+
+    def test_under_4_hours_is_hourly(self):
+        assert self._bucket(2.0) == "hour"
+
+    def test_between_4_and_16_is_half_day(self):
+        assert self._bucket(4.0) == "half_day"
+        assert self._bucket(15.9) == "half_day"
+
+    def test_16_or_more_is_full_day(self):
+        assert self._bucket(16.0) == "day"
+        assert self._bucket(20.0) == "day"
+
+
+# ── _default_price_hour ───────────────────────────────────────────────────────
+
+class TestDefaultPriceHour:
+    def test_formula(self):
+        # (200 / 8) * 1.45 = 36.25 → מעוגל ל-36
+        assert _default_price_hour(200.0) == 36
+
+    def test_rounds_to_nearest_shekel(self):
+        # (100 / 8) * 1.45 = 18.125 → מעוגל ל-18
+        assert _default_price_hour(100.0) == 18
+
+    def test_none_when_no_half_day_price(self):
+        assert _default_price_hour(None) is None
+        assert _default_price_hour(0) is None
+
+
+# ── _apply_season_adjustment: עיגול לכפולת 5 ────────────────────────────────────
+
+class TestSeasonAdjustmentRounding:
+    def _season(self, adj_type: str, direction: str, value: float) -> Season:
+        s = MagicMock(spec=Season)
+        s.adjustment_type = adj_type
+        s.adjustment_direction = direction
+        s.adjustment_value = value
+        return s
+
+    def test_percent_add_rounds_to_nearest_5(self):
+        # 200 * 1.10 = 220 → כבר כפולת 5
+        s = self._season("percent", "add", 10)
+        adjusted, _ = _apply_season_adjustment(s, 200.0)
+        assert adjusted == 220.0
+
+    def test_percent_rounds_non_multiple_of_5(self):
+        # 123 * 1.10 = 135.3 → מעוגל ל-135
+        s = self._season("percent", "add", 10)
+        adjusted, _ = _apply_season_adjustment(s, 123.0)
+        assert adjusted == 135.0
+
+    def test_fixed_not_rounded_to_5(self):
+        # fixed לא עובר עיגול לכפולת 5
+        s = self._season("fixed", "add", 13)
+        adjusted, _ = _apply_season_adjustment(s, 100.0)
+        assert adjusted == 113.0

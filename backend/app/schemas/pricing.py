@@ -72,6 +72,7 @@ class PriceRuleBase(BaseModel):
     price_day:                Optional[float]        = Field(None, gt=0)
     price_week:               Optional[float]        = Field(None, gt=0)
     price_month:              Optional[float]        = Field(None, gt=0)
+    price_hour:               Optional[float]        = Field(None, gt=0)
     exclude_sabbath_holidays: bool                   = True
     season_id:                Optional[int]          = None
     priority:                 int                    = Field(0, ge=0)
@@ -103,6 +104,7 @@ class PriceRuleUpdate(BaseModel):
     price_day:                Optional[float] = Field(None, gt=0)
     price_week:               Optional[float] = Field(None, gt=0)
     price_month:              Optional[float] = Field(None, gt=0)
+    price_hour:               Optional[float] = Field(None, gt=0)
     exclude_sabbath_holidays: Optional[bool]  = None
     season_id:                Optional[int]   = None
     priority:                 Optional[int]   = Field(None, ge=0)
@@ -133,6 +135,7 @@ class SeasonRuleCreate(BaseModel):
     applies_to_day:      bool = True
     applies_to_week:     bool = True
     applies_to_month:    bool = True
+    applies_to_hour:     bool = True
 
 
 class SeasonRuleOut(SeasonRuleCreate):

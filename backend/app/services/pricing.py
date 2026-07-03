@@ -34,6 +34,21 @@ from app.schemas.pricing import (
 
 MONTHLY_THRESHOLD_DAYS = 30
 
+# ברירת מחדל למחיר שעה נוספת: מחיר חצי יום חלקי 8, בתוספת 45%
+EXTRA_HOUR_DIVISOR = 8
+EXTRA_HOUR_MARKUP = 1.45
+
+# שארית שעות מעבר לימים מלאים (בהזמנה מעל 24 שעות): גבולות לקביעת חיוב
+REMAINDER_HOUR_THRESHOLD = 4     # < 4 → שעה נוספת
+REMAINDER_HALF_DAY_THRESHOLD = 16  # 4..<16 → חצי יום, >=16 → יום מלא
+
+
+def _default_price_hour(price_half_day: Optional[float]) -> Optional[float]:
+    """ברירת מחדל לשעה נוספת כשלא הוגדר price_hour מפורש: (price_half_day / 8) * 1.45, מעוגל לשקל."""
+    if not price_half_day:
+        return None
+    return round(price_half_day / EXTRA_HOUR_DIVISOR * EXTRA_HOUR_MARKUP)
+
 
 # ── Data classes ──────────────────────────────────────────────────────────────
 
@@ -44,10 +59,13 @@ class ResolvedPrices:
     price_day:      Optional[float]
     price_week:     Optional[float]
     price_month:    Optional[float]
+    price_hour:     Optional[float]
     exclude_sabbath_holidays: bool
     rule_id: Optional[int]
 
     def get(self, price_type: str) -> Optional[float]:
+        if price_type == "hour":
+            return self.price_hour if self.price_hour is not None else _default_price_hour(self.price_half_day)
         return getattr(self, f"price_{price_type}", None)
 
 
@@ -88,6 +106,19 @@ def _hours_between(pickup_time: str, return_time: str) -> float:
     return (return_minutes - pickup_minutes) / 60
 
 
+def _total_hours(
+    start_date: date,
+    pickup_time: str,
+    end_date: date,
+    return_time: str,
+) -> float:
+    """סך השעות המדויק בין איסוף להחזרה (לא מתעגל ליום קלנדרי)."""
+    ph, pm = _parse_time(pickup_time)
+    rh, rm = _parse_time(return_time)
+    days = (end_date - start_date).days
+    return days * 24 + (rh * 60 + rm - (ph * 60 + pm)) / 60
+
+
 def is_half_day(
     start_date: date,
     pickup_time: Optional[str],
@@ -104,7 +135,13 @@ def is_half_day(
 
     if end_date == start_date + timedelta(days=1):
         if pickup_time and return_time:
-            return _hours_between(pickup_time, return_time) <= 16
+            # כשיש הפרש של יום אחד, צריך להוסיף 24 שעות לחישוב
+            ph, pm = _parse_time(pickup_time)
+            rh, rm = _parse_time(return_time)
+            pickup_minutes = ph * 60 + pm
+            return_minutes = rh * 60 + rm + (24 * 60)  # תמיד מוסיפים 24 שעות ליום הבא
+            hours_diff = (return_minutes - pickup_minutes) / 60
+            return hours_diff <= 16
         # ללא שעות — לילה אחד לא נחשב חצי יום
         return False
 
@@ -277,6 +314,7 @@ def _merge_rules(rules: list[PriceRule]) -> ResolvedPrices:
         price_day=None,
         price_week=None,
         price_month=None,
+        price_hour=None,
         exclude_sabbath_holidays=True,
         rule_id=rules[0].id if rules else None,
     )
@@ -289,6 +327,8 @@ def _merge_rules(rules: list[PriceRule]) -> ResolvedPrices:
             result.price_week = rule.price_week
         if result.price_month is None and rule.price_month:
             result.price_month = rule.price_month
+        if result.price_hour is None and rule.price_hour:
+            result.price_hour = rule.price_hour
     return result
 
 
@@ -338,7 +378,7 @@ def resolve_prices(
             seen_ids.add(rule.id)
 
     if not collected:
-        return ResolvedPrices(None, None, None, None, True, None)
+        return ResolvedPrices(None, None, None, None, None, True, None)
 
     return _merge_rules(collected)
 
@@ -373,6 +413,7 @@ def _season_applies_to_type(
         "day":      "applies_to_day",
         "week":     "applies_to_week",
         "month":    "applies_to_month",
+        "hour":     "applies_to_hour",
     }
     attr = col_map.get(price_type, "applies_to_day")
     return any(getattr(r, attr) for r in rules)
@@ -403,6 +444,12 @@ def _apply_season_adjustment(
     adjusted = max(base_price * multiplier if season.adjustment_type == "percent"
                    else base_price + (val if season.adjustment_direction == "add" else -val),
                    0.0)
+
+    if season.adjustment_type == "percent":
+        # תוספות/הנחות באחוזים מעוגלות לכפולת 5 הקרובה
+        adjusted = round(adjusted / 5) * 5
+        multiplier = adjusted / base_price if base_price else 1.0
+
     return adjusted, multiplier
 
 
@@ -447,10 +494,28 @@ def _compute_price(
 ) -> PriceCalculateResponse:
     actual_days = max((end_date - start_date).days, 0)
 
+    # ── שארית שעות מעבר לימים מלאים (רק להזמנות מעל 24 שעות בפועל) ──────────
+    # דוגמה: הזמנה ל-50 שעות = 2 ימים מלאים + 2 שעות שארית.
+    # השארית מחושבת רק כשההזמנה כוללת שעות ואינה "אותו יום" (שם חל תמיד half_day).
+    half_day = is_half_day(start_date, pickup_time, end_date, return_time)
+    priced_end_date = end_date
+    remainder_hours = 0.0
+    remainder_date: Optional[date] = None
+
+    if not half_day and pickup_time and return_time and start_date != end_date:
+        total_hours = _total_hours(start_date, pickup_time, end_date, return_time)
+        full_days = int(total_hours // 24)
+        if full_days >= 1:
+            remainder = round(total_hours - full_days * 24, 4)
+            priced_end_date = start_date + timedelta(days=full_days)
+            if remainder > 0:
+                remainder_hours = remainder
+                remainder_date = priced_end_date
+
     # ── קביעת סוג מחיר ──────────────────────────────────────────────────────
-    if is_half_day(start_date, pickup_time, end_date, return_time):
+    if half_day:
         price_type = "half_day"
-    elif actual_days >= MONTHLY_THRESHOLD_DAYS:
+    elif (priced_end_date - start_date).days >= MONTHLY_THRESHOLD_DAYS:
         price_type = "month"
     else:
         price_type = "day"   # week ייקבע בהמשך לפי ימי חיוב
@@ -465,7 +530,10 @@ def _compute_price(
 
     # ── עונות פעילות ─────────────────────────────────────────────────────────
     seasons = db.query(Season).filter(Season.is_active == True).all()  # noqa: E712
-    segments = split_by_seasons(start_date, end_date, seasons)
+    # הזמנה באותו יום (start_date == end_date): טווח [start,end) ריק, אז בונים
+    # פסאודו-טווח של יום אחד רק כדי לאתר את העונה של אותו יום.
+    split_range_end = priced_end_date if priced_end_date > start_date else start_date + timedelta(days=1)
+    segments = split_by_seasons(start_date, split_range_end, seasons)
 
     # ── בדיקת weekly: אם יש מספיק ימי חיוב לפחות שבוע אחד ──────────────────
     if price_type == "day":
@@ -495,6 +563,17 @@ def _compute_price(
         total_billable_days += line.billable_days
         if first_rule_id is None and line.unit_price > 0:
             prices = resolve_prices(db, car, seg.season_id)
+            first_rule_id = prices.rule_id
+
+    # ── שורת שארית שעות (אם יש) ────────────────────────────────────────────
+    if remainder_date is not None:
+        line, subtotal = _calc_remainder(db, car, remainder_date, remainder_hours, holidays, seasons)
+        breakdown.append(line)
+        total += subtotal
+        total_billable_days += line.billable_days
+        if first_rule_id is None and line.unit_price > 0:
+            season = _find_season_for_date(remainder_date, seasons)
+            prices = resolve_prices(db, car, season.id if season else None)
             first_rule_id = prices.rule_id
 
     total_skipped = sum(len(line.skipped_dates) for line in breakdown)
@@ -600,6 +679,71 @@ def _calc_segment(
         billable_days=billable_days,
         skipped_dates=skipped,
         label=full_label,
+    )
+    return line, subtotal
+
+
+def _calc_remainder(
+    db: Session,
+    car: Car,
+    remainder_date: date,
+    remainder_hours: float,
+    holidays: set[date],
+    seasons: list[Season],
+) -> tuple[BreakdownLine, float]:
+    """
+    מחשב חיוב עבור שארית השעות שמעבר לימים המלאים (הזמנה מעל 24 שעות).
+    שבת/חג: נספר כיום אך ללא עלות.
+    """
+    season = _find_season_for_date(remainder_date, seasons)
+    prices = resolve_prices(db, car, season.id if season else None)
+
+    free = prices.exclude_sabbath_holidays and is_shabbat_or_holiday(remainder_date, holidays)
+
+    if free:
+        remainder_price_type = "hour"
+        unit_price = 0.0
+        subtotal = 0.0
+        label = "שעות נוספות (שבת/חג — ללא עלות)"
+    else:
+        if remainder_hours < REMAINDER_HOUR_THRESHOLD:
+            remainder_price_type = "hour"
+        elif remainder_hours < REMAINDER_HALF_DAY_THRESHOLD:
+            remainder_price_type = "half_day"
+        else:
+            remainder_price_type = "day"
+
+        unit_price = prices.get(remainder_price_type) or 0.0
+        if season and unit_price and _season_applies_to_type(
+            db, season, prices.rule_id, remainder_price_type
+        ):
+            unit_price, _ = _apply_season_adjustment(season, unit_price)
+
+        if remainder_price_type == "hour":
+            subtotal = round(unit_price * remainder_hours, 2)
+            label = f"{remainder_hours:.1f} שעות נוספות"
+        elif remainder_price_type == "half_day":
+            subtotal = unit_price
+            label = "חצי יום נוסף"
+        else:
+            subtotal = unit_price
+            label = "יום נוסף"
+
+    if season and season.name:
+        label += f" | {season.name}"
+
+    line = BreakdownLine(
+        segment_start=remainder_date,
+        segment_end=remainder_date + timedelta(days=1),
+        price_type=remainder_price_type,
+        unit_price=round(unit_price, 2),
+        season_multiplier=1.0,
+        season_name=season.name if season else None,
+        subtotal=round(subtotal, 2),
+        calendar_days=1,
+        billable_days=0.0 if free else 1.0,
+        skipped_dates=[remainder_date] if free else [],
+        label=label,
     )
     return line, subtotal
 
