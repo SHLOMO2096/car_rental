@@ -2,7 +2,7 @@ import Modal from "../../../components/ui/Modal";
 
 import { s } from "../styles";
 import { addDays, formatDateTime, todayISO } from "../utils/dates";
-import { getEarliestAllowedPickupTime, subtractMinutes } from "../utils/form";
+import { getEarliestAllowedPickupTime } from "../utils/form";
 
 function getEffectivePriceDay(car, priceRules) {
   if (!priceRules?.length) return null;
@@ -193,7 +193,7 @@ export default function BookingFormModal({
                     ...f,
                     start_date: e.target.value,
                     start_time: newPickupTime,
-                    end_time: subtractMinutes(newPickupTime, 30),
+                    end_time: newPickupTime,
                   };
                 })
               }
@@ -201,6 +201,7 @@ export default function BookingFormModal({
             />
             <input
               type="time"
+              lang="he"
               value={form.start_time}
               min={undefined}
               onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
@@ -223,6 +224,7 @@ export default function BookingFormModal({
             />
             <input
               type="time"
+              lang="he"
               value={form.end_time}
               onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))}
               style={{ ...s.input, flex: 1 }}

@@ -50,7 +50,7 @@ export function isBookingStartInPast(form, now = new Date()) {
 
 export function makeEmptyForm(_defaults = {}) {
   const pickupTime = getRoundedCurrentTime();
-  const returnTime = subtractMinutes(pickupTime, 30);
+  const returnTime = pickupTime;
   return {
     customer_id: "",
     car_id: "",
