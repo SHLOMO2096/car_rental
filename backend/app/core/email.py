@@ -91,7 +91,21 @@ def _base_template(title: str, body: str) -> str:
 
 
 def send_booking_confirmation(to: str, customer_name: str, car_name: str,
-                               start: str, end: str, total: float, booking_id: int) -> bool:
+                               start: str, end: str, total: float, booking_id: int,
+                               breakdown_lines: list[dict] | None = None) -> bool:
+    breakdown_rows = ""
+    if breakdown_lines:
+        for line in breakdown_lines:
+            label = line.get("label")
+            subtotal = line.get("subtotal")
+            if label is None or subtotal is None:
+                continue
+            breakdown_rows += f"""
+      <tr>
+        <td style="padding:8px 10px;color:#475569;font-size:13px">{label}</td>
+        <td style="padding:8px 10px;color:#475569;font-size:13px">₪{subtotal:,.0f}</td>
+      </tr>"""
+
     body = f"""
     <p style="margin:0 0 12px;font-size:16px;color:#1e293b">שלום <strong>{customer_name}</strong>,</p>
     <p style="margin:0 0 18px;color:#334155;font-size:15px">הזמנתך אושרה בהצלחה ואנחנו כבר מכינים הכול עבורך.</p>
@@ -112,6 +126,7 @@ def send_booking_confirmation(to: str, customer_name: str, car_name: str,
         <td style="padding:10px;font-weight:bold">עד תאריך</td>
         <td style="padding:10px">{end}</td>
       </tr>
+      {breakdown_rows}
       <tr style="background:#dbeafe">
         <td style="padding:10px;font-weight:bold">סכום לתשלום</td>
         <td style="padding:10px;font-weight:bold;color:#1d4ed8">₪{total:,.0f}</td>
@@ -403,6 +418,66 @@ def send_booking_edit_alert(
     success = True
     for recipient in recipients:
         success = _send(recipient, subject, _base_template("התראת עריכת הזמנה", body)) and success
+    return success
+
+
+def send_price_override_alert(
+    *,
+    booking_id: int,
+    customer_name: str,
+    computed_price: float,
+    override_price: float,
+    reason: str,
+    actor_email: str,
+    actor_role: str,
+) -> bool:
+    recipients = _parse_recipients(settings.SECURITY_ALERT_RECIPIENTS)
+    if not recipients:
+        logger.info("[ALERT EMAIL SKIPPED] No SECURITY_ALERT_RECIPIENTS configured")
+        return False
+
+    diff = override_price - computed_price
+    diff_color = "#dc2626" if diff < 0 else "#166534"
+    diff_sign = "+" if diff >= 0 else ""
+
+    body = f"""
+    <p><strong>התראת תפעול:</strong> בוצע שינוי מחיר ידני להזמנה.</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0">
+      <tr style="background:#fff7ed">
+        <td style="padding:10px;font-weight:bold">מספר הזמנה</td>
+        <td style="padding:10px">#{booking_id}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">לקוח</td>
+        <td style="padding:10px">{customer_name}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">מחיר מחושב</td>
+        <td style="padding:10px">₪{computed_price:,.0f}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">מחיר שנקבע (יישלח ללקוח)</td>
+        <td style="padding:10px;font-weight:bold">₪{override_price:,.0f}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">הפרש</td>
+        <td style="padding:10px;font-weight:bold;color:{diff_color}">{diff_sign}₪{diff:,.0f}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:bold">סיבת השינוי</td>
+        <td style="padding:10px">{reason}</td>
+      </tr>
+      <tr style="background:#f8fafc">
+        <td style="padding:10px;font-weight:bold">בוצע ע"י</td>
+        <td style="padding:10px">{actor_email} ({actor_role})</td>
+      </tr>
+    </table>
+    <p style="color:#b45309;font-weight:bold">נדרשת בקרה על השינוי לפי נוהל.</p>"""
+
+    subject = f"[ALERT] Booking #{booking_id} price override — {settings.APP_NAME}"
+    success = True
+    for recipient in recipients:
+        success = _send(recipient, subject, _base_template("התראת שינוי מחיר ידני", body)) and success
     return success
 
 

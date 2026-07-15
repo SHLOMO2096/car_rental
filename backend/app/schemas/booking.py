@@ -37,6 +37,11 @@ class BookingCreate(BaseModel):
     pickup_time:     Optional[str]      = None   # "HH:MM"
     return_time:     Optional[str]      = None   # "HH:MM"
     notes:           Optional[str]      = None
+    # ── Price Override ─────────────────────────────────────────────────────────
+    # שינוי ידני של מחיר בזמן יצירת ההזמנה — חייב ללוות סיבה, נרשם ב-audit_log
+    # ומופעלת התראה למנהל. המחיר הזה יישלח גם במייל אישור ההזמנה ללקוח.
+    price_override:        Optional[float] = None
+    price_override_reason: Optional[str]   = None
 
     @model_validator(mode="after")
     def dates_valid(self):
@@ -46,6 +51,16 @@ class BookingCreate(BaseModel):
             raise ValueError("לא ניתן לסמן שאין מייל וגם להזין כתובת מייל")
         if not self.customer_has_no_email and not self.customer_email:
             raise ValueError("יש להזין כתובת מייל תקינה או לסמן שאין מייל ללקוח")
+        return self
+
+    @model_validator(mode="after")
+    def validate_override(self):
+        if self.price_override is not None and not self.price_override_reason:
+            raise ValueError(
+                "חובה לספק סיבה (price_override_reason) בעת שינוי מחיר ידני"
+            )
+        if self.price_override is not None and self.price_override <= 0:
+            raise ValueError("מחיר override חייב להיות חיובי")
         return self
 
 class BookingUpdate(BaseModel):

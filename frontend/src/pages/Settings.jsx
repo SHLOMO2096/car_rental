@@ -135,6 +135,17 @@ export default function Settings() {
         </div>
 
         <div style={{ marginTop: 20 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={!!general.email_show_price_breakdown}
+              onChange={e => setGeneral({ ...general, email_show_price_breakdown: e.target.checked })}
+            />
+            <span>הצג פירוט מחיר מלא (breakdown) במייל אישור הזמנה, ולא רק סכום כולל</span>
+          </label>
+        </div>
+
+        <div style={{ marginTop: 20 }}>
           <div style={s.field}>
             <label style={s.label}>תנאי שימוש (יופיעו באישור ההזמנה)</label>
             <textarea 

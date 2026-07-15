@@ -71,6 +71,10 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
 
         payload = data.model_dump() if hasattr(data, "model_dump") else dict(data)
 
+        # override ידני — מנוהל בנפרד, לא מועבר כעדכון שדה ישיר על ה-Booking
+        price_override        = payload.pop("price_override", None)
+        price_override_reason = payload.pop("price_override_reason", None)
+
         # חישוב מחיר דרך PricingService
         try:
             pricing_result = calculate_total_price(
@@ -81,7 +85,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                 pickup_time=payload.get("pickup_time"),
                 return_time=payload.get("return_time"),
             )
-            total_price       = pricing_result.total
+            computed_price    = pricing_result.total
             billable_days     = pricing_result.billable_days
             actual_days       = pricing_result.actual_days
             price_type_used   = pricing_result.price_type_used
@@ -90,22 +94,28 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         except Exception:
             # fallback לחישוב ישן אם PricingService נכשל
             days = max((payload["end_date"] - payload["start_date"]).days, 1)
-            total_price     = self.get_effective_price(db, car) * days
+            computed_price  = self.get_effective_price(db, car) * days
             billable_days   = float(days)
             actual_days     = days
             price_type_used = None
             price_rule_id   = None
             breakdown_json  = None
 
+        final_price = price_override if price_override is not None else computed_price
+
         b = Booking(
             **payload,
             created_by=user_id,
-            total_price=total_price,
+            total_price=final_price,
             billable_days=billable_days,
             actual_days=actual_days,
             price_type_used=price_type_used,
             price_rule_id=price_rule_id,
             price_breakdown_json=breakdown_json,
+            price_override=price_override,
+            price_override_reason=price_override_reason if price_override is not None else None,
+            price_override_by=user_id if price_override is not None else None,
+            price_override_at=datetime.now(timezone.utc) if price_override is not None else None,
         )
         db.add(b); db.commit(); db.refresh(b)
         return b

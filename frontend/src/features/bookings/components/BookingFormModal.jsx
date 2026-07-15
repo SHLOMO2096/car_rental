@@ -304,6 +304,68 @@ export default function BookingFormModal({
         </div>
       )}
 
+      {/* Manual price override */}
+      <div style={{ marginBottom: 8 }}>
+        {!form.price_override_enabled ? (
+          <button
+            type="button"
+            onClick={() =>
+              setForm((f) => ({
+                ...f,
+                price_override_enabled: true,
+                price_override: f.price_override || (preview?.result?.total != null ? String(preview.result.total) : ""),
+              }))
+            }
+            style={{ ...s.btnSecondary, fontSize: 13, padding: "6px 12px" }}
+          >
+            ✏️ שינוי מחיר ידני
+          </button>
+        ) : (
+          <div
+            style={{
+              border: "1px solid #fdba74",
+              background: "#fff7ed",
+              borderRadius: 10,
+              padding: 12,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <strong style={{ fontSize: 13, color: "#9a3412" }}>שינוי מחיר ידני</strong>
+              <button
+                type="button"
+                onClick={() =>
+                  setForm((f) => ({ ...f, price_override_enabled: false, price_override: "", price_override_reason: "" }))
+                }
+                style={{ background: "none", border: "none", color: "#9a3412", cursor: "pointer", fontSize: 12, textDecoration: "underline" }}
+              >
+                בטל שינוי מחיר
+              </button>
+            </div>
+            <label style={s.label}>מחיר חדש (₪) *</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={form.price_override}
+              onChange={(e) => setForm((f) => ({ ...f, price_override: e.target.value }))}
+              style={s.input}
+              placeholder="לדוגמה: 450"
+            />
+            <label style={{ ...s.label, marginTop: 8 }}>סיבת השינוי *</label>
+            <textarea
+              value={form.price_override_reason}
+              rows={2}
+              onChange={(e) => setForm((f) => ({ ...f, price_override_reason: e.target.value }))}
+              style={{ ...s.input, resize: "vertical" }}
+              placeholder="למשל: לקוח קבוע, תיקון טעות תמחור וכו'"
+            />
+            <div style={{ fontSize: 12, color: "#9a3412", marginTop: 6 }}>
+              ⚠️ מחיר זה יישלח במייל אישור ההזמנה ללקוח, והשינוי יתועד וידווח למנהל.
+            </div>
+          </div>
+        )}
+      </div>
+
       {formError && <div style={s.errorBox}>{formError}</div>}
 
       {/* Audit info strip — shown in edit mode */}

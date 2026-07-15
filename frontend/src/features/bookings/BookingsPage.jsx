@@ -176,6 +176,9 @@ export default function BookingsPage() {
       notes: b.notes || "",
       start_time: b.pickup_time || generalSettings?.default_pickup_time || "08:00",
       end_time: b.return_time || generalSettings?.default_return_time || "08:00",
+      price_override_enabled: b.price_override != null,
+      price_override: b.price_override != null ? String(b.price_override) : "",
+      price_override_reason: b.price_override_reason || "",
     });
     setEdit(b);
     setFormError("");
@@ -237,6 +240,16 @@ export default function BookingsPage() {
       !form.operator_note.trim()
     ) {
       return setFormError("יש להזין הערת מפעיל בעת עריכת הזמנה שנוצרה על ידי סוכן אחר");
+    }
+
+    if (form.price_override_enabled) {
+      const overrideValue = Number(form.price_override);
+      if (!form.price_override || Number.isNaN(overrideValue) || overrideValue <= 0) {
+        return setFormError("יש להזין מחיר תקין (חיובי) לשינוי המחיר");
+      }
+      if (!form.price_override_reason.trim()) {
+        return setFormError("יש להזין סיבה לשינוי המחיר הידני");
+      }
     }
 
     if (modal === "create") {

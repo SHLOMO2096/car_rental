@@ -45,6 +45,7 @@ def get_setting(
                     "grace_period_hours": "2",
                     "notification_emails": "",
                     "terms_text": "",
+                    "email_show_price_breakdown": False,
                 },
             }
         raise HTTPException(404, "Setting not found")

@@ -9,5 +9,6 @@ export const DEFAULT_GENERAL_SETTINGS = {
   grace_period_hours: "2",
   notification_emails: "",
   terms_text: "",
+  email_show_price_breakdown: false,
 };
 

@@ -65,6 +65,9 @@ export function makeEmptyForm(_defaults = {}) {
     end_time: returnTime,
     notes: "",
     operator_note: "",
+    price_override_enabled: false,
+    price_override: "",
+    price_override_reason: "",
   };
 }
 
@@ -83,6 +86,12 @@ export function buildBookingPayload(form, carId, { mode = "create" } = {}) {
     return_time: form.end_time || null,
     notes: form.notes.trim() || null,
     ...(mode === "edit" ? { operator_note: form.operator_note?.trim() || null } : {}),
+    ...(form.price_override_enabled
+      ? {
+          price_override: Number(form.price_override),
+          price_override_reason: form.price_override_reason.trim() || null,
+        }
+      : {}),
   };
 }
 

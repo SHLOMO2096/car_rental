@@ -1,4 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════════
+import json
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, UploadFile, File, Body
 from sqlalchemy.orm import Session
 from datetime import date as Date, datetime, timezone
@@ -7,6 +8,7 @@ from app.models.booking import Booking, BookingStatus
 from app.models.car import Car
 from app.models.user import User, UserRole
 from app.models.customer import Customer
+from app.models.settings import SystemSetting
 from app.schemas.booking import BookingCreate, BookingUpdate, BookingOut, BookingDeleteRequest, ensure_booking_start_not_in_past
 from app.schemas.audit_log import AuditLogOut
 from app.crud.booking import crud_booking
@@ -23,12 +25,39 @@ from app.core.email import (
     send_booking_edit_alert,
     send_missing_customer_email_alert,
     send_past_booking_alert,
+    send_price_override_alert,
 )
 from app.crud.audit_log import log_audit_event, list_entity_audit_events
 from app.models.audit_log import AuditSeverity
 from app.services.google_drive import get_drive_service
 
 router = APIRouter()
+
+
+def _email_show_price_breakdown(db: Session) -> bool:
+    setting = db.query(SystemSetting).filter(SystemSetting.key == "general_settings").first()
+    value = setting.value if setting and setting.value else {}
+    return bool(value.get("email_show_price_breakdown"))
+
+
+def _price_breakdown_lines(booking: Booking) -> list[dict] | None:
+    if not booking.price_breakdown_json:
+        return None
+    try:
+        parsed = json.loads(booking.price_breakdown_json)
+    except (TypeError, ValueError):
+        return None
+    lines = parsed.get("breakdown") or []
+    return [{"label": line.get("label"), "subtotal": line.get("subtotal")} for line in lines] or None
+
+
+def _computed_price(booking: Booking) -> float | None:
+    if not booking.price_breakdown_json:
+        return None
+    try:
+        return json.loads(booking.price_breakdown_json).get("total")
+    except (TypeError, ValueError):
+        return None
 
 
 SENSITIVE_BOOKING_UPDATE_FIELDS = {
@@ -187,6 +216,35 @@ def create_booking(
 
     booking = crud_booking.create_booking(db, payload, current_user.id, car)
 
+    # ── price override בזמן יצירה — תיעוד + התראה למנהל ─────────────────────
+    if booking.price_override is not None:
+        log_audit_event(
+            db,
+            actor_user_id=current_user.id,
+            action="booking.price_override",
+            entity_type="booking",
+            entity_id=str(booking.id),
+            before_obj={"total_price": _computed_price(booking)},
+            after_obj={
+                "price_override":        booking.price_override,
+                "price_override_reason": booking.price_override_reason,
+                "total_price":           booking.total_price,
+                "override_by_user_id":   current_user.id,
+            },
+            ip_address=request.client.host if request and request.client else None,
+            severity=AuditSeverity.warning,
+        )
+        bg.add_task(
+            send_price_override_alert,
+            booking_id=booking.id,
+            customer_name=data.customer_name,
+            computed_price=_computed_price(booking) or 0.0,
+            override_price=booking.price_override,
+            reason=booking.price_override_reason or "",
+            actor_email=current_user.email,
+            actor_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
+        )
+
     # ── התראה אם ההזמנה נרשמה יותר מ-5 שעות אחרי תאריך ההתחלה ──────────────
     _pickup = data.pickup_time or "00:00"
     try:
@@ -219,6 +277,7 @@ def create_booking(
             end=str(data.end_date),
             total=booking.total_price,
             booking_id=booking.id,
+            breakdown_lines=_price_breakdown_lines(booking) if _email_show_price_breakdown(db) else None,
         )
         booking.email_sent = True
         db.commit()
@@ -340,6 +399,16 @@ def update_booking(
             },
             ip_address=request.client.host if request and request.client else None,
             severity=AuditSeverity.warning,
+        )
+        bg.add_task(
+            send_price_override_alert,
+            booking_id=updated.id,
+            customer_name=updated.customer_name,
+            computed_price=before_price["total_price"] or 0.0,
+            override_price=price_override,
+            reason=price_override_reason or "",
+            actor_email=current_user.email,
+            actor_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
         )
 
     after_state = _booking_update_snapshot(updated)
