@@ -903,9 +903,9 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
   const daysCount = Math.max(diffDays(startDate, endDate) + 1, 1);
 
   // Column widths: slightly wider for readability, and widen further when filtering columns.
-  // Max sizes match the pre-density values roughly (desktop 62, mobile 78).
-  const CAR_COL_WIDTH_BASE = isMobile ? 68 : 54;
-  const CAR_COL_WIDTH_MAX = isMobile ? 78 : 62;
+  // Sized so a full license plate fits on its own line in the header.
+  const CAR_COL_WIDTH_BASE = isMobile ? 76 : 62;
+  const CAR_COL_WIDTH_MAX = isMobile ? 86 : 72;
   const CAR_COL_WIDTH = isFiltered ? CAR_COL_WIDTH_MAX : CAR_COL_WIDTH_BASE;
   const DATE_COL_WIDTH = 74; // keep readable
 
@@ -1355,10 +1355,17 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                       }}
                       onMouseLeave={() => setHoveredCar(null)}
                     >
-                    <div style={{ fontWeight:700, color: isDragTarget ? "#1d4ed8" : tc.text, overflow:"hidden", textOverflow:"ellipsis" }}>{car.name}</div>
-                    <div style={{ color: isDragTarget ? "#2563eb" : tc.border, fontWeight:500, fontSize:9, marginTop:2, overflow:"hidden", textOverflow:"ellipsis" }}>
-                      {[`#${car.id}`, car.plate, car.make, car.group ? `קב׳ ${car.group}` : null].filter(Boolean).join(" · ")}
+                    <div style={{ color: isDragTarget ? "#1d4ed8" : tc.text, fontWeight:800, fontSize:11, direction:"ltr", whiteSpace:"nowrap" }}>
+                      {car.plate || "—"}
                     </div>
+                    <div style={{ fontWeight:700, color: isDragTarget ? "#1d4ed8" : tc.text, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {[car.name, car.make].filter(Boolean).join(" ")}
+                    </div>
+                    {car.group && (
+                      <div style={{ color: isDragTarget ? "#2563eb" : tc.border, fontWeight:500, fontSize:9, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        קב׳ {car.group}
+                      </div>
+                    )}
                   </th>
                 );
               })}
