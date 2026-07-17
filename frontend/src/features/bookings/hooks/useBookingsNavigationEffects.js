@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 import { getEarliestAllowedPickupTime, makeEmptyForm } from "../utils/form";
-import { todayISO, tomorrowISO } from "../utils/dates";
+import { addDays, todayISO } from "../utils/dates";
 
 /**
  * מרוכז כאן כל הניווט דרך location.state (prefill/edit) כדי ש-BookingsPage יהיה נקי יותר.
@@ -14,6 +14,7 @@ export function useBookingsNavigationEffects({ location, navigate, bookings, gen
 
     const defaults = makeEmptyForm(generalSettings || {});
     const nextStartDate = prefill.start_date || todayISO();
+    const nextStartTime = getEarliestAllowedPickupTime(nextStartDate, new Date(), defaults.start_time);
 
     setForm({
       ...defaults,
@@ -25,8 +26,10 @@ export function useBookingsNavigationEffects({ location, navigate, bookings, gen
       customer_phone: prefill.customer_phone || "",
       customer_id_num: prefill.customer_id_num || "",
       start_date: nextStartDate,
-      start_time: getEarliestAllowedPickupTime(nextStartDate, new Date(), defaults.start_time),
-      end_date: prefill.end_date || tomorrowISO(),
+      start_time: nextStartTime,
+      // תאריך החזרה = היום הנבחר + 1, עם אותה שעה כמו האיסוף
+      end_date: prefill.end_date || addDays(nextStartDate, 1),
+      end_time: nextStartTime,
     });
     setEdit(null);
     setFormError("");

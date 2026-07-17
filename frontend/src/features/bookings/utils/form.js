@@ -33,6 +33,28 @@ export function subtractMinutes(time, minutes) {
 }
 
 
+// Native <input type="time"> renders AM/PM based on OS locale on some systems,
+// regardless of the `lang` attribute. Typed 24h text input avoids that entirely.
+// sanitizeTimeTyping keeps the field usable while typing (partial input allowed).
+export function sanitizeTimeTyping(raw) {
+  const digits = String(raw || "").replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+// clampTimeValue normalizes to a valid 24h HH:MM on blur (00-23 : 00-59).
+// 1-2 digits are read as the hour (e.g. "9" -> "09:00"), 3-4 as HHMM.
+export function clampTimeValue(raw, fallback = "00:00") {
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (!digits) return fallback;
+  const hourStr = digits.length <= 2 ? digits : digits.slice(0, 2);
+  const minuteStr = digits.length <= 2 ? "0" : digits.slice(2, 4);
+  const hour = Math.min(23, Math.max(0, Number(hourStr) || 0));
+  const minute = Math.min(59, Math.max(0, Number(minuteStr) || 0));
+  return `${pad2(hour)}:${pad2(minute)}`;
+}
+
+
 export function getEarliestAllowedPickupTime(startDate, now = new Date(), fallbackTime = DEFAULT_GENERAL_SETTINGS.default_pickup_time) {
   if (!startDate || startDate !== todayISO()) {
     return fallbackTime;

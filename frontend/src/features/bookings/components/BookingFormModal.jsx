@@ -2,7 +2,7 @@ import Modal from "../../../components/ui/Modal";
 
 import { s } from "../styles";
 import { addDays, formatDateTime, todayISO } from "../utils/dates";
-import { getEarliestAllowedPickupTime } from "../utils/form";
+import { clampTimeValue, getEarliestAllowedPickupTime, sanitizeTimeTyping } from "../utils/form";
 
 function getEffectivePriceDay(car, priceRules) {
   if (!priceRules?.length) return null;
@@ -200,12 +200,14 @@ export default function BookingFormModal({
               style={{ ...s.input, flex: 2 }}
             />
             <input
-              type="time"
-              lang="he"
+              type="text"
+              inputMode="numeric"
+              placeholder="HH:MM"
+              maxLength={5}
               value={form.start_time}
-              min={undefined}
-              onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
-              style={{ ...s.input, flex: 1 }}
+              onChange={(e) => setForm((f) => ({ ...f, start_time: sanitizeTimeTyping(e.target.value) }))}
+              onBlur={(e) => setForm((f) => ({ ...f, start_time: clampTimeValue(e.target.value) }))}
+              style={{ ...s.input, flex: 1, textAlign: "center" }}
             />
           </div>
         </div>
@@ -223,11 +225,14 @@ export default function BookingFormModal({
               style={{ ...s.input, flex: 2 }}
             />
             <input
-              type="time"
-              lang="he"
+              type="text"
+              inputMode="numeric"
+              placeholder="HH:MM"
+              maxLength={5}
               value={form.end_time}
-              onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))}
-              style={{ ...s.input, flex: 1 }}
+              onChange={(e) => setForm((f) => ({ ...f, end_time: sanitizeTimeTyping(e.target.value) }))}
+              onBlur={(e) => setForm((f) => ({ ...f, end_time: clampTimeValue(e.target.value) }))}
+              style={{ ...s.input, flex: 1, textAlign: "center" }}
             />
           </div>
 
