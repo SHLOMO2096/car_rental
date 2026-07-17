@@ -1,0 +1,20 @@
+# Normalize line endings: store text files with LF in the repo and check them
+# out with LF everywhere (avoids CRLF noise on Windows/WSL).
+* text=auto eol=lf
+
+# Explicitly mark common binary files so Git never tries to convert them.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.svg  text eol=lf
+*.pdf  binary
+*.db   binary
+*.sqlite binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.xlsx  binary
+*.zip   binary
