@@ -48,6 +48,18 @@ function hashString(value) {
 function getModelTheme(model) {
   return MODEL_COLOR_PALETTE[hashString(model || "") % MODEL_COLOR_PALETTE.length];
 }
+// The `name` field is stored as "<make> <model>" (e.g. "טויוטה קורולה"); flip it to
+// "<model> <make>" (e.g. "קורולה טויוטה") for clearer identification.
+function modelBeforeMake(name, make) {
+  const full = (name || "").trim();
+  const mk = (make || "").trim();
+  if (!mk) return full;
+  if (full.toLowerCase().startsWith(mk.toLowerCase())) {
+    const model = full.slice(mk.length).trim();
+    return model ? `${model} ${mk}` : mk;
+  }
+  return full.toLowerCase().includes(mk.toLowerCase()) ? full : `${full} ${mk}`;
+}
 // Show the family name first so narrow cells surface the surname before the given name.
 function surnameFirst(name) {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
@@ -1359,7 +1371,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                       {car.plate || "—"}
                     </div>
                     <div style={{ fontWeight:700, color: isDragTarget ? "#1d4ed8" : tc.text, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                      {[car.name, car.make].filter(Boolean).join(" ")}
+                      {modelBeforeMake(car.name, car.make)}
                     </div>
                     {car.group && (
                       <div style={{ color: isDragTarget ? "#2563eb" : tc.border, fontWeight:500, fontSize:9, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
