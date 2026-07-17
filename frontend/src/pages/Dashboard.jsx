@@ -48,6 +48,14 @@ function hashString(value) {
 function getModelTheme(model) {
   return MODEL_COLOR_PALETTE[hashString(model || "") % MODEL_COLOR_PALETTE.length];
 }
+// Show the family name first so narrow cells surface the surname before the given name.
+function surnameFirst(name) {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts[0] || "לקוח";
+  const last = parts[parts.length - 1];
+  const rest = parts.slice(0, parts.length - 1);
+  return [last, ...rest].join(" ");
+}
 function fmtDay(d) {
   const mn = ["ינו","פבר","מרץ","אפר","מאי","יונ","יול","אוג","ספט","אוק","נוב","דצמ"];
   return `${DAY_NAMES[d.getDay()]} ${d.getDate()}/${mn[d.getMonth()]}`;
@@ -1292,26 +1300,12 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
                     padding:"14px 18px", borderBottom:"1px solid #e2e8f0", gap:12, flexWrap:"wrap" }}>
         <h3 style={{ ...cardTitle, margin:0 }}>📅 זמינות רכבים</h3>
-        <div style={{ fontSize:12, color:"#64748b" }}>
-          מציג מ־<strong>{startDate}</strong> עד <strong>{endDate}</strong>
+        <div style={{ display:"flex", alignItems:"center", gap:10, fontSize:12, color:"#64748b" }}>
+          {loadingGrid && <span style={{ color:"#94a3b8" }}>מרענן...</span>}
+          <span>מציג מ־<strong>{startDate}</strong> עד <strong>{endDate}</strong></span>
         </div>
       </div>
 
-      {/* Legend */}
-      <div style={{ display:"flex", gap:16, padding:"8px 18px", background:"#f8fafc",
-                    borderBottom:"1px solid #e2e8f0", fontSize:11, color:"#64748b", flexWrap:"wrap" }}>
-        <span><span style={dot("#dcfce7","#15803d")} />פנוי</span>
-        <span><span style={dot("#fee2e2","#b91c1c")} />תפוס</span>
-        <span><span style={dot("#dbeafe","#1d4ed8")} />יציאה היום</span>
-        <span><span style={dot("#fef9c3","#854d0e")} />חזרה היום</span>
-        <span><span style={dot("#e9d5ff","#7c3aed")} />חד-יומי</span>
-        <span><span style={dot("#f3e8ff","#7c3aed")} />שבת</span>
-        <span><span style={dot("#fee2e2","#dc2626")} />חג</span>
-        {permissionModel.canEditBookings && !isMobile && <span><span style={dot("#bfdbfe","#2563eb")} />✥ גרור להעברה</span>}
-        {isMobile && <span><span style={dot("#dbeafe","#2563eb")} />הקשה על הזמנה לפעולות · הקשה על פנוי ליצירה</span>}
-        <span><span style={dot("#e5e7eb","#64748b")} />עבר · לא ניתן להזמין</span>
-        {loadingGrid && <span style={{ marginRight:"auto", color:"#94a3b8" }}>מרענן...</span>}
-      </div>
       {moveModeBooking && (
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, padding:"8px 18px", background:"#ecfeff", borderBottom:"1px solid #bae6fd", fontSize:12, color:"#0f766e" }}>
           <span>מצב העברה פעיל עבור <strong>{moveModeBooking.customer_name}</strong> — בחר רכב יעד מהגריד</span>
@@ -1465,7 +1459,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                                                   openBookingActions(b, car.name || `רכב #${car.id}`);
                                              }}
                                               style={{ flex: 1, background: isDraggingThis ? "#e0f2fe" : "rgba(255,255,255,0.7)", borderRadius: 2, padding: "2px 4px", fontSize: 10, color: isDraggingThis ? "#0369a1" : "#854d0e", cursor: canDragThis ? (isDraggingThis ? "grabbing" : "grab") : "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", border: "1px solid rgba(133,77,14,0.2)", opacity: isDraggingThis ? 0.7 : 1 }}>
-                                             {b.customer_name?.split(" ")[0]}
+                                             {surnameFirst(b.customer_name)}
                                         </div>
                                     )})}
                                 </div>
@@ -1481,13 +1475,13 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                      const canDragBooking = permissionModel.canDragReassignBooking(b);
 
                     let bg, fg, label;
-                    const firstName = b.customer_name?.split(" ")[0] || "לקוח";
+                    const displayName = surnameFirst(b.customer_name);
                     
                     if (isSameDay) {
                       bg = "#e9d5ff"; fg = "#7c3aed";
                       label = (
                         <div style={{ display:"flex", flexDirection:"column", fontSize:10 }}>
-                          <span style={{ fontWeight:800 }}>{firstName}</span>
+                          <span style={{ fontWeight:800, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{displayName}</span>
                           <span>⬦ חד-יומי ({b.pickup_time||"08:30"})</span>
                         </div>
                       );
@@ -1495,7 +1489,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                       bg = "#dbeafe"; fg = "#1d4ed8";
                       label = (
                         <div style={{ display:"flex", flexDirection:"column", fontSize:10 }}>
-                          <span style={{ fontWeight:800 }}>{firstName}</span>
+                          <span style={{ fontWeight:800, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{displayName}</span>
                           <span>🚀 יציאה ({b.pickup_time||"08:30"})</span>
                         </div>
                       );
@@ -1503,14 +1497,14 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                       bg = "#fef9c3"; fg = "#854d0e";
                       label = (
                         <div style={{ display:"flex", flexDirection:"column", fontSize:10 }}>
-                          <span style={{ fontWeight:800 }}>{firstName}</span>
+                          <span style={{ fontWeight:800, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{displayName}</span>
                           <span>↩ חזרה ({b.return_time||"08:00"})</span>
                         </div>
                       );
                     } else {
                       bg = "#fee2e2"; fg = "#b91c1c";
                       label = (
-                        <div style={{ fontWeight:700, fontSize:10 }}>{firstName}</div>
+                        <div style={{ fontWeight:700, fontSize:10, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{displayName}</div>
                       );
                     }
 
@@ -1594,6 +1588,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
            <div style={{ fontSize: 11, color: "#334155", lineHeight: 1.45 }}>
              <div><strong>מס׳:</strong> #{hoveredCar.id}</div>
              {hoveredCar.plate && <div><strong>לוחית:</strong> {hoveredCar.plate}</div>}
+             {hoveredCar.color && <div><strong>צבע:</strong> {hoveredCar.color}</div>}
              {hoveredCar.make && <div><strong>יצרן:</strong> {hoveredCar.make}</div>}
              {hoveredCar.group && <div><strong>קבוצה:</strong> {hoveredCar.group}</div>}
              {hoveredCar.category && <div><strong>קטגוריה:</strong> {hoveredCar.category}</div>}
@@ -1653,10 +1648,6 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
 
 
 
-const dot = (bg, fg) => ({
-  display:"inline-block", width:10, height:10, borderRadius:2,
-  background:bg, border:`1px solid ${fg}30`, marginLeft:4, verticalAlign:"middle",
-});
 const fieldWrap = { display:"flex", flexDirection:"column", gap:6, minWidth:160 };
 const fieldLabel = { fontSize:12, color:"#64748b", fontWeight:600 };
 const inputStyle = {
