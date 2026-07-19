@@ -1004,13 +1004,9 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
     setReassignOperatorNote("");
   }
 
-  function openCreateBooking(car, ds, isPastDay) {
+  function openCreateBooking(car, ds) {
     if (moveModeBooking) {
       prepareReassign(moveModeBooking, car);
-      return;
-    }
-    if (isPastDay) {
-      toast.error("לא ניתן ליצור הזמנה לתאריך שכבר עבר");
       return;
     }
     if (!permissionModel.canCreateBookings) {
@@ -1420,21 +1416,21 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                     if (cellBookings.length === 0) {
                       return (
                         <td key={car.id}
-                            title={isPastDay ? `לא ניתן להזמין את ${car.name} לתאריך עבר` : (dragBooking ? `שחרר להעברה ל-${car.name}` : `לחץ להזמנת ${car.name} ב-${ds}`)}
-                            onClick={() => !dragBooking && openCreateBooking(car, ds, isPastDay)}
+                            title={isPastDay ? `לחץ להזמנת ${car.name} ב-${ds} (תאריך עבר)` : (dragBooking ? `שחרר להעברה ל-${car.name}` : `לחץ להזמנת ${car.name} ב-${ds}`)}
+                            onClick={() => !dragBooking && openCreateBooking(car, ds)}
                             onDragOver={e => handleDragOverCell(e, car.id)}
                             onDrop={e => handleDrop(e, car)}
                             onDragLeave={() => setDragOverCarId(null)}
                             style={{ ...gtd, textAlign:"center",
-                                     background: isPastDay ? "#e5e7eb" : (isDropColumn ? "#bfdbfe" : "#dcfce7"),
+                                     background: isPastDay ? "#ecfdf5" : (isDropColumn ? "#bfdbfe" : "#dcfce7"),
                                      color: isPastDay ? "#64748b" : (isDropColumn ? "#1d4ed8" : "#15803d"),
-                                     cursor: isPastDay ? "not-allowed" : (dragBooking ? "copy" : "pointer"),
+                                     cursor: dragBooking ? "copy" : "pointer",
                                      transition:"background 0.15s",
                                      outline: isPastDay ? "1px dashed #94a3b8" : (isDropColumn ? "2px dashed #2563eb" : "none"),
                                      outlineOffset:"-2px",
                                      boxShadow: dayMeta.isShabbat ? "inset 0 -2px 0 #7c3aed55" : (dayMeta.isHoliday ? "inset 0 -2px 0 #dc262655" : "none") }}
-                            onMouseEnter={e => { if (!dragBooking && !isPastDay) { e.currentTarget.style.background="#bbf7d0"; e.currentTarget.style.fontWeight="700"; }}}
-                            onMouseLeave={e => { if (!dragBooking && !isPastDay) { e.currentTarget.style.background="#dcfce7"; e.currentTarget.style.fontWeight="normal"; }}}>
+                            onMouseEnter={e => { if (!dragBooking) { e.currentTarget.style.background = isPastDay ? "#d1fae5" : "#bbf7d0"; e.currentTarget.style.fontWeight="700"; }}}
+                            onMouseLeave={e => { if (!dragBooking) { e.currentTarget.style.background = isPastDay ? "#ecfdf5" : "#dcfce7"; e.currentTarget.style.fontWeight="normal"; }}}>
                           {isPastDay ? "עבר" : (isDropColumn ? "⬇" : "✓")}
                         </td>
                       );
