@@ -64,9 +64,13 @@ export function getEarliestAllowedPickupTime(startDate, now = new Date(), fallba
 }
 
 
+// Non-blocking heads-up only — booking creation itself no longer restricts past dates/times.
 export function isBookingStartInPast(form, now = new Date()) {
-  if (!form?.start_date || !form?.start_time) return false;
-  if (form.start_date !== todayISO()) return false;
+  if (!form?.start_date) return false;
+  const today = todayISO();
+  if (form.start_date < today) return true;
+  if (form.start_date > today) return false;
+  if (!form.start_time) return false;
   return isTimeBefore(form.start_time, `${pad2(now.getHours())}:${pad2(now.getMinutes())}`);
 }
 

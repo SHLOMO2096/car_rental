@@ -15,15 +15,6 @@ def parse_booking_time(value: Optional[str]) -> Optional[datetime.time]:
         raise ValueError("שעת האיסוף/החזרה חייבת להיות בפורמט HH:MM") from exc
 
 
-def ensure_booking_start_not_in_past(start_date: date, pickup_time: Optional[str]) -> None:
-    parsed_pickup_time = parse_booking_time(pickup_time)
-    if start_date != date.today() or parsed_pickup_time is None:
-        return
-
-    now_time = datetime.now().replace(second=0, microsecond=0).time()
-    if parsed_pickup_time < now_time:
-        raise ValueError("לא ניתן ליצור או לעדכן הזמנה להיום בשעת איסוף שכבר עברה")
-
 class BookingCreate(BaseModel):
     car_id:          int
     customer_id:     Optional[int]      = None

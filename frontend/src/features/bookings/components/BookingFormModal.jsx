@@ -2,7 +2,7 @@ import Modal from "../../../components/ui/Modal";
 
 import { s } from "../styles";
 import { addDays, formatDateTime, todayISO } from "../utils/dates";
-import { clampTimeValue, getEarliestAllowedPickupTime, sanitizeTimeTyping } from "../utils/form";
+import { clampTimeValue, getEarliestAllowedPickupTime, isBookingStartInPast, sanitizeTimeTyping } from "../utils/form";
 
 function getEffectivePriceDay(car, priceRules) {
   if (!priceRules?.length) return null;
@@ -46,6 +46,7 @@ export default function BookingFormModal({
   const isCreate = mode === "create";
   const isEdit = mode === "edit";
   const earliestStartTime = getEarliestAllowedPickupTime(form.start_date, new Date(), form.start_time);
+  const startInPast = isBookingStartInPast(form);
   const isCrossAgentEdit =
     isEdit &&
     currentUser?.role === "agent" &&
@@ -372,6 +373,10 @@ export default function BookingFormModal({
           </div>
         )}
       </div>
+
+      {startInPast && (
+        <div style={s.warningBox}>⚠️ שים לב: תאריך/שעת האיסוף שנבחרו כבר עברו</div>
+      )}
 
       {formError && <div style={s.errorBox}>{formError}</div>}
 

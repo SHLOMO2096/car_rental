@@ -17,7 +17,7 @@ import { getJewishDayMeta, isAfterClosureTime } from "../../utils/jewishCalendar
 
 import { formatDate } from "./utils/dates";
 import { isValidEmail } from "./utils/validation";
-import { buildBookingPayload, isBookingStartInPast, makeEmptyForm } from "./utils/form";
+import { buildBookingPayload, makeEmptyForm } from "./utils/form";
 
 import BookingsHeader from "./components/BookingsHeader";
 import DateFilterBar from "./components/DateFilterBar";
@@ -229,9 +229,6 @@ export default function BookingsPage() {
     if (!form.start_date) return setFormError("יש לבחור תאריך התחלה");
     if (!form.end_date) return setFormError("יש לבחור תאריך סיום");
     if (form.end_date < form.start_date) return setFormError("תאריך סיום לפני תחילה");
-    if (isBookingStartInPast(form)) {
-      return setFormError("לא ניתן לשמור הזמנה להיום בשעת איסוף שכבר עברה");
-    }
     if (
       modal === "edit" &&
       currentUser?.role === "agent" &&

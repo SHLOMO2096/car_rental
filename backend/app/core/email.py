@@ -309,7 +309,7 @@ def send_past_booking_alert(
     start: str,
     end: str,
     pickup_time: str | None,
-    hours_in_past: float,
+    days_in_past: int,
     actor_email: str,
     actor_role: str,
 ) -> bool:
@@ -319,8 +319,9 @@ def send_past_booking_alert(
         return False
 
     pickup_str = f" {pickup_time}" if pickup_time else ""
+    days_label = "יום אחד" if days_in_past == 1 else f"{days_in_past} ימים"
     body = f"""
-    <p><strong>התראת תפעול:</strong> נוצרה הזמנה חדשה שתאריך ההתחלה שלה עבר לפני יותר מ-5 שעות.</p>
+    <p><strong>התראת תפעול:</strong> נוצרה הזמנה חדשה שתאריך ההתחלה שלה הוא בעבר.</p>
     <table style="width:100%;border-collapse:collapse;margin:16px 0">
       <tr style="background:#fef2f2">
         <td style="padding:10px;font-weight:bold">מספר הזמנה</td>
@@ -344,16 +345,16 @@ def send_past_booking_alert(
       </tr>
       <tr>
         <td style="padding:10px;font-weight:bold">עיכוב רישום</td>
-        <td style="padding:10px;color:#dc2626;font-weight:bold">{hours_in_past:.1f} שעות</td>
+        <td style="padding:10px;color:#dc2626;font-weight:bold">{days_label} לפני היום</td>
       </tr>
       <tr style="background:#f8fafc">
         <td style="padding:10px;font-weight:bold">בוצע ע"י</td>
         <td style="padding:10px">{actor_email} ({actor_role})</td>
       </tr>
     </table>
-    <p style="color:#dc2626;font-weight:bold">ההזמנה נרשמה באיחור משמעותי — יש לוודא שהרכב אכן יצא בזמן ולתעד בהתאם.</p>"""
+    <p style="color:#dc2626;font-weight:bold">ההזמנה נרשמה על תאריך שכבר עבר — יש לוודא שהרכב אכן יצא בזמן ולתעד בהתאם.</p>"""
 
-    subject = f"[ALERT] Booking #{booking_id} registered {hours_in_past:.1f}h after start — {settings.APP_NAME}"
+    subject = f"[ALERT] Booking #{booking_id} registered {days_label} after start date — {settings.APP_NAME}"
     success = True
     for recipient in recipients:
         success = _send(recipient, subject, _base_template("התראת רישום הזמנה באיחור", body)) and success

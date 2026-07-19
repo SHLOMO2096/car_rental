@@ -9,7 +9,7 @@ from app.models.car import Car
 from app.models.user import User, UserRole
 from app.models.customer import Customer
 from app.models.settings import SystemSetting
-from app.schemas.booking import BookingCreate, BookingUpdate, BookingOut, BookingDeleteRequest, ensure_booking_start_not_in_past
+from app.schemas.booking import BookingCreate, BookingUpdate, BookingOut, BookingDeleteRequest
 from app.schemas.audit_log import AuditLogOut
 from app.crud.booking import crud_booking
 from app.crud.customer import crud_customer
@@ -245,15 +245,9 @@ def create_booking(
             actor_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
         )
 
-    # ── התראה אם ההזמנה נרשמה יותר מ-5 שעות אחרי תאריך ההתחלה ──────────────
-    _pickup = data.pickup_time or "00:00"
-    try:
-        _h, _m = map(int, _pickup.split(":"))
-    except ValueError:
-        _h, _m = 0, 0
-    _start_dt = datetime.combine(data.start_date, datetime.min.time().replace(hour=_h, minute=_m))
-    _hours_late = (datetime.now() - _start_dt).total_seconds() / 3600
-    if _hours_late > 5:
+    # ── התראה אם ההזמנה נרשמה על תאריך התחלה שכבר עבר (לא רק שעה שעברה היום) ──
+    if data.start_date < Date.today():
+        _days_late = (Date.today() - data.start_date).days
         bg.add_task(
             send_past_booking_alert,
             booking_id=booking.id,
@@ -262,7 +256,7 @@ def create_booking(
             start=str(data.start_date),
             end=str(data.end_date),
             pickup_time=data.pickup_time,
-            hours_in_past=_hours_late,
+            days_in_past=_days_late,
             actor_email=current_user.email,
             actor_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
         )

@@ -150,6 +150,16 @@ export const s = {
     fontSize: 13,
     marginTop: 8,
   },
+  warningBox: {
+    background: "#fffbeb",
+    color: "#92400e",
+    border: "1px solid #fde68a",
+    borderRadius: 8,
+    padding: "10px 14px",
+    fontSize: 13,
+    marginTop: 8,
+    fontWeight: 600,
+  },
   pricePreview: {
     background: "#eff6ff",
     color: "#1d4ed8",
