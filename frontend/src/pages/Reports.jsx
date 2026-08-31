@@ -5,6 +5,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { Coins, ClipboardList, BarChart3, Trophy, FolderOpen, CircleCheck } from "lucide-react";
 
 const MONTHS_HE = ["ינו","פבר","מרץ","אפר","מאי","יונ","יול","אוג","ספט","אוק","נוב","דצמ"];
 const PIE_COLORS = ["#2c6b5e","#22c55e","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#f97316"];
@@ -60,15 +61,15 @@ export default function Reports() {
       {/* KPI Cards */}
       <div style={{ ...s.kpiGrid, gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit,minmax(180px,1fr))" }}>
         {[
-          { label:"סה״כ הכנסות בשנה", value:`₪${Math.round(totalRevenue).toLocaleString()}`, icon:"💰", color:"#154038" },
-          { label:"סה״כ הזמנות בשנה", value:totalBookings,                                   icon:"📋", color:"#7c3aed" },
-          { label:"ממוצע להזמנה",      value:`₪${Math.round(avgPerBooking).toLocaleString()}`, icon:"📊", color:"#1b5348" },
-          { label:"חודש שיא",          value:bestMonth.name,                                   icon:"🏆", color:"#b45309" },
-          { label:"סה״כ הזמנות מאז",   value:summary?.total ?? "—",                           icon:"📁", color:"#59605d" },
-          { label:"הזמנות פעילות כעת", value:summary?.active ?? "—",                          icon:"✅", color:"#15803d" },
+          { label:"סה״כ הכנסות בשנה", value:`₪${Math.round(totalRevenue).toLocaleString()}`, Icon: Coins, color:"#154038" },
+          { label:"סה״כ הזמנות בשנה", value:totalBookings,                                   Icon: ClipboardList, color:"#7c3aed" },
+          { label:"ממוצע להזמנה",      value:`₪${Math.round(avgPerBooking).toLocaleString()}`, Icon: BarChart3, color:"#1b5348" },
+          { label:"חודש שיא",          value:bestMonth.name,                                   Icon: Trophy, color:"#b45309" },
+          { label:"סה״כ הזמנות מאז",   value:summary?.total ?? "—",                           Icon: FolderOpen, color:"#59605d" },
+          { label:"הזמנות פעילות כעת", value:summary?.active ?? "—",                          Icon: CircleCheck, color:"#15803d" },
         ].map(k => (
           <div key={k.label} style={s.kpiCard}>
-            <div style={{ fontSize:28 }}>{k.icon}</div>
+            <k.Icon size={26} strokeWidth={1.6} color={k.color} aria-hidden="true" />
             <div>
               <div style={{ fontSize:24, fontWeight:800, color:k.color }}>{k.value}</div>
               <div style={{ fontSize:12, color:"#8e9592", marginTop:2 }}>{k.label}</div>
@@ -164,7 +165,7 @@ export default function Reports() {
                   <td style={s.td}>
                     <span style={{ ...s.rankBadge, background: i<3 ? ["#fef3c7","#eff3f1","#fef3c7"][i]:"#f7faf8",
                       color: i<3 ? ["#b45309","#59605d","#92400e"][i]:"#707774" }}>
-                      {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
+                      {`#${i+1}`}
                     </span>
                   </td>
                   <td style={s.td}><strong>{c.name}</strong></td>
@@ -179,7 +180,7 @@ export default function Reports() {
           <div style={s.mobileCardsWrap}>
             {topCars.map((c, i) => (
               <div key={c.car_id} style={s.mobileCard}>
-                <div style={s.mobileTitle}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`} · {c.name}</div>
+                <div style={s.mobileTitle}>{`#${i+1}`} · {c.name}</div>
                 <div style={s.mobileMeta}>הזמנות: {c.bookings}</div>
                 <div style={s.mobileMeta}>הכנסות: ₪{Math.round(c.revenue).toLocaleString()}</div>
                 <div style={s.mobileMeta}>ממוצע להזמנה: ₪{c.bookings ? Math.round(c.revenue/c.bookings).toLocaleString() : "—"}</div>

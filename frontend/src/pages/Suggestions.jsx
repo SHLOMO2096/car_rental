@@ -7,6 +7,7 @@ import { useAuthStore } from "../store/auth";
 import { toast } from "../store/toast";
 import { Permissions } from "../permissions";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { ClipboardList, ArrowLeftRight } from "lucide-react";
 
 const EMPTY_FORM = {
   car_id: "",
@@ -319,7 +320,7 @@ export default function Suggestions() {
 
               {item.type === "C" && (
                 <div style={s.affectedBox}>
-                  <div style={s.affectedTitle}>📋 פרטי ההזמנה הקיימת (שתועבר)</div>
+                  <div style={s.affectedTitle}><ClipboardList size={14} strokeWidth={1.9} aria-hidden="true" /> פרטי ההזמנה הקיימת (שתועבר)</div>
                   <div style={s.affectedGrid}>
                     <div style={s.affectedRow}>
                       <span style={s.affectedLabel}>לקוח:</span>
@@ -371,7 +372,7 @@ export default function Suggestions() {
                     )}
                   </div>
 
-                  <div style={s.replacementTitle}>🔄 רכב חלופי ללקוח הקיים</div>
+                  <div style={s.replacementTitle}><ArrowLeftRight size={14} strokeWidth={1.9} aria-hidden="true" /> רכב חלופי ללקוח הקיים</div>
                   <div style={s.affectedGrid}>
                     <div style={s.affectedRow}>
                       <span style={s.affectedLabel}>רכב:</span>

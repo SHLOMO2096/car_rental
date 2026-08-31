@@ -6,6 +6,10 @@ import { useAuthStore } from "../store/auth";
 import { Permissions } from "../permissions";
 import Modal from "../components/ui/Modal";
 import { useIsMobile } from "../hooks/useIsMobile";
+import {
+  CalendarRange, Coins, TrendingUp, Star, ArrowUp, ArrowDown, Pencil, Trash2,
+  Plus, Menu, X, Globe, Check, RefreshCw, Settings2, Hand,
+} from "lucide-react";
 
 // ── קבועים ────────────────────────────────────────────────────────────────────
 const ENTITY_HE = {
@@ -53,16 +57,16 @@ export default function Pricing() {
   const [tab, setTab] = useState("seasons");
 
   const tabs = [
-    { id: "seasons",      label: "עונות מחיר",   icon: "🗓" },
-    { id: "rules",        label: "כללי מחיר",    icon: "💰" },
-    { id: "season-rules", label: "כללי עונה",    icon: "📈" },
-    { id: "holidays",     label: "חגים",          icon: "✡️" },
+    { id: "seasons",      label: "עונות מחיר",   Icon: CalendarRange },
+    { id: "rules",        label: "כללי מחיר",    Icon: Coins },
+    { id: "season-rules", label: "כללי עונה",    Icon: TrendingUp },
+    { id: "holidays",     label: "חגים",          Icon: Star },
   ];
 
   return (
     <div dir="rtl">
       <h2 style={{ margin: "0 0 20px", color: "#272c2a", fontSize: 22, fontWeight: 800 }}>
-        💰 ניהול מחירים
+        <Coins size={19} strokeWidth={1.9} aria-hidden="true" /> ניהול מחירים
       </h2>
 
       {/* Tabs */}
@@ -81,7 +85,7 @@ export default function Pricing() {
             borderBottom: tab === t.id ? "3px solid #154038" : "3px solid transparent",
             marginBottom: -2, transition: "all 0.15s", flexShrink: 0,
           }}>
-            {t.icon} {t.label}
+            <t.Icon size={15} strokeWidth={1.9} aria-hidden="true" /> {t.label}
           </button>
         ))}
       </div>
@@ -221,7 +225,7 @@ function SeasonsTab({ canManage, isMobile }) {
                   {s.season_type && (
                     <span style={badgeStyle(s.season_type === "peak" ? "#fef3c7" : "#e4f2ee",
                                             s.season_type === "peak" ? "#92400e" : "#1b5348")}>
-                      {s.season_type === "peak" ? "⬆ שיא" : "⬇ שפל"}
+                      {s.season_type === "peak" ? <><ArrowUp size={12} strokeWidth={2.2} aria-hidden="true" /> שיא</> : <><ArrowDown size={12} strokeWidth={2.2} aria-hidden="true" /> שפל</>}
                     </span>
                   )}
                   <span style={badgeStyle(s.is_active ? "#dcfce7" : "#eff3f1",
@@ -246,8 +250,8 @@ function SeasonsTab({ canManage, isMobile }) {
 
               {canManage && (
                 <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                  <button onClick={() => openEdit(s)} style={smallBtn("#e4f2ee", "#1b5348")}>✏️ ערוך</button>
-                  <button onClick={() => remove(s)}   style={smallBtn("#fef2f2", "#dc2626")}>🗑 מחק</button>
+                  <button onClick={() => openEdit(s)} style={smallBtn("#e4f2ee", "#1b5348")}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
+                  <button onClick={() => remove(s)}   style={smallBtn("#fef2f2", "#dc2626")}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /> מחק</button>
                 </div>
               )}
             </div>
@@ -256,7 +260,7 @@ function SeasonsTab({ canManage, isMobile }) {
       )}
 
       <Modal open={form !== null} onClose={() => setForm(null)}
-             title={form?.id ? "✏️ עדכון עונה" : "➕ עונה חדשה"}>
+             title={form?.id ? "עדכון עונה" : "עונה חדשה"}>
         {form && <SeasonForm form={form} setForm={setForm} saving={saving}
                              onSave={save} onCancel={() => setForm(null)} isMobile={isMobile} />}
       </Modal>
@@ -277,7 +281,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
 
       <Field label="סוג עונה">
         <div style={{ display: "flex", gap: 12 }}>
-          {[["peak", "⬆ עונת שיא"], ["low", "⬇ עונת שפל"]].map(([val, lbl]) => (
+          {[["peak", "עונת שיא"], ["low", "עונת שפל"]].map(([val, lbl]) => (
             <label key={val} style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer", fontSize: 13 }}>
               <input type="radio" name="season_type" value={val}
                      checked={form.season_type === val}
@@ -489,7 +493,7 @@ function RulesTab({ canManage, isMobile }) {
               padding: "6px 10px", cursor: "pointer", fontSize: 13, color: "#404643",
             }}
           >
-            ☰ היררכיה
+            <Menu size={14} strokeWidth={1.9} aria-hidden="true" /> היררכיה
           </button>
         )}
 
@@ -513,7 +517,7 @@ function RulesTab({ canManage, isMobile }) {
               <button
                 onClick={closeForm}
                 style={{ background: "none", border: "none", cursor: "pointer", color: "#8e9592", padding: 4, borderRadius: 8, fontSize: 18, lineHeight: 1 }}
-              >✕</button>
+              ><X size={15} strokeWidth={1.9} aria-hidden="true" /></button>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
               <PriceRuleForm
@@ -536,7 +540,7 @@ function RulesTab({ canManage, isMobile }) {
             <div style={{
               width: 48, height: 48, border: "2px solid #e3e7e5", borderRadius: 12,
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-            }}>💰</div>
+            }}><Coins size={20} strokeWidth={1.9} aria-hidden="true" /></div>
             <p style={{ fontSize: 13, textAlign: "center", lineHeight: 1.7, margin: 0 }}>
               בחר כלל מחיר מהעץ להצגה ועריכה
               {canManage && <><br />או לחץ על "כלל חדש" להוספה</>}
@@ -589,7 +593,7 @@ function RulesTab({ canManage, isMobile }) {
             onMouseEnter={e => e.currentTarget.style.background = "#fef9c3"}
             onMouseLeave={e => e.currentTarget.style.background = "#fefce8"}
           >
-            <span style={{ flex: 1, fontSize: 12, color: "#854d0e", fontWeight: 600 }}>🌐 כלל גלובלי</span>
+            <span style={{ flex: 1, fontSize: 12, color: "#854d0e", fontWeight: 600 }}><Globe size={12} strokeWidth={1.9} aria-hidden="true" /> כלל גלובלי</span>
             <span style={{ fontSize: 10, color: "#92400e", background: "#fef3c7", padding: "1px 5px", borderRadius: 8 }}>עקיפה</span>
           </div>
         )}
@@ -629,7 +633,7 @@ function RulesTab({ canManage, isMobile }) {
                         <button
                           onClick={() => { openEdit(catRule || { ...EMPTY_RULE, entity_type: "category", entity_value: cat }); closeSidebar(); }}
                           style={rowActionBtn} title="ערוך כלל קטגוריה"
-                        >✏️</button>
+                        ><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /></button>
                         <button
                           onClick={() => { openNew({ entity_type: "category", entity_value: cat }); closeSidebar(); }}
                           style={rowActionBtn} title="כלל חדש לקטגוריה"
@@ -666,7 +670,7 @@ function RulesTab({ canManage, isMobile }) {
                               <button
                                 onClick={() => { openEdit(grpRule || { ...EMPTY_RULE, entity_type: "model", entity_value: mdl }); closeSidebar(); }}
                                 style={rowActionBtn} title="ערוך כלל דגם"
-                              >✏️</button>
+                              ><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /></button>
                               <button
                                 onClick={() => { openNew({ entity_type: "model", entity_value: mdl }); closeSidebar(); }}
                                 style={rowActionBtn} title="כלל חדש לדגם"
@@ -1005,13 +1009,13 @@ function SeasonRulesTab({ canManage, isMobile }) {
                   <td style={tdStyle}><span style={badgeStyle("#fef3c7", "#92400e")}>{seasonName(sr.season_id)}</span></td>
                   <td style={tdStyle}>{sr.price_rule_id ? ruleName(sr.price_rule_id) : <em style={{ color: "#8e9592" }}>כל הכללים</em>}</td>
                   {APPLIES_FIELDS.map(({ key }) => (
-                    <td key={key} style={{ ...tdStyle, textAlign: "center" }}>{sr[key] ? "✅" : "—"}</td>
+                    <td key={key} style={{ ...tdStyle, textAlign: "center" }}>{sr[key] ? <Check size={15} strokeWidth={2.2} aria-hidden="true" /> : "—"}</td>
                   ))}
                   <td style={tdStyle}>
                     {canManage && (
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => openEdit(sr)} style={smallBtn("#e4f2ee", "#1b5348")}>✏️</button>
-                        <button onClick={() => remove(sr.id)} style={smallBtn("#fef2f2", "#dc2626")}>🗑</button>
+                        <button onClick={() => openEdit(sr)} style={smallBtn("#e4f2ee", "#1b5348")}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /></button>
+                        <button onClick={() => remove(sr.id)} style={smallBtn("#fef2f2", "#dc2626")}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /></button>
                       </div>
                     )}
                   </td>
@@ -1023,7 +1027,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
       )}
 
       <Modal open={form !== null} onClose={() => setForm(null)}
-             title={isCreateMode ? "➕ כלל עונה חדש" : "✏️ עדכון כלל עונה"}>
+             title={isCreateMode ? "כלל עונה חדש" : "עדכון כלל עונה"}>
         {form && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* עונה */}
@@ -1170,7 +1174,7 @@ function HolidaysTab({ canManage, isMobile }) {
           <>
             <button onClick={() => setForm({ name: "", date: "" })} style={btn("#154038")}>+ חג ידני</button>
             <button onClick={generate} disabled={generating} style={btn("#0d9488")}>
-              {generating ? "מייבא..." : `🔄 ייבוא אוטומטי ${year}`}
+              {generating ? "מייבא..." : <><RefreshCw size={14} strokeWidth={1.9} aria-hidden="true" /> {`ייבוא אוטומטי ${year}`}</>}
             </button>
           </>
         )}
@@ -1185,7 +1189,7 @@ function HolidaysTab({ canManage, isMobile }) {
         <>
           {holidays.length === 0 && (
             <div style={{ textAlign: "center", padding: 48, color: "#8e9592" }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>✡️</div>
+              <div style={{ marginBottom: 10 }}><Star size={34} strokeWidth={1.4} aria-hidden="true" /></div>
               <div>אין חגים לשנת {year}</div>
               {canManage && <div style={{ fontSize: 13, marginTop: 4 }}>לחץ "ייבוא אוטומטי" להוספה</div>}
             </div>
@@ -1206,14 +1210,14 @@ function HolidaysTab({ canManage, isMobile }) {
                   <div style={{ fontSize: 12, color: "#707774", marginTop: 3 }}>
                     {new Date(h.date).toLocaleDateString("he-IL")}
                     <span style={{ marginRight: 8, fontSize: 11, color: h.is_auto_generated ? "#1b5348" : "#15803d" }}>
-                      {h.is_auto_generated ? "⚙️ אוטו" : "✋ ידני"}
+                      {h.is_auto_generated ? <><Settings2 size={12} strokeWidth={1.9} aria-hidden="true" /> אוטו</> : <><Hand size={12} strokeWidth={1.9} aria-hidden="true" /> ידני</>}
                     </span>
                   </div>
                 </div>
                 {canManage && (
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => setForm({ ...h })} style={smallBtn("#e4f2ee", "#1b5348")}>✏️</button>
-                    <button onClick={() => remove(h)}         style={smallBtn("#fef2f2", "#dc2626")}>🗑</button>
+                    <button onClick={() => setForm({ ...h })} style={smallBtn("#e4f2ee", "#1b5348")}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /></button>
+                    <button onClick={() => remove(h)}         style={smallBtn("#fef2f2", "#dc2626")}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /></button>
                   </div>
                 )}
               </div>
@@ -1223,7 +1227,7 @@ function HolidaysTab({ canManage, isMobile }) {
       )}
 
       <Modal open={form !== null} onClose={() => setForm(null)}
-             title={form?.id ? "✏️ עדכון חג" : "➕ הוספת חג ידני"}>
+             title={form?.id ? "עדכון חג" : "הוספת חג ידני"}>
         {form && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <Field label="שם החג">
@@ -1263,7 +1267,7 @@ function FormFooter({ saving, onCancel, onSave, onDelete }) {
       {onDelete && (
         <button onClick={onDelete} disabled={saving}
                 style={{ ...smallBtn("#fef2f2", "#dc2626"), marginLeft: "auto" }}>
-          🗑 מחק כלל
+          <Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /> מחק כלל
         </button>
       )}
       <button onClick={onCancel} disabled={saving} style={smallBtn("#eff3f1", "#59605d")}>ביטול</button>

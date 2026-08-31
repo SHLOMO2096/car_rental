@@ -11,6 +11,11 @@ import { useAuthStore } from "../store/auth";
 import { toast } from "../store/toast";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useDragScroll } from "../hooks/useDragScroll";
+import {
+  Search, Upload, Megaphone, CalendarPlus, History, Pencil, Trash2, Mail,
+  MessageCircle, IdCard, Phone, MapPin, Image, Users as UsersIcon, ClipboardList,
+  RemoveFormatting,
+} from "lucide-react";
 
 const EMPTY_FORM = { name: "", address: "", phone: "", email: "", id_number: "" };
 const EMPTY_EMAIL_FORM = { subject: "", body: "" };
@@ -26,31 +31,31 @@ const BULK_TEMPLATES = [
   { id: "", label: "— ללא תבנית —", subject: "", body: "" },
   {
     id: "promo",
-    label: "🏷️ מבצע מיוחד",
+    label: "מבצע מיוחד",
     subject: "מבצע מיוחד ללקוחות שלנו!",
     body: "<h3>🎉 מבצע מיוחד!</h3><p>אנו שמחים להציע לך הטבה בלעדית:</p><ul><li><strong>הנחה של 20%</strong> על השכרה לסוף שבוע</li><li>תוקף עד: <strong>[תאריך]</strong></li></ul><p>לפרטים והזמנה — צור קשר עמנו בהקדם 📞</p>",
   },
   {
     id: "hours",
-    label: "🕐 עדכון שעות פתיחה",
+    label: "עדכון שעות פתיחה",
     subject: "עדכון שעות פתיחה",
     body: "<h3>שינוי שעות פתיחה</h3><p>ברצוננו לעדכנך כי <strong>שעות הפתיחה שלנו השתנו:</strong></p><ul><li>ראשון–חמישי: <strong>08:00–19:00</strong></li><li>שישי: <strong>08:00–13:00</strong></li><li>שבת: סגור</li></ul><p>נשמח לשרת אותך בשעות הפעילות החדשות 😊</p>",
   },
   {
     id: "holiday",
-    label: "🎊 ברכת חג",
+    label: "ברכת חג",
     subject: "ברכות לרגל החג",
     body: "<h3>חג שמח! 🎊</h3><p>לכבוד החג, אנו סוגרים ביום <strong>[תאריך]</strong>.</p><p>נחזור לפעילות מלאה ביום <strong>[תאריך]</strong>.</p><p>מאחלים לך ולמשפחתך חג שמח, מנוחה ושמחה! 🌟</p>",
   },
   {
     id: "reminder",
-    label: "🔔 תזכורת כללית",
+    label: "תזכורת כללית",
     subject: "תזכורת מאיתנו",
     body: "<h3>תזכורת מאיתנו 🔔</h3><p>שלום יקרנו,</p><p>רצינו להזכיר לך שאנחנו כאן בשבילך לכל צורך בהשכרת רכב.</p><p>לתיאום הזמנה מהיר וקל — צור קשר עמנו:</p><ul><li>📞 טלפון: <strong>[מספר טלפון]</strong></li><li>📧 מייל: <strong>[כתובת מייל]</strong></li></ul>",
   },
   {
     id: "return",
-    label: "🚗 החזרת לקוח",
+    label: "החזרת לקוח",
     subject: "מתגעגעים אליך! הטבה מיוחדת",
     body: "<h3>מתגעגעים אליך! 🚗</h3><p>עבר זמן מאז ההשכרה האחרונה שלך, ורצינו להזכיר לך שאנחנו כאן.</p><p>כמחווה של הוקרה — <strong>קבל 10% הנחה</strong> על ההשכרה הבאה שלך!</p><p>פשוט ציין קוד קידום-מכירות: <strong>[קוד]</strong> בעת ההזמנה.</p>",
   },
@@ -337,7 +342,7 @@ export default function Customers() {
               <span style={{
                 position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
                 fontSize: 18, pointerEvents: "none",
-              }}>🔍</span>
+              }}><Search size={15} strokeWidth={1.9} aria-hidden="true" /></span>
               <input
                 placeholder="חיפוש לפי שם / טלפון / מייל / תעודת זהות"
                 value={search}
@@ -355,27 +360,27 @@ export default function Customers() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button onClick={() => fileInputRef.current?.click()} disabled={importing}
                 style={{ ...s.btnImport, flex: 1, minWidth: 0 }}>
-                {importing ? "מייבא..." : "⬆️ ייבוא"}
+                {importing ? "מייבא..." : <><Upload size={14} strokeWidth={1.9} aria-hidden="true" /> ייבוא</>}
               </button>
               {canSendBulkEmail && (
                 <button onClick={openBulkEmail}
-                  style={{ ...s.btnEmailPrimary, flex: 1, minWidth: 0 }}>📣 הודעה המונית</button>
+                  style={{ ...s.btnEmailPrimary, flex: 1, minWidth: 0 }}><Megaphone size={14} strokeWidth={1.9} aria-hidden="true" /> הודעה המונית</button>
               )}
             </div>
           </div>
         ) : (
           <div style={{ ...s.topActions }}>
             <input
-              placeholder="🔍 חיפוש לפי שם / טלפון / מייל / תעודת זהות"
+              placeholder="חיפוש לפי שם / טלפון / מייל / תעודת זהות"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ ...s.searchInput, minWidth: 320 }}
             />
             <button onClick={() => fileInputRef.current?.click()} disabled={importing} style={s.btnImport}>
-              {importing ? "מייבא..." : "⬆️ ייבוא לקוחות"}
+              {importing ? "מייבא..." : <><Upload size={14} strokeWidth={1.9} aria-hidden="true" /> ייבוא לקוחות</>}
             </button>
             {canSendBulkEmail && (
-              <button onClick={openBulkEmail} style={s.btnEmailPrimary}>📣 הודעה לכל הלקוחות</button>
+              <button onClick={openBulkEmail} style={s.btnEmailPrimary}><Megaphone size={14} strokeWidth={1.9} aria-hidden="true" /> הודעה לכל הלקוחות</button>
             )}
           </div>
         )}
@@ -424,13 +429,13 @@ export default function Customers() {
                   <td style={s.td}>{c.email || "—"}</td>
                   <td style={s.td}>
                     <div style={s.actionsWrap}>
-                      <button onClick={() => bookForCustomer(c)} style={s.btnBook}>📅 הזמן רכב</button>
-                      <button onClick={() => openHistory(c)} style={s.btnHistory}>🕘 היסטוריה</button>
-                      <button onClick={() => openEdit(c)} style={s.btnEdit}>✏️ ערוך</button>
-                      <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}>🗑 מחק</button>
-                      {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}>✉️ שלח מייל</button>}
+                      <button onClick={() => bookForCustomer(c)} style={s.btnBook}><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן רכב</button>
+                      <button onClick={() => openHistory(c)} style={s.btnHistory}><History size={14} strokeWidth={1.9} aria-hidden="true" /> היסטוריה</button>
+                      <button onClick={() => openEdit(c)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
+                      <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /> מחק</button>
+                      {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}><Mail size={14} strokeWidth={1.9} aria-hidden="true" /> שלח מייל</button>}
                       {toWhatsAppUrl(c.phone) && (
-                        <button onClick={() => window.location.href = toWhatsAppUrl(c.phone)} style={s.btnWhatsApp}>💬 WhatsApp</button>
+                        <button onClick={() => window.location.href = toWhatsAppUrl(c.phone)} style={s.btnWhatsApp}><MessageCircle size={14} strokeWidth={1.9} aria-hidden="true" /> WhatsApp</button>
                       )}
                     </div>
                   </td>
@@ -450,18 +455,18 @@ export default function Customers() {
               transition:"background 0.5s",
             }}>
               <div style={s.mobileCardTitle}>#{c.id} · {c.name}</div>
-              <div style={s.mobileMeta}>{c.id_number ? `🪪 ${c.id_number}` : "🪪 —"}</div>
-              <div style={s.mobileMeta}>{c.phone ? `📞 ${c.phone}` : "📞 —"}</div>
-              <div style={s.mobileMeta}>{c.email ? `📧 ${c.email}` : "📧 —"}</div>
-              <div style={s.mobileMeta}>{c.address ? `📍 ${c.address}` : "📍 —"}</div>
+              <div style={s.mobileMeta}><IdCard size={12} strokeWidth={1.9} aria-hidden="true" /> {c.id_number || "—"}</div>
+              <div style={s.mobileMeta}><Phone size={12} strokeWidth={1.9} aria-hidden="true" /> {c.phone || "—"}</div>
+              <div style={s.mobileMeta}><Mail size={12} strokeWidth={1.9} aria-hidden="true" /> {c.email || "—"}</div>
+              <div style={s.mobileMeta}><MapPin size={12} strokeWidth={1.9} aria-hidden="true" /> {c.address || "—"}</div>
               <div style={s.actionsWrap}>
-                <button onClick={() => bookForCustomer(c)} style={s.btnBook}>📅 הזמן</button>
-                <button onClick={() => openHistory(c)} style={s.btnHistory}>🕘 היסטוריה</button>
-                <button onClick={() => openEdit(c)} style={s.btnEdit}>✏️ ערוך</button>
-                <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}>🗑 מחק</button>
-                {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}>✉️ מייל</button>}
+                <button onClick={() => bookForCustomer(c)} style={s.btnBook}><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן</button>
+                <button onClick={() => openHistory(c)} style={s.btnHistory}><History size={14} strokeWidth={1.9} aria-hidden="true" /> היסטוריה</button>
+                <button onClick={() => openEdit(c)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
+                <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /> מחק</button>
+                {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}><Mail size={14} strokeWidth={1.9} aria-hidden="true" /> מייל</button>}
                 {toWhatsAppUrl(c.phone) && (
-                  <button onClick={() => window.location.href = toWhatsAppUrl(c.phone)} style={s.btnWhatsApp}>💬 WhatsApp</button>
+                  <button onClick={() => window.location.href = toWhatsAppUrl(c.phone)} style={s.btnWhatsApp}><MessageCircle size={14} strokeWidth={1.9} aria-hidden="true" /> WhatsApp</button>
                 )}
               </div>
             </div>
@@ -481,10 +486,10 @@ export default function Customers() {
             </div>
 
             <div style={s.historyMeta}>
-              {historyData.customer.id_number && <span>🪪 {historyData.customer.id_number}</span>}
-              {historyData.customer.phone && <span>📞 {historyData.customer.phone}</span>}
-              {historyData.customer.email && <span>📧 {historyData.customer.email}</span>}
-              {historyData.customer.address && <span>📍 {historyData.customer.address}</span>}
+              {historyData.customer.id_number && <span><IdCard size={12} strokeWidth={1.9} aria-hidden="true" /> {historyData.customer.id_number}</span>}
+              {historyData.customer.phone && <span><Phone size={12} strokeWidth={1.9} aria-hidden="true" /> {historyData.customer.phone}</span>}
+              {historyData.customer.email && <span><Mail size={12} strokeWidth={1.9} aria-hidden="true" /> {historyData.customer.email}</span>}
+              {historyData.customer.address && <span><MapPin size={12} strokeWidth={1.9} aria-hidden="true" /> {historyData.customer.address}</span>}
             </div>
 
             <div style={s.historyTableWrap}>
@@ -502,7 +507,7 @@ export default function Customers() {
                       <td style={s.td}>#{b.id}</td>
                       <td style={s.td}>
                         {b.car?.name || `רכב #${b.car_id}`}
-                        {b.car?.plate && <div style={{ fontSize: 11, color: "#707774", marginTop: 2 }}>🪪 {b.car.plate}</div>}
+                        {b.car?.plate && <div style={{ fontSize: 11, color: "#707774", marginTop: 2 }}><IdCard size={11} strokeWidth={1.9} aria-hidden="true" /> {b.car.plate}</div>}
                       </td>
                       <td style={s.td}>{formatDate(b.start_date)}</td>
                       <td style={s.td}>{formatDate(b.end_date)}</td>
@@ -511,7 +516,7 @@ export default function Customers() {
                       <td style={s.td}>
                         {b.drive_link ? (
                           <button onClick={() => setViewPhotos(b)} style={{ ...s.btnPhoto, padding: "4px 8px" }} title="צפה בתמונות">
-                            🖼️ צפה
+                            <Image size={13} strokeWidth={1.9} aria-hidden="true" /> צפה
                             {b.drive_link.split(",").filter(Boolean).length > 1 && (
                               <small style={{ fontSize: 10, fontWeight: "bold", marginRight: 4 }}>({b.drive_link.split(",").filter(Boolean).length})</small>
                             )}
@@ -525,7 +530,7 @@ export default function Customers() {
             </div>
 
             <div style={s.modalFooter}>
-              <button onClick={() => historyCustomer && bookForCustomer(historyCustomer)} style={s.btnBook}>📅 הזמן רכב ללקוח</button>
+              <button onClick={() => historyCustomer && bookForCustomer(historyCustomer)} style={s.btnBook}><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן רכב ללקוח</button>
             </div>
           </div>
         )}
@@ -595,7 +600,7 @@ export default function Customers() {
 
           {/* Audience */}
           <div>
-            <label style={s.fieldLabel}>👥 קהל יעד</label>
+            <label style={s.fieldLabel}><UsersIcon size={13} strokeWidth={1.9} aria-hidden="true" /> קהל יעד</label>
             <div style={s.audienceRow}>
               {AUDIENCE_OPTIONS.map((opt) => (
                 <label key={opt.value} style={{
@@ -618,7 +623,7 @@ export default function Customers() {
 
           {/* Template selector */}
           <div>
-            <label style={s.fieldLabel}>📋 תבנית מוכנה</label>
+            <label style={s.fieldLabel}><ClipboardList size={13} strokeWidth={1.9} aria-hidden="true" /> תבנית מוכנה</label>
             <select
               defaultValue=""
               onChange={(e) => applyBulkTemplate(e.target.value)}
@@ -795,7 +800,7 @@ function RichTextEditor({ value, onChange }) {
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("insertUnorderedList"); }} style={TB_BTN} title="רשימת תבליטים">• רשימה</button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("insertOrderedList"); }} style={TB_BTN} title="רשימה ממוספרת">1. רשימה</button>
         <span style={{ width: 1, background: "#e3e7e5", margin: "2px 4px", display: "inline-block" }} />
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("removeFormat"); }} style={{ ...TB_BTN, color: "#8e9592" }} title="נקה עיצוב">✕</button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("removeFormat"); }} style={{ ...TB_BTN, color: "#8e9592" }} title="נקה עיצוב"><RemoveFormatting size={15} strokeWidth={1.9} aria-hidden="true" /></button>
       </div>
       {/* Editable area */}
       <div

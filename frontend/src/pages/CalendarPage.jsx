@@ -5,6 +5,7 @@ import { carsAPI } from "../api/cars";
 import { getJewishDayMeta } from "../utils/jewishCalendar";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useDragScroll } from "../hooks/useDragScroll";
+import { Sparkle, Clock, Star } from "lucide-react";
 
 const TYPE_COLORS = {
   sedan:"#2c6b5e", crossover:"#8b5cf6", suv:"#10b981", hatchback:"#f59e0b",
@@ -124,7 +125,7 @@ export function CalendarPage() {
             fontSize: isMobile ? 11 : 13, fontWeight:700,
           }}
         >
-          {showHebrew ? "✦ עברי" : "✦ הצג עברי"}
+          {showHebrew ? <><Sparkle size={13} strokeWidth={1.9} aria-hidden="true" /> עברי</> : <><Sparkle size={13} strokeWidth={1.9} aria-hidden="true" /> הצג עברי</>}
         </button>
         <button onClick={prevMonth} style={navBtn}>→</button>
         <span style={{ fontWeight:700, fontSize: isMobile ? 13 : 16, minWidth: isMobile ? 100 : 140, textAlign:"center" }}>
@@ -221,7 +222,7 @@ export function CalendarPage() {
               )}
               {dayMeta.closureAtNoon && (
                 <div style={{ fontSize:10, fontWeight:700, color:"#92400e", marginBottom:4 }}>
-                  🕛 סגירה ב-12:00
+                  <Clock size={13} strokeWidth={1.9} aria-hidden="true" /> סגירה ב-12:00
                 </div>
               )}
               {bList.slice(0,3).map(b => {
@@ -257,7 +258,7 @@ export function CalendarPage() {
           fontSize:12, color:"#5b21b6", fontWeight:600,
           display:"flex", gap:8, alignItems:"center", flexWrap:"wrap",
         }}>
-          <span>✡ חודש עברי:</span>
+          <span><Star size={12} strokeWidth={1.9} aria-hidden="true" /> חודש עברי:</span>
           {hebrewMonths.map(m => <span key={m} style={{ background:"#7c3aed", color:"#fff", borderRadius:10, padding:"2px 8px" }}>{m}</span>)}
           <span style={{ color:"#7c3aed" }}>· שנה: {hebrewYear}</span>
           <span style={{ marginRight:"auto", fontWeight:400, color:"#6d28d9" }}>

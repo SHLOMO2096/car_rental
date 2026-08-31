@@ -4,6 +4,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { useDragScroll } from "../hooks/useDragScroll";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
+import { Pencil } from "lucide-react";
 
 const EMPTY_FORM = { email:"", full_name:"", password:"", role:"agent" };
 
@@ -87,7 +88,7 @@ export default function Users() {
                   <td style={s.td}>{new Date(u.created_at).toLocaleDateString("he-IL")}</td>
                   <td style={s.td}>
                     <div style={{ display:"flex", gap:6 }}>
-                      <button onClick={() => openEdit(u)} style={s.btnEdit}>✏️ ערוך</button>
+                      <button onClick={() => openEdit(u)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
                       <button onClick={() => toggleActive(u)} style={u.is_active ? s.btnWarn : s.btnSuccess}>
                         {u.is_active ? "השבת" : "הפעל"}
                       </button>
@@ -113,7 +114,7 @@ export default function Users() {
                 <span style={{ fontSize:11, color:"#8e9592" }}>נוצר: {new Date(u.created_at).toLocaleDateString("he-IL")}</span>
               </div>
               <div style={{ display:"flex", gap:8 }}>
-                <button onClick={() => openEdit(u)} style={s.btnEdit}>✏️ ערוך</button>
+                <button onClick={() => openEdit(u)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
                 <button onClick={() => toggleActive(u)} style={u.is_active ? s.btnWarn : s.btnSuccess}>
                   {u.is_active ? "השבת" : "הפעל"}
                 </button>

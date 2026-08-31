@@ -6,6 +6,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { DEFAULT_GENERAL_SETTINGS } from "../config/defaultSettings";
 import { useAuthStore } from "../store/auth";
 import { Permissions } from "../permissions";
+import { Save } from "lucide-react";
 
 export default function Settings() {
   const can = useAuthStore((s) => s.can);
@@ -213,7 +214,7 @@ export default function Settings() {
 
       <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", marginBottom: 40 }}>
         <button onClick={save} disabled={saving} style={{ ...s.btnSave, padding: "12px 32px", fontSize: 16 }}>
-          {saving ? "שומר..." : "💾 שמור הכל"}
+          {saving ? "שומר..." : <><Save size={15} strokeWidth={1.9} aria-hidden="true" /> שמור הכל</>}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Modal from "../ui/Modal";
+import { X, ChevronRight, ChevronLeft, Camera, Images, FolderOpen } from "lucide-react";
 
 /**
  * ImageGallery - A Lightbox-style viewer for booking photos.
@@ -54,7 +55,7 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
             onClick={onClose} 
             style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", width: 36, height: 36, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            ✕
+            <X size={17} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -66,7 +67,7 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
             onClick={prev} 
             style={{ position: "absolute", left: 10, background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", borderRadius: "50%", width: 44, height: 44, fontSize: 20, cursor: "pointer", zIndex: 30002, backdropFilter: "blur(4px)" }}
           >
-            ❮
+            <ChevronRight size={22} strokeWidth={2} aria-hidden="true" />
           </button>
         )}
         
@@ -105,7 +106,7 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
             onClick={next} 
             style={{ position: "absolute", right: 10, background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", borderRadius: "50%", width: 44, height: 44, fontSize: 20, cursor: "pointer", zIndex: 30002, backdropFilter: "blur(4px)" }}
           >
-            ❯
+            <ChevronLeft size={22} strokeWidth={2} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -164,7 +165,7 @@ export function CameraCaptureModal({ bookingId, onClose, onCapture }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 40000, background: "#000", display: "flex", flexDirection: "column" }}>
       <div style={{ position: "absolute", top: 20, right: 20, zIndex: 40001 }}>
-        <button onClick={onClose} style={{ background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", borderRadius: "50%", width: 40, height: 40, fontSize: 20, cursor: "pointer" }}>✕</button>
+        <button onClick={onClose} style={{ background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", borderRadius: "50%", width: 40, height: 40, fontSize: 20, cursor: "pointer" }}><X size={17} strokeWidth={1.9} aria-hidden="true" /></button>
       </div>
       
       {error ? (
@@ -269,7 +270,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
       />
 
       <button onClick={(e) => { e.stopPropagation(); onToggle(); }} style={btnStyle} title="ניהול תמונות">
-        {variant === "compact" ? "📸" : "📸 תמונות"}
+        {variant === "compact" ? <Camera size={15} strokeWidth={1.9} aria-hidden="true" /> : <><Camera size={15} strokeWidth={1.9} aria-hidden="true" /> תמונות</>}
         {photoCount > 0 && (
           <span
             style={{
@@ -318,7 +319,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
                   background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center"
                 }}
               >
-                🖼️ גלריית תמונות ({photoCount})
+                <Images size={15} strokeWidth={1.9} aria-hidden="true" /> גלריית תמונות ({photoCount})
               </button>
             )}
 
@@ -329,7 +330,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
                 background: "#f0f9ff", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", color: "#1b5348", fontWeight: 700
               }}
             >
-              📸 צילום רציף
+              <Camera size={15} strokeWidth={1.9} aria-hidden="true" /> צילום רציף
             </button>
 
             <button
@@ -339,7 +340,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
                 background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderTop: "1px solid #eff3f1"
               }}
             >
-              📁 בחר מהגלריה
+              <FolderOpen size={15} strokeWidth={1.9} aria-hidden="true" /> בחר מהגלריה
             </button>
           </div>
         </>
