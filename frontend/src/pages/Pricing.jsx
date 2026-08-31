@@ -10,6 +10,7 @@ import {
   CalendarRange, Coins, TrendingUp, Star, ArrowUp, ArrowDown, Pencil, Trash2,
   Plus, Menu, X, Globe, Check, RefreshCw, Settings2, Hand,
 } from "lucide-react";
+import { useConfirm } from "../hooks/useConfirm";
 
 // ── קבועים ────────────────────────────────────────────────────────────────────
 const ENTITY_HE = {
@@ -110,6 +111,7 @@ const EMPTY_SEASON = {
 };
 
 function SeasonsTab({ canManage, isMobile }) {
+  const [confirm, confirmDialog] = useConfirm();
   const [seasons, setSeasons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm]       = useState(null);
@@ -168,7 +170,7 @@ function SeasonsTab({ canManage, isMobile }) {
   };
 
   const remove = async (s) => {
-    if (!confirm(`למחוק את "${s.name}"?`)) return;
+    if (!(await confirm(`למחוק את "${s.name}"?`, { confirmLabel: "מחק" }))) return;
     try {
       await pricingAPI.deleteSeason(s.id);
       toast.success("עונה בוטלה"); load();
@@ -264,6 +266,7 @@ function SeasonsTab({ canManage, isMobile }) {
         {form && <SeasonForm form={form} setForm={setForm} saving={saving}
                              onSave={save} onCancel={() => setForm(null)} isMobile={isMobile} />}
       </Modal>
+      {confirmDialog}
     </div>
   );
 }
@@ -384,6 +387,7 @@ const EMPTY_RULE = {
 };
 
 function RulesTab({ canManage, isMobile }) {
+  const [confirm, confirmDialog] = useConfirm();
   const [rules,       setRules]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [form,        setForm]        = useState(null);
@@ -450,7 +454,7 @@ function RulesTab({ canManage, isMobile }) {
   };
 
   const remove = async (r) => {
-    if (!confirm("למחוק כלל זה?")) return;
+    if (!(await confirm("למחוק כלל זה?", { confirmLabel: "מחק" }))) return;
     try { await pricingAPI.deleteRule(r.id); toast.success("נמחק"); load(); }
     catch (e) { toast.error(e?.response?.data?.detail || "שגיאה"); }
   };
@@ -732,6 +736,7 @@ function RulesTab({ canManage, isMobile }) {
           </div>
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 }
@@ -856,6 +861,7 @@ const APPLIES_FIELDS = [
 ];
 
 function SeasonRulesTab({ canManage, isMobile }) {
+  const [confirm, confirmDialog] = useConfirm();
   const [srules,  setSrules]  = useState([]);
   const [seasons, setSeasons] = useState([]);
   const [prules,  setPrules]  = useState([]);
@@ -958,7 +964,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
   };
 
   const remove = async (id) => {
-    if (!confirm("למחוק כלל עונה זה?")) return;
+    if (!(await confirm("למחוק כלל עונה זה?", { confirmLabel: "מחק" }))) return;
     try { await pricingAPI.deleteSeasonRule(id); toast.success("נמחק"); load(); }
     catch (e) { toast.error(e?.response?.data?.detail || "שגיאה"); }
   };
@@ -1108,6 +1114,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
           </div>
         )}
       </Modal>
+      {confirmDialog}
     </div>
   );
 }
@@ -1116,6 +1123,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
 // TAB 4 — חגים
 // ══════════════════════════════════════════════════════════════════════════════
 function HolidaysTab({ canManage, isMobile }) {
+  const [confirm, confirmDialog] = useConfirm();
   const [holidays,   setHolidays]   = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [year,       setYear]       = useState(new Date().getFullYear());
@@ -1134,7 +1142,7 @@ function HolidaysTab({ canManage, isMobile }) {
   useEffect(() => { load(); }, [load]);
 
   const generate = async () => {
-    if (!confirm(`לייבא חגים לשנת ${year} אוטומטית?`)) return;
+    if (!(await confirm(`לייבא חגים לשנת ${year} אוטומטית?`, { confirmLabel: "ייבא" }))) return;
     setGenerating(true);
     try {
       const result = await pricingAPI.generateHolidays(year);
@@ -1145,7 +1153,7 @@ function HolidaysTab({ canManage, isMobile }) {
   };
 
   const remove = async (h) => {
-    if (!confirm(`למחוק את "${h.name}"?`)) return;
+    if (!(await confirm(`למחוק את "${h.name}"?`, { confirmLabel: "מחק" }))) return;
     try { await pricingAPI.deleteHoliday(h.id); toast.success("נמחק"); load(); }
     catch (e) { toast.error(e?.response?.data?.detail || "שגיאה"); }
   };
@@ -1240,6 +1248,7 @@ function HolidaysTab({ canManage, isMobile }) {
           </div>
         )}
       </Modal>
+      {confirmDialog}
     </div>
   );
 }

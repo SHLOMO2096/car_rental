@@ -8,6 +8,7 @@ import { toast } from "../store/toast";
 import { Permissions } from "../permissions";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { ClipboardList, ArrowLeftRight } from "lucide-react";
+import { useConfirm } from "../hooks/useConfirm";
 
 const EMPTY_FORM = {
   car_id: "",
@@ -23,6 +24,7 @@ const TYPE_LABEL = {
 };
 
 export default function Suggestions() {
+  const [confirm, confirmDialog] = useConfirm();
   const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY_FORM);
   const [mode, setMode] = useState("car");
@@ -149,7 +151,7 @@ export default function Suggestions() {
       return;
     }
 
-    const ok = window.confirm("להחיל את ההצעה? הפעולה תירשם במערכת.");
+    const ok = await confirm("להחיל את ההצעה? הפעולה תירשם ותדווח למנהל.", { confirmLabel: "החל" });
     if (!ok) return;
 
     setError("");
@@ -428,6 +430,7 @@ export default function Suggestions() {
           );
         })}
       </div>
+      {confirmDialog}
     </div>
   );
 }

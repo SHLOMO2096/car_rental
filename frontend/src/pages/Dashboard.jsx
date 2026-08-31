@@ -1081,9 +1081,9 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
     });
 
     if (conflicts.length > 0) {
-      alert(
-        `לא ניתן להעביר ל-${targetCar.name}:\n` +
-        `ישנה הזמנה קיימת בתאריכים ${conflicts[0]} – ${conflicts[conflicts.length - 1]}`
+      toast.error(
+        `ישנה הזמנה קיימת בתאריכים ${conflicts[0]} – ${conflicts[conflicts.length - 1]}`,
+        { title: `לא ניתן להעביר ל-${targetCar.name}` }
       );
       return;
     }
