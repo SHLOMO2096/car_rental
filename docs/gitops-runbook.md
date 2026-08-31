@@ -6,7 +6,7 @@ This project deploys production from git history.
 
 - Work on `feature/*` branches.
 - Open PRs into `main`.
-- Production deploy is triggered from `main` only.
+- Production deploy is triggered manually (`workflow_dispatch`), from `main` or from an explicit tag/SHA.
 - Optional: deploy a specific commit/tag manually via workflow input.
 
 ## 2) Required GitHub configuration
@@ -102,7 +102,7 @@ Files:
 - `.github/workflows/deploy-prod.yml`
 - `scripts/deploy_production.sh`
 
-- Triggered by push to `main` or manual dispatch.
+- Triggered by **manual dispatch only**. The `push: branches: [main]` trigger is intentionally commented out in `deploy-prod.yml`; re-enabling it makes every merge to `main` deploy to production.
 - Re-runs verify stage (tests + frontend build).
 - SSH into server, checks out the exact commit SHA, ensures required Docker networks exist, validates Compose, then runs:
 
@@ -135,6 +135,71 @@ File: `.github/workflows/rollback-prod.yml`
 - Manual dispatch with required `git_ref` (tag/SHA).
 - SSH into server, checkout target ref, redeploy stack.
 - Runs the same shared deploy script and the same health checks.
+- It skips the `verify` job (tests/build), on the assumption that the target commit was already verified when it was deployed.
+
+### Rollback does not roll back the database
+
+`scripts/deploy_production.sh` always runs `alembic upgrade head`, and Alembic never
+downgrades on its own. Rolling back the code to an older commit therefore leaves the
+schema at the newer revision.
+
+- **Additive migrations** (new nullable column/table): safe, the older code simply ignores them.
+- **Destructive migrations** (dropped/renamed column, tightened `NOT NULL`): the older code
+  will break. Rolling back the code is not enough.
+
+Before a rollback that crosses a destructive migration, downgrade explicitly first:
+
+```bash
+cd /opt/car-rental
+# which revision is the DB on, and which one does the target commit expect?
+docker compose --env-file .env.production -f docker-compose.prod.yml exec -T backend alembic current
+git show <TARGET_SHA>:backend/alembic/versions/ | tail
+docker compose --env-file .env.production -f docker-compose.prod.yml exec -T backend alembic downgrade <TARGET_REVISION>
+```
+
+Take a DB dump before any manual downgrade:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db   pg_dump -U "$DB_USER" "$DB_NAME" > /opt/car-rental-backups/pre-rollback-$(date +%F-%H%M).sql
+```
+
+## 6.5) Development environment
+
+Files: `.github/workflows/deploy-dev.yml`, `scripts/deploy_development.sh`,
+`docker-compose.yml` + `docker-compose.dev-server.yml`.
+
+- Auto-deploys on every push to `development` (`cancel-in-progress: true` — a newer push
+  cancels an in-flight deploy).
+- Server path `/opt/car-rental-dev`, env file `.env.development`, host `dev.waycar.co.il`,
+  edge proxy `infra-proxy-dev`.
+- The script copies `.env.development` over `backend/.env`, because `docker-compose.yml`
+  loads the backend environment from `env_file: ./backend/.env`.
+
+### Compose merge semantics (the trap)
+
+The dev server runs the local `docker-compose.yml` **plus** the `docker-compose.dev-server.yml`
+overlay. When Compose merges files, mappings (`environment`) merge key-by-key with the later
+file winning, but sequences (`ports`, `volumes`) are **concatenated** — so `ports: []` in the
+overlay removes nothing. Removing a base value requires the `!reset` tag (Compose v2.24+):
+
+```yaml
+services:
+  backend:
+    ports: !reset null
+```
+
+Until this was fixed, the dev server published `backend:8000`, `db:5433` and `redis:6379`
+straight onto the host (bypassing Traefik, TLS and the rate-limit middlewares) and ran with
+`DEBUG=true`, which let `Base.metadata.create_all` race the Alembic migrations.
+
+Always verify a change to either file by printing the effective config:
+
+```bash
+docker compose --env-file .env.development   -f docker-compose.yml -f docker-compose.dev-server.yml config
+```
+
+The same check applies to production (`-f docker-compose.prod.yml`), which is a single
+self-contained file and therefore not exposed to the merge behaviour.
 
 ## 7) Daily operations
 
