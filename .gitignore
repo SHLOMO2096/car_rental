@@ -13,6 +13,8 @@ frontend/dist/
 # Environment files
 .env
 .env.production
+.env.development
+backend/.env
 
 # Local deployment notes
 deploy.log
