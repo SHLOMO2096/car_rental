@@ -231,7 +231,7 @@ export function CalendarPage() {
                     style={{
                       background: car ? `${TYPE_COLORS[car.type]}20` : "#eff3f1",
                       borderRight: `3px solid ${car ? TYPE_COLORS[car.type] : "#8e9592"}`,
-                      borderRadius:3, padding:"1px 4px", fontSize:10, marginBottom:1,
+                      borderRadius:8, padding:"1px 4px", fontSize:10, marginBottom:1,
                       overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis",
                       color:"#404643",
                     }}
@@ -253,12 +253,12 @@ export function CalendarPage() {
       {showHebrew && (
         <div style={{
           marginTop:12, padding:"8px 14px",
-          background:"#ede9fe", borderRadius:8,
+          background:"#ede9fe", borderRadius:12,
           fontSize:12, color:"#5b21b6", fontWeight:600,
           display:"flex", gap:8, alignItems:"center", flexWrap:"wrap",
         }}>
           <span>✡ חודש עברי:</span>
-          {hebrewMonths.map(m => <span key={m} style={{ background:"#7c3aed", color:"#fff", borderRadius:6, padding:"2px 8px" }}>{m}</span>)}
+          {hebrewMonths.map(m => <span key={m} style={{ background:"#7c3aed", color:"#fff", borderRadius:10, padding:"2px 8px" }}>{m}</span>)}
           <span style={{ color:"#7c3aed" }}>· שנה: {hebrewYear}</span>
           <span style={{ marginRight:"auto", fontWeight:400, color:"#6d28d9" }}>
             תאריך בצד ימין של כל תא = יום עברי ·
@@ -270,20 +270,20 @@ export function CalendarPage() {
       {/* Car type legend */}
       <div style={{ marginTop:12, display:"flex", gap:12, flexWrap:"wrap" }}>
         <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12 }}>
-          <div style={{ width:12, height:12, background:"#ede9fe", borderRadius:3 }} />
+          <div style={{ width:12, height:12, background:"#ede9fe", borderRadius:8 }} />
           <span style={{ color:"#59605d" }}>שבת</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12 }}>
-          <div style={{ width:12, height:12, background:"#fee2e2", borderRadius:3 }} />
+          <div style={{ width:12, height:12, background:"#fee2e2", borderRadius:8 }} />
           <span style={{ color:"#59605d" }}>חג</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12 }}>
-          <div style={{ width:12, height:12, background:"#fef3c7", borderRadius:3 }} />
+          <div style={{ width:12, height:12, background:"#fef3c7", borderRadius:8 }} />
           <span style={{ color:"#59605d" }}>ערב חג (סגירה 12:00)</span>
         </div>
         {Object.entries(TYPE_COLORS).map(([type, color]) => (
           <div key={type} style={{ display:"flex", alignItems:"center", gap:6, fontSize:12 }}>
-            <div style={{ width:12, height:12, background:color, borderRadius:3 }} />
+            <div style={{ width:12, height:12, background:color, borderRadius:8 }} />
             <span style={{ color:"#59605d" }}>{type}</span>
           </div>
         ))}
@@ -291,11 +291,11 @@ export function CalendarPage() {
     </div>
   );
 }
-const navBtn  = { background:"#eff3f1", border:"1px solid #e3e7e5", borderRadius:8,
+const navBtn  = { background:"#eff3f1", border:"1px solid #e3e7e5", borderRadius:12,
                   padding:"6px 14px", cursor:"pointer", fontSize:16 };
-const dayCell = { minHeight:90, padding:6, borderRadius:6, verticalAlign:"top" };
+const dayCell = { minHeight:90, padding:6, borderRadius:10, verticalAlign:"top" };
 const mobileDayCell = { minHeight:60, padding:"3px 2px", fontSize:10 };
-const emptyCell = { minHeight:90, background:"#fafafa", borderRadius:6, border:"1px solid #eff3f1" };
+const emptyCell = { minHeight:90, background:"#fafafa", borderRadius:10, border:"1px solid #eff3f1" };
 const tagBase = {
   fontSize: 9,
   fontWeight: 700,

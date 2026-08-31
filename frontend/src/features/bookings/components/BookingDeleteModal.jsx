@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 export default function BookingDeleteModal({
   booking,
   loading,
@@ -16,13 +17,13 @@ export default function BookingDeleteModal({
     >
       <div
         dir="rtl"
-        style={{ background: "#fff", borderRadius: 16, padding: 24, maxWidth: 420, width: "92%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }}
+        style={{ background: "#fff", borderRadius: 20, padding: 24, maxWidth: 420, width: "92%", boxShadow: "0 8px 24px rgba(20,24,22,0.10), 0 32px 80px rgba(20,24,22,0.18)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ margin: "0 0 8px", fontSize: 18, color: "#991b1b" }}>מחיקת הזמנה</h3>
         <div style={{ fontSize: 13, color: "#59605d", marginBottom: 4 }}><strong>לקוח:</strong> {booking.customer_name}</div>
         <div style={{ fontSize: 13, color: "#59605d", marginBottom: 4 }}><strong>תאריכים:</strong> {booking.start_date} - {booking.end_date}</div>
-        <div style={{ fontSize: 12, color: "#991b1b", background: "#fef2f2", borderRadius: 10, padding: "10px 12px", margin: "14px 0 18px" }}>
+        <div style={{ fontSize: 12, color: "#991b1b", background: "#fef2f2", borderRadius: 14, padding: "10px 12px", margin: "14px 0 18px" }}>
           המחיקה מבוצעת כפעולת soft delete ומתועדת ב-audit log.
         </div>
         {requiresOperatorNote && (
@@ -35,12 +36,12 @@ export default function BookingDeleteModal({
               onChange={(e) => onOperatorNoteChange?.(e.target.value)}
               rows={3}
               placeholder="מה הסיבה למחיקה? מי אישר?"
-              style={{ width: "100%", borderRadius: 8, border: "1px solid #f59e0b", padding: 10, fontSize: 13, resize: "vertical", boxSizing: "border-box" }}
+              style={{ width: "100%", borderRadius: 12, border: "1px solid #f59e0b", padding: 10, fontSize: 13, resize: "vertical", boxSizing: "border-box" }}
             />
           </div>
         )}
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button onClick={onCancel} disabled={loading} style={{ padding: "9px 16px", borderRadius: 8, border: "1px solid #ccd2cf", background: "#fff", color: "#404643", cursor: "pointer" }}>
+          <button onClick={onCancel} disabled={loading} style={{ padding: "9px 16px", borderRadius: 12, border: "1px solid #ccd2cf", background: "#fff", color: "#404643", cursor: "pointer" }}>
             ביטול
           </button>
           <button
@@ -48,7 +49,7 @@ export default function BookingDeleteModal({
             disabled={loading || (requiresOperatorNote && !operatorNote.trim())}
             style={{
               padding: "9px 16px",
-              borderRadius: 8,
+              borderRadius: 12,
               border: "none",
               background: loading || (requiresOperatorNote && !operatorNote.trim()) ? "#fca5a5" : "#dc2626",
               color: "#fff",
@@ -56,7 +57,7 @@ export default function BookingDeleteModal({
               cursor: loading || (requiresOperatorNote && !operatorNote.trim()) ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "מוחק..." : "🗑 מחק הזמנה"}
+            {loading ? "מוחק..." : <><Trash2 size={15} strokeWidth={1.9} aria-hidden="true" /> מחק הזמנה</>}
           </button>
         </div>
       </div>

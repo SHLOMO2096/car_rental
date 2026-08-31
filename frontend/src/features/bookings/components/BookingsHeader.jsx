@@ -14,7 +14,7 @@ export default function BookingsHeader({
       <h1 style={s.h1}>ניהול הזמנות</h1>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
         <input
-          placeholder="🔍 לקוח, טלפון, רכב..."
+          placeholder="לקוח, טלפון, רכב..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           style={{ ...s.searchInput, minWidth: isMobile ? "100%" : 220 }}

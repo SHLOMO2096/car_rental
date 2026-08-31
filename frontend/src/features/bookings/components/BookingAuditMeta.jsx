@@ -1,5 +1,6 @@
 import { s } from "../styles";
 import { formatDateTime } from "../utils/dates";
+import { Clock } from "lucide-react";
 
 /** פס audit קטן – "נוצר ע"י שם · תאריך" */
 export default function BookingAuditMeta({ b, style = {} }) {
@@ -14,7 +15,7 @@ export default function BookingAuditMeta({ b, style = {} }) {
 
   return (
     <div style={{ ...s.auditMeta, ...style }}>
-      🕐 {parts.join(" · ")}
+      <Clock size={11} strokeWidth={1.9} aria-hidden="true" /> {parts.join(" · ")}
     </div>
   );
 }

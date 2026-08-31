@@ -1,3 +1,4 @@
+import { Upload } from "lucide-react";
 export default function UploadQueueFloatingPanel({ uploadQueue, onClear }) {
   if (!uploadQueue || uploadQueue.length === 0) return null;
 
@@ -11,8 +12,8 @@ export default function UploadQueueFloatingPanel({ uploadQueue, onClear }) {
         background: "#272c2a",
         color: "#fff",
         padding: "12px 20px",
-        borderRadius: 12,
-        boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+        borderRadius: 16,
+        boxShadow: "0 8px 24px rgba(20,24,22,0.10), 0 32px 80px rgba(20,24,22,0.18)",
         display: "flex",
         flexDirection: "column",
         gap: 8,
@@ -31,7 +32,7 @@ export default function UploadQueueFloatingPanel({ uploadQueue, onClear }) {
           justifyContent: "space-between",
         }}
       >
-        <span>📤 העלאת תמונות ({uploadQueue.filter((u) => u.status !== "done").length})</span>
+        <span><Upload size={14} strokeWidth={1.9} aria-hidden="true" /> העלאת תמונות ({uploadQueue.filter((u) => u.status !== "done").length})</span>
         <button
           onClick={onClear}
           style={{ background: "none", border: "none", color: "#8e9592", cursor: "pointer", fontSize: 11 }}
@@ -68,7 +69,7 @@ export default function UploadQueueFloatingPanel({ uploadQueue, onClear }) {
                   ? "מעלה..."
                   : u.status === "done"
                     ? "✓ הושלם"
-                    : "✘ שגיאה"}
+                    : "× שגיאה"}
             </span>
           </div>
         ))}

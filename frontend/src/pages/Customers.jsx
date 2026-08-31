@@ -344,7 +344,7 @@ export default function Customers() {
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
                   width: "100%", padding: "12px 42px 12px 14px",
-                  borderRadius: 12, border: "2px solid #2c6b5e",
+                  borderRadius: 16, border: "2px solid #2c6b5e",
                   fontSize: 15, boxSizing: "border-box", outline: "none",
                   boxShadow: "0 2px 8px rgba(21,64,56,0.15)",
                   fontWeight: 500,
@@ -680,44 +680,44 @@ const s = {
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" },
   topActions: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
   h1: { fontSize: 24, fontWeight: 800, margin: 0 },
-  searchInput: { minWidth: 320, padding: "8px 14px", borderRadius: 8, border: "1px solid #e3e7e5", fontSize: 14, outline: "none" },
-  card: { background: "#fff", border: "1px solid #e3e7e5", borderRadius: 12, padding: 14, marginBottom: 14 },
+  searchInput: { minWidth: 320, padding: "8px 14px", borderRadius: 12, border: "1px solid #e3e7e5", fontSize: 14, outline: "none" },
+  card: { background: "#fff", border: "1px solid #e3e7e5", borderRadius: 16, padding: 14, marginBottom: 14 },
   cardTitle: { margin: "0 0 10px", fontSize: 14 },
   formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8 },
   formGridSingle: { display: "grid", gap: 12 },
   fieldLabel: { display: "block", fontSize: 12, fontWeight: 700, color: "#59605d", marginBottom: 6 },
-  input: { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e3e7e5", fontSize: 14, boxSizing: "border-box" },
-  btnPrimary: { background: "#154038", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
-  btnSecondary: { background: "#eff3f1", color: "#59605d", border: "1px solid #e3e7e5", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
-  btnImport: { background: "#7c3aed", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
-  btnEmailPrimary: { background: "#154038", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
-  infoBox: { background: "#f0fdfa", color: "#115e59", border: "1px solid #99f6e4", borderRadius: 10, padding: 12, fontSize: 12, lineHeight: 1.7 },
+  input: { width: "100%", padding: "9px 12px", borderRadius: 12, border: "1px solid #e3e7e5", fontSize: 14, boxSizing: "border-box" },
+  btnPrimary: { background: "#154038", color: "#fff", border: "none", borderRadius: 12, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
+  btnSecondary: { background: "#eff3f1", color: "#59605d", border: "1px solid #e3e7e5", borderRadius: 12, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
+  btnImport: { background: "#7c3aed", color: "#fff", border: "none", borderRadius: 12, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
+  btnEmailPrimary: { background: "#154038", color: "#fff", border: "none", borderRadius: 12, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
+  infoBox: { background: "#f0fdfa", color: "#115e59", border: "1px solid #99f6e4", borderRadius: 14, padding: 12, fontSize: 12, lineHeight: 1.7 },
   counter: { fontSize: 13, color: "#707774", marginBottom: 10 },
-  tableWrap: { background: "#fff", borderRadius: 12, overflow: "auto", border: "1px solid #e3e7e5" },
+  tableWrap: { background: "#fff", borderRadius: 16, overflow: "auto", border: "1px solid #e3e7e5" },
   table: { width: "100%", borderCollapse: "collapse" },
   th: { padding: "11px 12px", textAlign: "right", fontSize: 12, color: "#59605d", borderBottom: "1px solid #e3e7e5" },
   tr: { borderBottom: "1px solid #eff3f1" },
   td: { padding: "10px 12px", fontSize: 13, verticalAlign: "top" },
   empty: { textAlign: "center", padding: 28, color: "#8e9592" },
   actionsWrap: { display: "flex", gap: 6, flexWrap: "wrap" },
-  btnBook: { background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnPhoto: { background: "#fdf4ff", color: "#a21caf", border: "1px solid #f0abfc", borderRadius: 7, padding: "4px 8px", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "inline-block" },
-  btnHistory: { background: "#eef5f2", color: "#154038", border: "1px solid #b9d4cb", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnEdit: { background: "#fff7ed", color: "#c2410c", border: "1px solid #fdba74", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnDelete: { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnEmail: { background: "#ecfeff", color: "#154038", border: "1px solid #99f6e4", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnWhatsApp: { background: "#ecfdf5", color: "#047857", border: "1px solid #6ee7b7", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer", textDecoration: "none" },
+  btnBook: { background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
+  btnPhoto: { background: "#fdf4ff", color: "#a21caf", border: "1px solid #f0abfc", borderRadius: 10, padding: "4px 8px", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "inline-block" },
+  btnHistory: { background: "#eef5f2", color: "#154038", border: "1px solid #b9d4cb", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
+  btnEdit: { background: "#fff7ed", color: "#c2410c", border: "1px solid #fdba74", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
+  btnDelete: { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
+  btnEmail: { background: "#ecfeff", color: "#154038", border: "1px solid #99f6e4", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
+  btnWhatsApp: { background: "#ecfdf5", color: "#047857", border: "1px solid #6ee7b7", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer", textDecoration: "none" },
   summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginBottom: 12 },
-  summaryCard: { background: "#f7faf8", border: "1px solid #e3e7e5", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 6 },
+  summaryCard: { background: "#f7faf8", border: "1px solid #e3e7e5", borderRadius: 14, padding: 10, display: "flex", flexDirection: "column", gap: 6 },
   summaryLabel: { color: "#707774", fontSize: 12 },
   historyMeta: { display: "flex", gap: 12, flexWrap: "wrap", color: "#59605d", fontSize: 12, marginBottom: 12 },
-  historyTableWrap: { background: "#fff", borderRadius: 12, overflow: "auto", border: "1px solid #e3e7e5" },
+  historyTableWrap: { background: "#fff", borderRadius: 16, overflow: "auto", border: "1px solid #e3e7e5" },
   modalFooter: { display: "flex", justifyContent: "flex-end", marginTop: 14 },
   modalFooterActions: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16, flexWrap: "wrap" },
   audienceRow: { display: "flex", gap: 8, flexWrap: "wrap" },
   audienceOption: {
     display: "flex", alignItems: "center", gap: 4,
-    padding: "6px 12px", borderRadius: 20, fontSize: 13,
+    padding: "6px 12px", borderRadius: 24, fontSize: 13,
     border: "1px solid #e3e7e5", background: "#f7faf8",
     color: "#59605d", cursor: "pointer", fontWeight: 500,
   },
@@ -726,14 +726,14 @@ const s = {
   },
   mobileCardsWrap: { display: "grid", gap: 10 },
   mobileCard: {
-    background: "#fff", border: "1px solid #e3e7e5", borderRadius: 12,
-    padding: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+    background: "#fff", border: "1px solid #e3e7e5", borderRadius: 16,
+    padding: 12, boxShadow: "0 1px 2px rgba(20,24,22,0.04), 0 2px 8px rgba(20,24,22,0.04)",
   },
   mobileCardTitle: { fontSize: 15, fontWeight: 800, color: "#141816", marginBottom: 6 },
   mobileMeta: { fontSize: 12, color: "#59605d", marginBottom: 4 },
   mobileEmpty: {
     textAlign: "center", background: "#fff", border: "1px solid #e3e7e5",
-    borderRadius: 12, padding: 24, color: "#8e9592",
+    borderRadius: 16, padding: 24, color: "#8e9592",
   },
 };
 
@@ -773,13 +773,13 @@ function RichTextEditor({ value, onChange }) {
   }
 
   const TB_BTN = {
-    background: "none", border: "1px solid transparent", borderRadius: 5,
+    background: "none", border: "1px solid transparent", borderRadius: 8,
     padding: "3px 8px", cursor: "pointer", fontSize: 13, color: "#404643",
     fontFamily: "inherit", lineHeight: 1.4,
   };
 
   return (
-    <div style={{ border: "1px solid #e3e7e5", borderRadius: 8, overflow: "hidden" }}>
+    <div style={{ border: "1px solid #e3e7e5", borderRadius: 12, overflow: "hidden" }}>
       {/* Toolbar */}
       <div style={{
         display: "flex", gap: 2, padding: "6px 8px",

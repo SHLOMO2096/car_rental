@@ -101,7 +101,7 @@ export default function Users() {
       ) : (
         <div style={{ display:"grid", gap:10 }}>
           {users.map(u => (
-            <div key={u.id} style={{ background:"#fff", border:"1px solid #e3e7e5", borderRadius:12, padding:14, opacity: u.is_active ? 1 : 0.55 }}>
+            <div key={u.id} style={{ background:"#fff", border:"1px solid #e3e7e5", borderRadius:16, padding:14, opacity: u.is_active ? 1 : 0.55 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
                 <span style={s.idBadge}>#{u.id}</span>
                 <Badge label={u.is_active ? "פעיל" : "מושבת"} color={u.is_active ? "green" : "gray"} />
@@ -168,27 +168,27 @@ export default function Users() {
 const s = {
   header:     { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 },
   h1:         { fontSize:24, fontWeight:800, margin:0 },
-  tableWrap:  { background:"#fff", borderRadius:12, overflow:"auto",
-                border:"1px solid #e3e7e5", boxShadow:"0 1px 4px rgba(0,0,0,0.05)" },
+  tableWrap:  { background:"#fff", borderRadius:16, overflow:"auto",
+                border:"1px solid #e3e7e5", boxShadow:"0 1px 2px rgba(20,24,22,0.04), 0 2px 8px rgba(20,24,22,0.04)" },
   th:         { padding:"12px 14px", fontSize:12, fontWeight:700, color:"#59605d",
                 textAlign:"right", borderBottom:"1px solid #e3e7e5" },
   td:         { padding:"12px 14px", fontSize:13 },
-  idBadge:    { background:"#eff3f1", color:"#59605d", borderRadius:6,
+  idBadge:    { background:"#eff3f1", color:"#59605d", borderRadius:10,
                 padding:"2px 7px", fontSize:12, fontWeight:700 },
   label:      { display:"block", fontSize:12, fontWeight:600, color:"#59605d", marginBottom:5 },
-  input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e3e7e5",
+  input:      { width:"100%", padding:"9px 12px", borderRadius:12, border:"1px solid #e3e7e5",
                 fontSize:14, outline:"none", boxSizing:"border-box" },
-  btnPrimary: { background:"#154038", color:"#fff", border:"none", borderRadius:8,
+  btnPrimary: { background:"#154038", color:"#fff", border:"none", borderRadius:12,
                 padding:"8px 18px", fontWeight:700, cursor:"pointer" },
   btnSecondary:{ background:"#eff3f1", color:"#59605d", border:"1px solid #e3e7e5",
-                 borderRadius:8, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
+                 borderRadius:12, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
   btnEdit:    { background:"#eef5f2", color:"#2c6b5e", border:"1px solid #b9d4cb",
-                borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:12 },
+                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:12 },
   btnWarn:    { background:"#fff7ed", color:"#c2410c", border:"1px solid #fed7aa",
-                borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:12 },
+                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:12 },
   btnSuccess: { background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0",
-                borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:12 },
-  errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:8,
+                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:12 },
+  errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:12,
                 padding:"10px 14px", fontSize:13 },
   modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:8 },
 };

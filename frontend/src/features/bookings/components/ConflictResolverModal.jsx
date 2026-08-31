@@ -3,6 +3,7 @@ import Modal from "../../../components/ui/Modal";
 import { s } from "../styles";
 import { addDays, diffDays, formatDate, formatDayWithWeekday } from "../utils/dates";
 import { overlaps } from "../utils/bookingMath";
+import { AlertTriangle, Sparkles } from "lucide-react";
 
 export default function ConflictResolverModal({
   open,
@@ -72,7 +73,7 @@ export default function ConflictResolverModal({
         <div>
           <div style={s.conflictIntro}>
             <strong>
-              ⚠️ הרכב {conflictModal.requestedCarName} תפוס בין {formatDate(conflictModal.requestedStart)} ל-
+              <AlertTriangle size={15} strokeWidth={1.9} aria-hidden="true" /> הרכב {conflictModal.requestedCarName} תפוס בין {formatDate(conflictModal.requestedStart)} ל-
               {formatDate(conflictModal.requestedEnd)}.
             </strong>
             <div style={{ marginTop: 6 }}>
@@ -131,7 +132,7 @@ export default function ConflictResolverModal({
                       marginRight: 6,
                       fontSize: 10,
                       padding: "1px 6px",
-                      borderRadius: 4,
+                      borderRadius: 8,
                       border: "1px solid #ccd2cf",
                       background: "#eff3f1",
                       cursor: "pointer",
@@ -145,7 +146,7 @@ export default function ConflictResolverModal({
               <div
                 style={{
                   border: "1px solid #ccd2cf",
-                  borderRadius: 8,
+                  borderRadius: 12,
                   background: "#fff",
                   maxHeight: 130,
                   overflowY: "auto",
@@ -224,7 +225,7 @@ export default function ConflictResolverModal({
               style={{ ...s.conflictCard, ...s.newBookingCard }}
             >
               <div style={s.newBookingBadge}>חדש · מוכן לגרירה</div>
-              <div style={s.newBookingTitle}>✨ גרור אותי ללוח כדי לבחור רכב חלופי</div>
+              <div style={s.newBookingTitle}><Sparkles size={14} strokeWidth={1.9} aria-hidden="true" /> גרור אותי ללוח כדי לבחור רכב חלופי</div>
               <div style={s.newBookingMeta}>
                 {form.customer_name || "לקוח חדש"} · {formatDate(form.start_date)} עד {formatDate(form.end_date)}
               </div>

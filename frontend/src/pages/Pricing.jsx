@@ -202,7 +202,7 @@ function SeasonsTab({ canManage, isMobile }) {
             <div key={s.id} style={{
               background: "#fff",
               border: `1px solid ${s.is_active ? "#b9d4cb" : "#e3e7e5"}`,
-              borderRadius: 12, padding: 16,
+              borderRadius: 16, padding: 16,
               opacity: s.is_active ? 1 : 0.6,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -315,7 +315,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
         </Field>
       </div>
 
-      <div style={{ background: "#f7faf8", borderRadius: 10, padding: 14 }}>
+      <div style={{ background: "#f7faf8", borderRadius: 14, padding: 14 }}>
         <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", marginBottom: hasAdj ? 12 : 0 }}>
           <ToggleSwitch checked={hasAdj}
                         onChange={v => setForm(prev => ({
@@ -465,7 +465,7 @@ function RulesTab({ canManage, isMobile }) {
   return (
     <div style={{
       display: "flex", overflow: "hidden", position: "relative",
-      border: "1px solid #e3e7e5", borderRadius: 10,
+      border: "1px solid #e3e7e5", borderRadius: 14,
       height: "calc(100dvh - 190px)", minHeight: 460,
     }}>
       {/* Mobile overlay */}
@@ -485,7 +485,7 @@ function RulesTab({ canManage, isMobile }) {
             onClick={() => setSidebarOpen(true)}
             style={{
               position: "absolute", top: 12, right: 12, zIndex: 5,
-              background: "#fff", border: "1px solid #e3e7e5", borderRadius: 6,
+              background: "#fff", border: "1px solid #e3e7e5", borderRadius: 10,
               padding: "6px 10px", cursor: "pointer", fontSize: 13, color: "#404643",
             }}
           >
@@ -512,7 +512,7 @@ function RulesTab({ canManage, isMobile }) {
               </div>
               <button
                 onClick={closeForm}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#8e9592", padding: 4, borderRadius: 4, fontSize: 18, lineHeight: 1 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#8e9592", padding: 4, borderRadius: 8, fontSize: 18, lineHeight: 1 }}
               >✕</button>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
@@ -534,7 +534,7 @@ function RulesTab({ canManage, isMobile }) {
             paddingTop: isMobile ? 56 : 0,
           }}>
             <div style={{
-              width: 48, height: 48, border: "2px solid #e3e7e5", borderRadius: 8,
+              width: 48, height: 48, border: "2px solid #e3e7e5", borderRadius: 12,
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
             }}>💰</div>
             <p style={{ fontSize: 13, textAlign: "center", lineHeight: 1.7, margin: 0 }}>
@@ -590,7 +590,7 @@ function RulesTab({ canManage, isMobile }) {
             onMouseLeave={e => e.currentTarget.style.background = "#fefce8"}
           >
             <span style={{ flex: 1, fontSize: 12, color: "#854d0e", fontWeight: 600 }}>🌐 כלל גלובלי</span>
-            <span style={{ fontSize: 10, color: "#92400e", background: "#fef3c7", padding: "1px 5px", borderRadius: 3 }}>עקיפה</span>
+            <span style={{ fontSize: 10, color: "#92400e", background: "#fef3c7", padding: "1px 5px", borderRadius: 8 }}>עקיפה</span>
           </div>
         )}
 
@@ -712,7 +712,7 @@ function RulesTab({ canManage, isMobile }) {
                                 color: carHasOverride ? "#92400e" : "#8e9592",
                                 background: carHasOverride ? "#fef3c7" : "none",
                                 padding: carHasOverride ? "1px 5px" : 0,
-                                borderRadius: 3,
+                                borderRadius: 8,
                               }}>
                                 {carHasOverride ? "עקיפה" : "יורש"}
                               </span>
@@ -1039,7 +1039,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
             {/* בחירת כללי מחיר */}
             <Field label={isCreateMode ? "כללי מחיר (ריק = כל הכללים)" : "כלל מחיר"}>
               <div style={{
-                border: "1px solid #ccd2cf", borderRadius: 7, maxHeight: 220,
+                border: "1px solid #ccd2cf", borderRadius: 10, maxHeight: 220,
                 overflowY: "auto", background: "#fff",
               }}>
                 {/* "כל הכללים" — רק בעת יצירה */}
@@ -1198,7 +1198,7 @@ function HolidaysTab({ canManage, isMobile }) {
             {holidays.map(h => (
               <div key={h.id} style={{
                 background: "#fff", border: "1px solid #e3e7e5",
-                borderRadius: 10, padding: 14,
+                borderRadius: 14, padding: 14,
                 display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
               }}>
                 <div style={{ minWidth: 0 }}>
@@ -1308,7 +1308,7 @@ function fmtMonthDay(dateStr) {
 
 // ── styles ────────────────────────────────────────────────────────────────────
 const inp = {
-  width: "100%", padding: "8px 10px", borderRadius: 7,
+  width: "100%", padding: "8px 10px", borderRadius: 10,
   border: "1px solid #ccd2cf", fontSize: 13, direction: "rtl",
   fontFamily: "inherit", boxSizing: "border-box", outline: "none",
 };
@@ -1317,24 +1317,24 @@ const tdStyle = { padding: "10px 12px", color: "#404643" };
 
 const badgeStyle = (bg, color) => ({
   background: bg, color,
-  padding: "2px 8px", borderRadius: 20,
+  padding: "2px 8px", borderRadius: 24,
   fontSize: 11, fontWeight: 700, display: "inline-block", whiteSpace: "nowrap",
 });
 
 const btn = (bg) => ({
-  background: bg, color: "#fff", border: "none", borderRadius: 8,
+  background: bg, color: "#fff", border: "none", borderRadius: 12,
   padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer",
   whiteSpace: "nowrap",
 });
 
 const smallBtn = (bg, color) => ({
   background: bg, color, border: `1px solid ${color}30`,
-  borderRadius: 7, padding: "5px 10px", fontSize: 12, cursor: "pointer",
+  borderRadius: 10, padding: "5px 10px", fontSize: 12, cursor: "pointer",
   fontWeight: 600, whiteSpace: "nowrap",
 });
 
 const rowActionBtn = {
   background: "none", border: "none", cursor: "pointer",
-  color: "#8e9592", padding: "2px 4px", borderRadius: 3,
+  color: "#8e9592", padding: "2px 4px", borderRadius: 8,
   fontSize: 12, lineHeight: 1, flexShrink: 0,
 };

@@ -1,5 +1,6 @@
 import { s } from "../styles";
 import { useDragScroll } from "../../../hooks/useDragScroll";
+import { ClipboardList } from "lucide-react";
 
 export default function DateFilterBar({
   dateFilter,
@@ -24,7 +25,7 @@ export default function DateFilterBar({
         { key: "all", label: "כל התאריכים" },
         { key: "today", label: "היום" },
         { key: "tomorrow", label: "מחר" },
-        { key: "custom", label: "תאריך ספציפי 📅" },
+        { key: "custom", label: "תאריך ספציפי" },
       ].map((opt) => (
         <button
           key={opt.key}
@@ -40,7 +41,7 @@ export default function DateFilterBar({
       )}
 
       {activeDateStr && dateFilter !== "all" && (
-        <span style={s.dateFilterHint}>📋 מציג הזמנות פעילות ב-{new Date(activeDateStr).toLocaleDateString("he-IL")}</span>
+        <span style={s.dateFilterHint}><ClipboardList size={13} strokeWidth={1.9} aria-hidden="true" /> מציג הזמנות פעילות ב-{new Date(activeDateStr).toLocaleDateString("he-IL")}</span>
       )}
     </div>
   );

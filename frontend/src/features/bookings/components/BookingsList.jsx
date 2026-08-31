@@ -6,6 +6,7 @@ import { s } from "../styles";
 import { formatDate } from "../utils/dates";
 import BookingAuditMeta from "./BookingAuditMeta";
 import { useDragScroll } from "../../../hooks/useDragScroll";
+import { User, AlertTriangle, Mail, CircleCheck, CalendarPlus, Pencil, Trash2 } from "lucide-react";
 
 export default function BookingsList({
   bookings,
@@ -88,7 +89,7 @@ export default function BookingsList({
                         title="פתח כרטיס לקוח"
                         aria-label={`פתח כרטיס לקוח: ${b.customer_name}`}
                       >
-                        👤 {b.customer_name}
+                        <User size={13} strokeWidth={1.9} aria-hidden="true" /> {b.customer_name}
                       </button>
                     ) : (
                       <div style={{ fontWeight: 600 }}>{b.customer_name}</div>
@@ -113,7 +114,7 @@ export default function BookingsList({
                       <div style={{ ...s.sub, color: overdue ? "#ef4444" : s.sub.color }}>החזרה: {b.return_time || "08:00"}</div>
                     )}
                     {overdue && (
-                      <div style={{ fontSize: 10, color: "#dc2626", fontWeight: "bold", marginTop: 4 }}>⚠️ חלף זמן החזרה</div>
+                      <div style={{ fontSize: 10, color: "#dc2626", fontWeight: "bold", marginTop: 4 }}><AlertTriangle size={11} strokeWidth={1.9} aria-hidden="true" /> חלף זמן החזרה</div>
                     )}
                   </td>
                   <td style={s.td}>
@@ -125,7 +126,7 @@ export default function BookingsList({
                     <Badge label={st.label} color={st.color} />
                     {b.email_sent && (
                       <span title="אימייל נשלח" style={{ marginRight: 4 }}>
-                        📧
+                        <Mail size={15} strokeWidth={1.9} aria-hidden="true" />
                       </span>
                     )}
                   </td>
@@ -138,14 +139,14 @@ export default function BookingsList({
                             style={actionChip("success")}
                             title="סמן כהושלמה"
                           >
-                            ✅ סיום
+                            <CircleCheck size={14} strokeWidth={1.9} aria-hidden="true" /> סיום
                           </button>
                           <button
                             onClick={() => onQuickExtend(b)}
                             style={actionChip("info")}
                             title="הארך ביום אחד"
                           >
-                            📅 +יום
+                            <CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> +יום
                           </button>
                         </>
                       )}
@@ -160,12 +161,12 @@ export default function BookingsList({
                           justifyContent: "center",
                           background: "#fff",
                           border: "1px solid #e3e7e5",
-                          borderRadius: 10,
+                          borderRadius: 14,
                         }}
                         title="ערוך"
                         aria-label={`ערוך הזמנה #${b.id}`}
                       >
-                        ✏️
+                        <Pencil size={15} strokeWidth={1.9} aria-hidden="true" />
                       </button>
                       {b.status === "active" && (
                         <PhotoMenu
@@ -190,13 +191,13 @@ export default function BookingsList({
                             justifyContent: "center",
                             background: "#fff",
                             border: "1px solid #fecaca",
-                            borderRadius: 10,
+                            borderRadius: 14,
                             color: "#dc2626",
                           }}
                           title="מחק"
                           aria-label={`מחק הזמנה #${b.id}`}
                         >
-                          🗑️
+                          <Trash2 size={15} strokeWidth={1.9} aria-hidden="true" />
                         </button>
                       )}
                     </div>
@@ -240,7 +241,7 @@ export default function BookingsList({
                 title="פתח כרטיס לקוח"
                 aria-label={`פתח כרטיס לקוח: ${b.customer_name}`}
               >
-                👤 {b.customer_name}
+                <User size={13} strokeWidth={1.9} aria-hidden="true" /> {b.customer_name}
               </button>
             ) : (
               <div style={s.mobileTitle}>{b.customer_name}</div>
@@ -265,7 +266,7 @@ export default function BookingsList({
                   <div style={{ ...s.sub, color: overdue ? "#ef4444" : s.sub.color }}>החזרה: {b.return_time || "08:00"}</div>
                 )}
                 {overdue && (
-                  <div style={{ fontSize: 10, color: "#dc2626", fontWeight: "bold", marginTop: 2 }}>⚠️ חלף זמן החזרה</div>
+                  <div style={{ fontSize: 10, color: "#dc2626", fontWeight: "bold", marginTop: 2 }}><AlertTriangle size={11} strokeWidth={1.9} aria-hidden="true" /> חלף זמן החזרה</div>
                 )}
               </div>
             </div>
@@ -280,14 +281,14 @@ export default function BookingsList({
                       style={actionChip("success")}
                       title="סמן כהושלמה"
                     >
-                      ✅ סיום
+                      <CircleCheck size={14} strokeWidth={1.9} aria-hidden="true" /> סיום
                     </button>
                     <button
                       onClick={() => onQuickExtend(b)}
                       style={actionChip("info")}
                       title="הארך ביום אחד"
                     >
-                      📅 +יום
+                      <CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> +יום
                     </button>
                   </>
                 )}
@@ -303,12 +304,12 @@ export default function BookingsList({
                     justifyContent: "center",
                     background: "#fff",
                     border: "1px solid #e3e7e5",
-                    borderRadius: 10,
+                    borderRadius: 14,
                   }}
                   title="ערוך"
                   aria-label={`ערוך הזמנה #${b.id}`}
                 >
-                  ✏️
+                  <Pencil size={15} strokeWidth={1.9} aria-hidden="true" />
                 </button>
 
                 {b.status === "active" && (
@@ -335,13 +336,13 @@ export default function BookingsList({
                       justifyContent: "center",
                       background: "#fff",
                       border: "1px solid #fecaca",
-                      borderRadius: 10,
+                      borderRadius: 14,
                       color: "#dc2626",
                     }}
                     title="מחק"
                     aria-label={`מחק הזמנה #${b.id}`}
                   >
-                    🗑️
+                    <Trash2 size={15} strokeWidth={1.9} aria-hidden="true" />
                   </button>
                 )}
               </div>

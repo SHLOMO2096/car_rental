@@ -421,21 +421,21 @@ const s = {
 
   grid: { display: "grid", gap: 12, marginBottom: 12 },
 
-  card: { background: "#fff", border: "1px solid #e3e7e5", borderRadius: 12, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", marginBottom: 12 },
+  card: { background: "#fff", border: "1px solid #e3e7e5", borderRadius: 16, padding: 16, boxShadow: "0 1px 2px rgba(20,24,22,0.04), 0 2px 8px rgba(20,24,22,0.04)", marginBottom: 12 },
   cardTitle: { fontSize: 14, fontWeight: 900, color: "#141816", marginBottom: 10 },
 
   row: { display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13, padding: "6px 0", borderBottom: "1px dashed #e3e7e5" },
   label: { color: "#707774", fontWeight: 700 },
 
   smallLabel: { display: "block", fontSize: 12, fontWeight: 700, color: "#59605d", marginBottom: 6 },
-  input: { width: "100%", border: "1px solid #ccd2cf", borderRadius: 10, padding: "9px 10px", fontSize: 13, boxSizing: "border-box" },
+  input: { width: "100%", border: "1px solid #ccd2cf", borderRadius: 14, padding: "9px 10px", fontSize: 13, boxSizing: "border-box" },
 
-  btnPrimary: { background: "#2c6b5e", color: "#fff", border: "none", borderRadius: 10, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
-  btnSecondary: { background: "#fff", color: "#141816", border: "1px solid #ccd2cf", borderRadius: 10, padding: "9px 12px", fontWeight: 800, cursor: "pointer" },
-  btnWarn: { background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa", borderRadius: 10, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
-  btnDanger: { background: "rgba(239,68,68,0.12)", color: "#dc2626", border: "1px solid rgba(239,68,68,0.35)", borderRadius: 10, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
+  btnPrimary: { background: "#2c6b5e", color: "#fff", border: "none", borderRadius: 14, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
+  btnSecondary: { background: "#fff", color: "#141816", border: "1px solid #ccd2cf", borderRadius: 14, padding: "9px 12px", fontWeight: 800, cursor: "pointer" },
+  btnWarn: { background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa", borderRadius: 14, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
+  btnDanger: { background: "rgba(239,68,68,0.12)", color: "#dc2626", border: "1px solid rgba(239,68,68,0.35)", borderRadius: 14, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
 
-  tableWrap: { overflow: "auto", borderRadius: 10, border: "1px solid #e3e7e5" },
+  tableWrap: { overflow: "auto", borderRadius: 14, border: "1px solid #e3e7e5" },
   table: { width: "100%", borderCollapse: "collapse" },
   th: { padding: "12px 12px", textAlign: "right", fontSize: 12, color: "#59605d", fontWeight: 900, whiteSpace: "nowrap" },
   td: { padding: "10px 12px", fontSize: 13, color: "#141816", verticalAlign: "top" },

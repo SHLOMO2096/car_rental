@@ -221,19 +221,19 @@ export default function Settings() {
 }
 
 const s = {
-  card: { background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e3e7e5", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" },
+  card: { background: "#fff", padding: 24, borderRadius: 16, border: "1px solid #e3e7e5", boxShadow: "0 1px 3px rgba(20,24,22,0.05), 0 4px 12px rgba(20,24,22,0.06)" },
   cardTitle: { margin: "0 0 10px", fontSize: 18, fontWeight: 700, color: "#272c2a" },
-  tableWrap: { overflow: "auto", borderRadius: 10, border: "1px solid #e3e7e5" },
+  tableWrap: { overflow: "auto", borderRadius: 14, border: "1px solid #e3e7e5" },
   th: { padding: "12px 12px", textAlign: "right", fontSize: 12, color: "#59605d", fontWeight: 900, whiteSpace: "nowrap" },
   td: { padding: "10px 12px", fontSize: 13, color: "#141816", verticalAlign: "top" },
   filterRow: {
     display: "flex", gap: 12, padding: 16, background: "#f7faf8", 
-    borderRadius: 8, border: "1px solid #e3e7e5", flexWrap: "wrap", alignItems: "flex-end" 
+    borderRadius: 12, border: "1px solid #e3e7e5", flexWrap: "wrap", alignItems: "flex-end" 
   },
   field: { display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 140 },
   label: { fontSize: 12, fontWeight: 600, color: "#59605d" },
-  input: { padding: "8px 12px", borderRadius: 6, border: "1px solid #ccd2cf", fontSize: 14, outline: "none" },
-  btnRemove: { background: "#fee2e2", color: "#dc2626", border: "none", padding: "8px 12px", borderRadius: 6, cursor: "pointer", transition: "background 0.2s" },
-  btnAdd: { background: "#eff3f1", color: "#59605d", border: "1px solid #ccd2cf", padding: "8px 16px", borderRadius: 6, cursor: "pointer", fontWeight: 600 },
-  btnSave: { background: "#154038", color: "#fff", border: "none", padding: "8px 20px", borderRadius: 6, cursor: "pointer", fontWeight: 700, transition: "opacity 0.2s" },
+  input: { padding: "8px 12px", borderRadius: 10, border: "1px solid #ccd2cf", fontSize: 14, outline: "none" },
+  btnRemove: { background: "#fee2e2", color: "#dc2626", border: "none", padding: "8px 12px", borderRadius: 10, cursor: "pointer", transition: "background 0.2s" },
+  btnAdd: { background: "#eff3f1", color: "#59605d", border: "1px solid #ccd2cf", padding: "8px 16px", borderRadius: 10, cursor: "pointer", fontWeight: 600 },
+  btnSave: { background: "#154038", color: "#fff", border: "none", padding: "8px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 700, transition: "opacity 0.2s" },
 };

@@ -46,7 +46,7 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
     >
       {/* Header / Controls */}
       <div style={{ position: "absolute", top: 20, right: 20, left: 20, display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 30001 }}>
-        <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, background: "rgba(255,255,255,0.1)", padding: "6px 12px", borderRadius: 20 }}>
+        <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, background: "rgba(255,255,255,0.1)", padding: "6px 12px", borderRadius: 24 }}>
           תמונה {currentIndex + 1} / {urls.length}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
@@ -82,7 +82,7 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
           }}
           style={{ 
             maxWidth: "100%", maxHeight: "100%", objectFit: "contain",
-            borderRadius: 8, boxShadow: "0 10px 40px rgba(0,0,0,0.5)", 
+            borderRadius: 12, boxShadow: "0 8px 24px rgba(20,24,22,0.12), 0 32px 80px rgba(20,24,22,0.22)", 
             display: (loading || error) ? "none" : "block"
           }}
           onClick={(e) => e.stopPropagation()}
@@ -93,7 +93,7 @@ export function ImageGallery({ photos, initialIndex = 0, onClose }) {
             <p>שגיאה בטעינת התמונה במכשיר זה.</p>
             <button 
               onClick={() => window.open(urls[currentIndex], "_blank")}
-              style={{ background: "#fff", color: "#000", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, marginTop: 10 }}
+              style={{ background: "#fff", color: "#000", border: "none", borderRadius: 12, padding: "10px 20px", fontWeight: 700, marginTop: 10 }}
             >
               פתח בטאב חדש
             </button>
@@ -231,7 +231,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
           width: 34,
           height: 34,
           padding: 0,
-          borderRadius: 10,
+          borderRadius: 14,
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
@@ -246,7 +246,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
           border: "1px solid",
           borderColor: photoCount > 0 ? "#b9d4cb" : "#e3e7e5",
           padding: "8px 16px",
-          borderRadius: 8,
+          borderRadius: 12,
           display: "flex",
           alignItems: "center",
           gap: 6,
@@ -302,7 +302,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
           />
           <div style={{
             position: "absolute", bottom: "100%", left: 0, marginBottom: 8,
-            zIndex: 10002, background: "#fff", borderRadius: 12, 
+            zIndex: 10002, background: "#fff", borderRadius: 16, 
             boxShadow: "0 10px 40px rgba(0,0,0,0.2)", border: "1px solid #e3e7e5",
             minWidth: 190, overflow: "hidden"
           }} onClick={e => e.stopPropagation()}>

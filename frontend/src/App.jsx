@@ -1,4 +1,9 @@
 import { Suspense, lazy, useEffect, useState } from "react";
+import {
+  LayoutDashboard, Car, Users as UsersIcon, ClipboardList, CalendarDays, Clock,
+  TrendingUp, Wallet, Tag, UserCog, Settings as SettingsIcon,
+  LogOut, Menu, CarFront,
+} from "lucide-react";
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "./store/auth";
 import ToastHost        from "./components/ui/ToastHost";
@@ -58,18 +63,19 @@ function Layout({ children }) {
   }, [isMobile]);
 
   const links = [
-    { to:"/",          label:"לוח בקרה",   icon:"📊" },
-    { to:"/cars",      label:"רכבים",       icon:"🚗" },
-    ...(can(Permissions.CUSTOMERS_VIEW) ? [{ to:"/customers", label:"לקוחות", icon:"👤" }] : []),
-    { to:"/bookings",  label:"הזמנות",      icon:"📋" },
-    { to:"/calendar",  label:"לוח שנה",     icon:"📅" },
-    ...(can(Permissions.ATTENDANCE_VIEW) ? [{ to:"/attendance", label:"נוכחות", icon:"🕒" }] : []),
-    ...(can(Permissions.REPORTS_VIEW) ? [{ to:"/reports", label:"סטטיסטיקות", icon:"📈" }] : []),
-    ...(can(Permissions.PAYROLL_VIEW) ? [{ to:"/payroll", label:"שכר עובדים", icon:"💵" }] : []),
-    ...(can(Permissions.PRICING_VIEW) ? [{ to:"/pricing", label:"מחירים", icon:"🏷️" }] : []),
-    ...(can(Permissions.USERS_MANAGE) ? [{ to:"/users", label:"משתמשים", icon:"👥" }] : []),
-    ...(can(Permissions.USERS_MANAGE) ? [{ to:"/settings", label:"הגדרות", icon:"⚙️" }] : []),
+    { to:"/",          label:"לוח בקרה",   Icon: LayoutDashboard },
+    { to:"/cars",      label:"רכבים",       Icon: Car },
+    ...(can(Permissions.CUSTOMERS_VIEW) ? [{ to:"/customers", label:"לקוחות", Icon: UsersIcon }] : []),
+    { to:"/bookings",  label:"הזמנות",      Icon: ClipboardList },
+    { to:"/calendar",  label:"לוח שנה",     Icon: CalendarDays },
+    ...(can(Permissions.ATTENDANCE_VIEW) ? [{ to:"/attendance", label:"נוכחות", Icon: Clock }] : []),
+    ...(can(Permissions.REPORTS_VIEW) ? [{ to:"/reports", label:"סטטיסטיקות", Icon: TrendingUp }] : []),
+    ...(can(Permissions.PAYROLL_VIEW) ? [{ to:"/payroll", label:"שכר עובדים", Icon: Wallet }] : []),
+    ...(can(Permissions.PRICING_VIEW) ? [{ to:"/pricing", label:"מחירים", Icon: Tag }] : []),
+    ...(can(Permissions.USERS_MANAGE) ? [{ to:"/users", label:"משתמשים", Icon: UserCog }] : []),
+    ...(can(Permissions.USERS_MANAGE) ? [{ to:"/settings", label:"הגדרות", Icon: SettingsIcon }] : []),
   ];
+
 
   async function handleLogoutClick() {
     // If the user has an active shift, ask what they want to do.
@@ -110,7 +116,7 @@ function Layout({ children }) {
       }}>
         <div style={{ padding:"22px 18px 18px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <div style={{ fontSize:26 }}>🚘</div>
+            <CarFront size={26} strokeWidth={1.6} color="#6bbdab" aria-hidden="true" />
             <div>
               <div style={{ color:"#6bbdab", fontWeight:800, fontSize:14 }}>השכרת רכבים</div>
               <div style={{ color:"#59605d", fontSize:11 }}>מערכת ניהול</div>
@@ -119,7 +125,7 @@ function Layout({ children }) {
         </div>
 
         <nav style={{ flex:1, padding:"12px 0", overflowY:"auto" }}>
-          {links.map(({ to, label, icon }) => (
+          {links.map(({ to, label, Icon }) => (
             <NavLink key={to} to={to} end={to==="/"} onClick={() => isMobile && setMenuOpen(false)} style={({ isActive }) => ({
               display:"flex", alignItems:"center", gap:10,
               padding:"10px 18px", color: isActive ? "#6bbdab" : "#8e9592",
@@ -128,7 +134,7 @@ function Layout({ children }) {
               borderRight: isActive ? "3px solid #6bbdab" : "3px solid transparent",
               transition:"all 0.15s",
             })}>
-              <span style={{ fontSize:16 }}>{icon}</span>
+              <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
               <span>{label}</span>
             </NavLink>
           ))}
@@ -156,8 +162,12 @@ function Layout({ children }) {
           <button onClick={handleLogoutClick} style={{
             width:"100%", background:"rgba(239,68,68,0.12)",
             border:"1px solid rgba(239,68,68,0.25)", color:"#fca5a5",
-            borderRadius:7, padding:"7px 0", fontSize:13, cursor:"pointer", fontWeight:600,
-          }}>🚪 יציאה</button>
+            borderRadius:10, padding:"8px 0", fontSize:13, cursor:"pointer", fontWeight:600,
+            display:"flex", alignItems:"center", justifyContent:"center", gap:7,
+          }}>
+            <LogOut size={15} strokeWidth={1.9} aria-hidden="true" />
+            יציאה
+          </button>
           <div style={{ marginTop:10, color:"#707774", fontSize:11, lineHeight:1.5 }}>
             <div>גרסה: v{APP_VERSION}</div>
             <div>Build: {BUILD_TIME}</div>
@@ -172,16 +182,18 @@ function Layout({ children }) {
           <div style={{
             display:"flex", alignItems:"center", justifyContent:"space-between",
             marginBottom:10, background:"#fff", border:"1px solid #e3e7e5",
-            borderRadius:10, padding:"8px 10px",
+            borderRadius:14, padding:"8px 10px",
           }}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
               style={{
-                border:"1px solid #ccd2cf", borderRadius:8, background:"#fff",
-                padding:"6px 10px", cursor:"pointer", fontSize:13, fontWeight:700,
+                border:"1px solid #ccd2cf", borderRadius:12, background:"#fff",
+                padding:"7px 12px", cursor:"pointer", fontSize:13, fontWeight:700,
+                display:"flex", alignItems:"center", gap:7,
               }}
             >
-              ☰ תפריט
+              <Menu size={16} strokeWidth={1.9} aria-hidden="true" />
+              תפריט
             </button>
             <div style={{ fontSize:12, color:"#707774", fontWeight:700 }}>{user?.full_name || "משתמש"}</div>
           </div>
@@ -221,7 +233,7 @@ function Layout({ children }) {
                 background: "#eff3f1",
                 color: "#59605d",
                 border: "1px solid #e3e7e5",
-                borderRadius: 8,
+                borderRadius: 12,
                 padding: "9px 16px",
                 fontWeight: 700,
                 cursor: logoutAttendancePrompt.busy ? "not-allowed" : "pointer",
@@ -240,7 +252,7 @@ function Layout({ children }) {
                 background: "#fff",
                 color: "#141816",
                 border: "1px solid #ccd2cf",
-                borderRadius: 8,
+                borderRadius: 12,
                 padding: "9px 16px",
                 fontWeight: 800,
                 cursor: logoutAttendancePrompt.busy ? "not-allowed" : "pointer",
@@ -266,7 +278,7 @@ function Layout({ children }) {
                 background: "rgba(239,68,68,0.12)",
                 color: "#dc2626",
                 border: "1px solid rgba(239,68,68,0.35)",
-                borderRadius: 8,
+                borderRadius: 12,
                 padding: "9px 16px",
                 fontWeight: 900,
                 cursor: logoutAttendancePrompt.busy ? "not-allowed" : "pointer",
@@ -348,7 +360,7 @@ function BuildInfoBadge() {
       background: "rgba(15,23,42,0.88)",
       color: "#ccd2cf",
       border: "1px solid rgba(148,163,184,0.35)",
-      borderRadius: 8,
+      borderRadius: 12,
       padding: "6px 10px",
       fontSize: 11,
       lineHeight: 1.4,

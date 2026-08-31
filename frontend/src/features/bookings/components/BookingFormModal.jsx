@@ -3,6 +3,7 @@ import Modal from "../../../components/ui/Modal";
 import { s } from "../styles";
 import { addDays, formatDateTime, todayISO } from "../utils/dates";
 import { clampTimeValue, getEarliestAllowedPickupTime, isBookingStartInPast, sanitizeTimeTyping } from "../utils/form";
+import { Coins, Info, Mail, Pencil, AlertTriangle, UserCircle, Clock } from "lucide-react";
 
 function getEffectivePriceDay(car, priceRules) {
   if (!priceRules?.length) return null;
@@ -101,7 +102,7 @@ export default function BookingFormModal({
                     const effectivePrice = getEffectivePriceDay(c, priceRules);
                     return (
                       <option key={c.id} value={c.id}>
-                        {c.name} ({c.plate}) {c.is_hybrid ? "🌿" : ""}{effectivePrice != null ? ` — ₪${effectivePrice}/יום` : ""}
+                        {c.name} ({c.plate}) {c.is_hybrid ? " · היברידי" : ""}{effectivePrice != null ? ` — ₪${effectivePrice}/יום` : ""}
                       </option>
                     );
                   })}
@@ -290,7 +291,7 @@ export default function BookingFormModal({
             <span>⏳ מחשב מחיר...</span>
           ) : preview.result ? (
             <>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>💰 תחשיב מחיר:</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}><Coins size={15} strokeWidth={1.9} aria-hidden="true" /> תחשיב מחיר:</div>
               {preview.result.breakdown.map((line, i) => (
                 <div key={i} style={{ fontSize: 13, marginBottom: 2 }}>
                   {line.label} — <strong>₪{line.subtotal.toLocaleString()}</strong>
@@ -298,14 +299,14 @@ export default function BookingFormModal({
               ))}
               {preview.result.note && (
                 <div style={{ fontSize: 12, color: "#707774", marginTop: 2 }}>
-                  ℹ️ {preview.result.note}
+                  <Info size={13} strokeWidth={1.9} aria-hidden="true" /> {preview.result.note}
                 </div>
               )}
               <div style={{ marginTop: 6, fontWeight: 700, fontSize: 15 }}>
                 סה&quot;כ: ₪{preview.result.total.toLocaleString()}
               </div>
               {form.customer_email && (
-                <span style={{ marginTop: 4, display: "block", fontSize: 12 }}>📧 אישור יישלח ללקוח</span>
+                <span style={{ marginTop: 4, display: "block", fontSize: 12 }}><Mail size={13} strokeWidth={1.9} aria-hidden="true" /> אישור יישלח ללקוח</span>
               )}
             </>
           ) : null}
@@ -326,14 +327,14 @@ export default function BookingFormModal({
             }
             style={{ ...s.btnSecondary, fontSize: 13, padding: "6px 12px" }}
           >
-            ✏️ שינוי מחיר ידני
+            <Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> שינוי מחיר ידני
           </button>
         ) : (
           <div
             style={{
               border: "1px solid #fdba74",
               background: "#fff7ed",
-              borderRadius: 10,
+              borderRadius: 14,
               padding: 12,
             }}
           >
@@ -368,14 +369,14 @@ export default function BookingFormModal({
               placeholder="למשל: לקוח קבוע, תיקון טעות תמחור וכו'"
             />
             <div style={{ fontSize: 12, color: "#9a3412", marginTop: 6 }}>
-              ⚠️ מחיר זה יישלח במייל אישור ההזמנה ללקוח, והשינוי יתועד וידווח למנהל.
+              <AlertTriangle size={13} strokeWidth={1.9} aria-hidden="true" /> מחיר זה יישלח במייל אישור ההזמנה ללקוח, והשינוי יתועד וידווח למנהל.
             </div>
           </div>
         )}
       </div>
 
       {startInPast && (
-        <div style={s.warningBox}>⚠️ שים לב: תאריך/שעת האיסוף שנבחרו כבר עברו</div>
+        <div style={s.warningBox}><AlertTriangle size={13} strokeWidth={1.9} aria-hidden="true" /> שים לב: תאריך/שעת האיסוף שנבחרו כבר עברו</div>
       )}
 
       {formError && <div style={s.errorBox}>{formError}</div>}
@@ -387,7 +388,7 @@ export default function BookingFormModal({
             margin: "12px 0 0",
             padding: "8px 12px",
             background: "#f7faf8",
-            borderRadius: 8,
+            borderRadius: 12,
             border: "1px solid #e3e7e5",
             display: "flex",
             flexWrap: "wrap",
@@ -398,17 +399,17 @@ export default function BookingFormModal({
         >
           {editBooking.created_by_name && (
             <span>
-              🧑‍💼 נוצר ע"י <strong>{editBooking.created_by_name}</strong>
+              <UserCircle size={13} strokeWidth={1.9} aria-hidden="true" /> נוצר ע"י <strong>{editBooking.created_by_name}</strong>
             </span>
           )}
           {editBooking.updated_by_name && (
             <span>
-              ✏️ עודכן לאחרונה ע"י <strong>{editBooking.updated_by_name}</strong>
+              <Pencil size={13} strokeWidth={1.9} aria-hidden="true" /> עודכן לאחרונה ע"י <strong>{editBooking.updated_by_name}</strong>
             </span>
           )}
-          {editBooking.created_at && <span>🕐 {formatDateTime(editBooking.created_at)}</span>}
-          {editBooking.updated_at && <span>✏️ עודכן: {formatDateTime(editBooking.updated_at)}</span>}
-          {isCrossAgentEdit && <span style={{ color: "#b45309", fontWeight: 700 }}>⚠️ עריכת הזמנה של סוכן אחר</span>}
+          {editBooking.created_at && <span><Clock size={12} strokeWidth={1.9} aria-hidden="true" /> {formatDateTime(editBooking.created_at)}</span>}
+          {editBooking.updated_at && <span><Pencil size={12} strokeWidth={1.9} aria-hidden="true" /> עודכן: {formatDateTime(editBooking.updated_at)}</span>}
+          {isCrossAgentEdit && <span style={{ color: "#b45309", fontWeight: 700 }}><AlertTriangle size={13} strokeWidth={1.9} aria-hidden="true" /> עריכת הזמנה של סוכן אחר</span>}
         </div>
       )}
 
@@ -417,7 +418,7 @@ export default function BookingFormModal({
           style={{
             marginTop: 12,
             border: "1px solid #e3e7e5",
-            borderRadius: 10,
+            borderRadius: 14,
             background: "#ffffff",
             overflow: "hidden",
           }}

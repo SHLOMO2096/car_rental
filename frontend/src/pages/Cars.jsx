@@ -9,6 +9,7 @@ import { settingsAPI } from "../api/settings";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
+import { FolderOpen, Folder, Car as CarIcon, CalendarCheck, CalendarPlus, Pencil } from "lucide-react";
 
 // Removed old CAR_TYPES constant
 
@@ -139,7 +140,7 @@ export default function Cars() {
       <div style={s.pageHeader}>
         <h1 style={s.h1}>ניהול רכבים</h1>
         <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-          <input placeholder="🔍 חיפוש שם / לוחית..." value={search}
+          <input placeholder="חיפוש שם / לוחית..." value={search}
             onChange={e => setSearch(e.target.value)} style={s.searchInput} />
           <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={s.select}>
             <option value="all">כל הקטגוריות</option>
@@ -164,7 +165,7 @@ export default function Cars() {
           onClick={() => setActiveFilter("all")}
         />
         <FilterChip
-          label="✅ פעילים" value={cars.filter(c=>c.is_active).length} color="#22c55e"
+          label="פעילים" value={cars.filter(c=>c.is_active).length} color="#22c55e"
           active={activeFilter === "active"}
           onClick={() => setActiveFilter("active")}
         />
@@ -193,7 +194,7 @@ export default function Cars() {
                 onClick={() => setOpenFolders(prev => ({ ...prev, [cat.name || "unassigned"]: !isOpen }))}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>{isOpen ? "📂" : "📁"}</span>
+                  <span style={{ fontSize: 20 }}>{isOpen ? <FolderOpen size={18} strokeWidth={1.8} aria-hidden="true" /> : <Folder size={18} strokeWidth={1.8} aria-hidden="true" />}</span>
                   <span style={{ fontWeight: 800, fontSize: 18 }}>{displayTitle}</span>
                   <span style={s.folderBadge}>{catCars.length}</span>
                 </div>
@@ -209,7 +210,7 @@ export default function Cars() {
                     return (
                       <div key={isHybrid ? "hybrid" : "regular"}>
                         <h4 style={{ fontSize: 13, color: "#707774", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                          {isHybrid ? "🌿 היברידי" : "⛽ רגיל"}
+                          {isHybrid ? "היברידי" : "רגיל"}
                           <span style={{ fontWeight: 400, fontSize: 11 }}>({subCars.length})</span>
                         </h4>
                         <div style={s.grid}>
@@ -225,7 +226,7 @@ export default function Cars() {
                             return (
                               <div key={car.id} style={{ ...s.card, opacity: car.is_active ? 1 : 0.55 }}>
                                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                                  <span style={{ fontSize:32 }}>🚗</span>
+                                  <CarIcon size={30} strokeWidth={1.5} aria-hidden="true" />
                                   <Badge label={car.is_active ? "פעיל" : "לא פעיל"}
                                          color={car.is_active ? "green" : "gray"} />
                                 </div>
@@ -234,7 +235,7 @@ export default function Cars() {
                                 
                                 {car.test_date && (
                                   <div style={{ fontSize: 11, color: "#e11d48", fontWeight: 600, marginTop: 4 }}>
-                                    🗓 טסט עד: {car.test_date}
+                                    <CalendarCheck size={12} strokeWidth={1.9} aria-hidden="true" /> טסט עד: {car.test_date}
                                   </div>
                                 )}
                                 
@@ -246,12 +247,12 @@ export default function Cars() {
                                       onClick={() => navigate("/bookings", {
                                         state: { bookingPrefill: { car_id: car.id } }
                                       })}
-                                      style={s.btnBook}>📅 הזמן
+                                      style={s.btnBook}><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן
                                     </button>
                                   )}
                                   {canManageCars && (
                                     <>
-                                      <button onClick={() => openEdit(car)} style={s.btnEdit}>✏️ ערוך</button>
+                                      <button onClick={() => openEdit(car)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
                                       <button onClick={() => toggleActive(car)}
                                         style={car.is_active ? s.btnWarn : s.btnSuccess}>
                                         {car.is_active ? "⏸ השבת" : "▶ הפעל"}
@@ -294,7 +295,7 @@ export default function Cars() {
             <label style={{ display: "flex", alignItems: "center", gap: 8, height: "100%", cursor: "pointer" }}>
               <input type="checkbox" checked={form.is_hybrid} 
                 onChange={e => setForm(f=>({...f,is_hybrid:e.target.checked}))} />
-              <span style={{ fontSize: 14 }}>רכב היברידי 🌿</span>
+              <span style={{ fontSize: 14 }}>רכב היברידי</span>
             </label>
           </Field>
           <Field label="שנה *">
@@ -345,7 +346,7 @@ function FilterChip({ label, value, color, active, onClick }) {
       style={{
         background: active ? `${color}20` : "#f7faf8",
         border: active ? `2px solid ${color}` : `1px solid ${color}30`,
-        borderRadius: 20, padding: "5px 16px", fontSize: 13,
+        borderRadius: 24, padding: "5px 16px", fontSize: 13,
         color: active ? color : "#707774",
         cursor: "pointer", fontWeight: active ? 700 : 500,
         transition: "all 0.15s",
@@ -373,48 +374,48 @@ const s = {
   pageHeader: { display:"flex", justifyContent:"space-between", alignItems:"center",
                 marginBottom:20, flexWrap:"wrap", gap:12 },
   h1:         { fontSize:24, fontWeight:800, margin:0 },
-  searchInput:{ padding:"8px 14px", borderRadius:8, border:"1px solid #e3e7e5",
+  searchInput:{ padding:"8px 14px", borderRadius:12, border:"1px solid #e3e7e5",
                 fontSize:14, outline:"none", minWidth:220 },
-  select:     { padding:"8px 14px", borderRadius:8, border:"1px solid #e3e7e5",
+  select:     { padding:"8px 14px", borderRadius:12, border:"1px solid #e3e7e5",
                 fontSize:14, cursor:"pointer", background:"#fff" },
   folderSection: { marginBottom: 12 },
   folderHeader: { display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "12px 16px", background: "#f7faf8", borderRadius: 12,
+                  padding: "12px 16px", background: "#f7faf8", borderRadius: 16,
                   border: "1px solid #e3e7e5", cursor: "pointer", userSelect: "none",
                   transition: "background 0.2s" },
-  folderBadge: { background: "#e3e7e5", color: "#59605d", borderRadius: 12,
+  folderBadge: { background: "#e3e7e5", color: "#59605d", borderRadius: 16,
                  padding: "2px 8px", fontSize: 12, fontWeight: 700 },
   grid:       { display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap: 16, marginTop: 16 },
-  card:       { background:"#fff", borderRadius:14, padding:18,
-                border:"1px solid #e3e7e5", boxShadow:"0 1px 4px rgba(0,0,0,0.05)",
+  card:       { background:"#fff", borderRadius:18, padding:18,
+                border:"1px solid #e3e7e5", boxShadow:"0 1px 2px rgba(20,24,22,0.04), 0 2px 8px rgba(20,24,22,0.04)",
                 transition:"transform 0.15s, box-shadow 0.15s" },
   carName:    { fontWeight:800, fontSize:16, marginTop:8 },
   carSub:     { fontSize:12, color:"#8e9592", marginTop:2 },
   // price:      { fontSize:15, fontWeight:700, color:"#154038", marginTop:6, display: "flex", alignItems: "center", gap: 6 },
   // priceHint:  { fontSize:11, color: "#8e9592", fontWeight: 400 },
   desc:       { fontSize:12, color:"#707774", marginTop:6, lineHeight:1.5 },
-  typeTag:    { background:"#eef5f2", color:"#2c6b5e", borderRadius:20,
+  typeTag:    { background:"#eef5f2", color:"#2c6b5e", borderRadius:24,
                 padding:"2px 10px", fontSize:11, fontWeight:600 },
-  btnPrimary: { background:"#154038", color:"#fff", border:"none", borderRadius:8,
+  btnPrimary: { background:"#154038", color:"#fff", border:"none", borderRadius:12,
                 padding:"8px 18px", fontWeight:700, cursor:"pointer", fontSize:14 },
   btnSecondary:{ background:"#eff3f1", color:"#59605d", border:"1px solid #e3e7e5",
-                 borderRadius:8, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
+                 borderRadius:12, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
   btnEdit:    { background:"#eef5f2", color:"#2c6b5e", border:"1px solid #b9d4cb",
-                borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:13 },
+                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:13 },
   btnBook:    { background:"#f0fdf4", color:"#15803d", border:"1px solid #86efac",
-                borderRadius:7, padding:"5px 12px", cursor:"pointer", fontSize:13, fontWeight:700 },
+                borderRadius:10, padding:"5px 12px", cursor:"pointer", fontSize:13, fontWeight:700 },
   btnWarn:    { background:"#fff7ed", color:"#c2410c", border:"1px solid #fed7aa",
-                borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:13 },
+                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:13 },
   btnSuccess: { background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0",
-                borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:13 },
+                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:13 },
   btnDanger:  { background:"#fef2f2", color:"#dc2626", border:"1px solid #fecaca",
-                borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:13 },
-  input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e3e7e5",
+                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:13 },
+  input:      { width:"100%", padding:"9px 12px", borderRadius:12, border:"1px solid #e3e7e5",
                 fontSize:14, outline:"none", boxSizing:"border-box" },
   label:      { display:"block", fontSize:12, fontWeight:600, color:"#59605d", marginBottom:5 },
   formGrid:   { display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginBottom:12 },
   modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 },
-  errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:8,
+  errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:12,
                 padding:"10px 14px", fontSize:13, marginTop:8 },
   empty:      { gridColumn:"1/-1", textAlign:"center", padding:40, color:"#8e9592" },
 };

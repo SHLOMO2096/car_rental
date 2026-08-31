@@ -14,6 +14,11 @@ import { useAuthStore } from "../store/auth";
 import { getJewishDayMeta } from "../utils/jewishCalendar";
 import { PhotoMenu, CameraCaptureModal, ImageGallery } from "../components/photos/PhotoManagement";
 import { createDashboardPermissionModel } from "./dashboardPermissions";
+import {
+  SlidersHorizontal, X, AlertCircle, Trash2, User, Maximize2, Minimize2, Check,
+  ClipboardList, CircleCheck, ArrowLeftRight, CalendarDays, Car, Hash,
+  Upload,
+} from "lucide-react";
 
 const DAY_NAMES   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
 // פלטה קטגוריאלית לזיהוי דגם ברשת הזמינות.
@@ -306,7 +311,7 @@ export function Dashboard() {
             type="search"
             value={quickSearch}
             onChange={(e) => setQuickSearch(e.target.value)}
-            placeholder="🔍 חיפוש מהיר: דגם, יצרן, לוחית, מספר רכב..."
+            placeholder="חיפוש מהיר: דגם, יצרן, לוחית, מספר רכב..."
             autoComplete="off"
             autoCorrect="off"
             spellCheck="false"
@@ -335,7 +340,7 @@ export function Dashboard() {
                 padding: 4,
               }}
             >
-              ✕
+              <X size={17} strokeWidth={2} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -358,7 +363,7 @@ export function Dashboard() {
               minWidth: isMobile ? "auto" : 180,
             }}
           >
-            🎚️ סינונים מתקדמים
+            <SlidersHorizontal size={15} strokeWidth={1.9} aria-hidden="true" /> סינונים מתקדמים
             {activeFiltersCount > 0 && (
               <span style={{
                 background: "#fff",
@@ -383,7 +388,7 @@ export function Dashboard() {
                 fontWeight: 600,
               }}
             >
-              ✕ נקה הכל
+              <X size={14} strokeWidth={2.2} aria-hidden="true" /> נקה הכל
             </button>
           )}
         </div>
@@ -392,12 +397,12 @@ export function Dashboard() {
         <div style={{ fontSize: 12, color: "#707774", marginTop: 10 }}>
           {quickSearch && filteredCars.length === 0 && (
             <span style={{ color: "#dc2626" }}>
-              ⚠️ לא נמצאו רכבים תואמים ל-"{quickSearch}"
+              <AlertCircle size={15} strokeWidth={1.9} aria-hidden="true" /> לא נמצאו רכבים תואמים ל-"{quickSearch}"
             </span>
           )}
           {!quickSearch && activeFiltersCount > 0 && filteredCars.length === 0 && (
             <span style={{ color: "#dc2626" }}>
-              ⚠️ לא נמצאו רכבים תואמים לסינונים הנבחרים
+              <AlertCircle size={15} strokeWidth={1.9} aria-hidden="true" /> לא נמצאו רכבים תואמים לסינונים הנבחרים
             </span>
           )}
           {(quickSearch || activeFiltersCount > 0) && filteredCars.length > 0 && (
@@ -425,7 +430,7 @@ export function Dashboard() {
           onClick={() => setFocusMode(true)}
           style={{ ...chipStyle, display:"flex", alignItems:"center", gap:6, padding:"4px 10px", background:"#eff3f1" }}
         >
-          ⛶ מסך מלא
+          <Maximize2 size={14} strokeWidth={1.9} aria-hidden="true" /> מסך מלא
         </button>
       </div>
 
@@ -450,12 +455,12 @@ export function Dashboard() {
              </div>
              <button 
                onClick={() => setFocusMode(false)} 
-               style={{ padding:"8px 16px", borderRadius:8, background:"#ef4444", color:"#fff", border:"none", cursor:"pointer" }}
+               style={{ padding:"8px 16px", borderRadius:12, background:"#ef4444", color:"#fff", border:"none", cursor:"pointer" }}
              >
-               ✖ סגור מסך מלא
+               <Minimize2 size={15} strokeWidth={1.9} aria-hidden="true" /> סגור מסך מלא
              </button>
           </div>
-          <div style={{ background:"#fff", borderRadius:12, boxShadow:"0 4px 20px rgba(0,0,0,0.1)", padding:10 }}>
+          <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 4px 12px rgba(20,24,22,0.06), 0 18px 40px rgba(20,24,22,0.10)", padding:10 }}>
             <AvailabilityGrid 
               cars={filteredCars} 
               startDate={rangeStart} 
@@ -474,13 +479,13 @@ export function Dashboard() {
       {/* ── Stats cards (below the grid) ── */}
       <div style={{ display:"grid", gridTemplateColumns:isMobile ? "repeat(2,1fr)" : "repeat(auto-fit,minmax(180px,1fr))", gap:12, margin:"20px 0" }}>
         {[
-          { label:"סה״כ הזמנות",   value: kpis?.total  ?? "—", color:"#2c6b5e", icon:"📋" },
-          { label:"הזמנות פעילות", value: kpis?.active ?? "—", color:"#22c55e", icon:"✅" },
+          { label:"סה״כ הזמנות",   value: kpis?.total  ?? "—", color:"#2c6b5e", Icon: ClipboardList },
+          { label:"הזמנות פעילות", value: kpis?.active ?? "—", color:"#22c55e", Icon: CircleCheck },
         ].map(s => (
-          <div key={s.label} style={{ background:"#fff", borderRadius:12, padding:isMobile ? "14px 16px" : "20px 24px",
+          <div key={s.label} style={{ background:"#fff", borderRadius:16, padding:isMobile ? "14px 16px" : "20px 24px",
                border:`1px solid ${s.color}30`, display:"flex", gap:12, alignItems:"center",
-               boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-            <span style={{ fontSize: isMobile ? 24 : 32 }}>{s.icon}</span>
+               boxShadow:"0 1px 2px rgba(20,24,22,0.04), 0 3px 10px rgba(20,24,22,0.05)" }}>
+            <s.Icon size={isMobile ? 24 : 30} strokeWidth={1.6} color={s.color} aria-hidden="true" />
             <div>
               <div style={{ fontSize: isMobile ? 22 : 28, fontWeight:800, color:s.color }}>{s.value}</div>
               <div style={{ fontSize:11, color:"#8e9592" }}>{s.label}</div>
@@ -532,7 +537,7 @@ export function Dashboard() {
                 width: "90%",
                 maxWidth: 700,
                 maxHeight: "85vh",
-                borderRadius: 16,
+                borderRadius: 20,
                 animation: "zoomIn 0.25s ease-out",
               }),
               background: "#fff",
@@ -572,7 +577,7 @@ export function Dashboard() {
               ...(isMobile ? {} : { borderTopLeftRadius: 16, borderTopRightRadius: 16 }),
             }}>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#272c2a" }}>
-                🎚️ סינון ותצוגה
+                <SlidersHorizontal size={17} strokeWidth={1.9} aria-hidden="true" /> סינון ותצוגה
               </h3>
               <button
                 onClick={() => setShowFilterSheet(false)}
@@ -586,7 +591,7 @@ export function Dashboard() {
                   lineHeight: 1,
                 }}
               >
-                ✕
+                <X size={17} strokeWidth={2} aria-hidden="true" />
               </button>
             </div>
 
@@ -635,9 +640,9 @@ export function Dashboard() {
                 <span style={{ ...fieldLabel, display: "block", marginBottom: 8 }}>סוג הנעה</span>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {[
-                    { value: "all", label: "🚗 הכל" },
-                    { value: "hybrid", label: "🌿 היברידי" },
-                    { value: "regular", label: "⛽ רגיל" },
+                    { value: "all", label: "הכל" },
+                    { value: "hybrid", label: "היברידי" },
+                    { value: "regular", label: "רגיל" },
                   ].map(opt => (
                     <label
                       key={opt.value}
@@ -693,7 +698,7 @@ export function Dashboard() {
               <div style={{
                 background: "#f7faf8",
                 padding: "12px 16px",
-                borderRadius: 8,
+                borderRadius: 12,
                 fontSize: 12,
                 color: "#707774",
                 marginBottom: 16,
@@ -739,7 +744,7 @@ export function Dashboard() {
                   fontWeight: 700,
                 }}
               >
-                ✓ החל והצג ({filteredCars.length})
+                <Check size={16} strokeWidth={2.2} aria-hidden="true" /> החל והצג ({filteredCars.length})
               </button>
             </div>
           </div>
@@ -776,26 +781,26 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel, 
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1000,
                   display:"flex", alignItems:"center", justifyContent:"center" }}
          onClick={onCancel}>
-      <div dir="rtl" style={{ background:"#fff", borderRadius:16, padding:28, maxWidth:400,
-                               width:"90%", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}
+      <div dir="rtl" style={{ background:"#fff", borderRadius:20, padding:28, maxWidth:400,
+                               width:"90%", boxShadow:"0 8px 24px rgba(20,24,22,0.10), 0 32px 80px rgba(20,24,22,0.18)" }}
            onClick={e => e.stopPropagation()}>
-        <div style={{ fontSize:22, marginBottom:8 }}>🔄 העברת הזמנה</div>
+        <div style={{ fontSize:22, marginBottom:8 }}><ArrowLeftRight size={19} strokeWidth={1.8} aria-hidden="true" /> העברת הזמנה</div>
         <p style={{ fontSize:14, color:"#404643", marginBottom:4 }}>
           <strong>{booking.customer_name}</strong>
         </p>
         <p style={{ fontSize:13, color:"#707774", marginBottom:4 }}>
-          📅 {booking.start_date} – {booking.end_date}
+          <CalendarDays size={14} strokeWidth={1.8} aria-hidden="true" /> {booking.start_date} – {booking.end_date}
         </p>
         <div style={{ display:"flex", alignItems:"center", gap:10, margin:"16px 0",
-                      padding:"12px 16px", background:"#eff3f1", borderRadius:10, fontSize:13 }}>
+                      padding:"12px 16px", background:"#eff3f1", borderRadius:14, fontSize:13 }}>
           <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2 }}>
-            <span style={{ color:"#dc2626", fontWeight:700 }}>🚗 {fromCar.name}</span>
-            {fromCar.plate && <span style={{ fontSize:11, color:"#8e9592", fontWeight:600 }}>🔢 {fromCar.plate}</span>}
+            <span style={{ color:"#dc2626", fontWeight:700 }}><Car size={14} strokeWidth={1.8} aria-hidden="true" /> {fromCar.name}</span>
+            {fromCar.plate && <span style={{ fontSize:11, color:"#8e9592", fontWeight:600 }}><Hash size={12} strokeWidth={2} aria-hidden="true" />{fromCar.plate}</span>}
           </div>
           <span style={{ color:"#707774", fontSize:18, flex:1, textAlign:"center" }}>←</span>
           <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2 }}>
-            <span style={{ color:"#16a34a", fontWeight:700 }}>🚗 {toCar.name}</span>
-            {toCar.plate && <span style={{ fontSize:11, color:"#8e9592", fontWeight:600 }}>🔢 {toCar.plate}</span>}
+            <span style={{ color:"#16a34a", fontWeight:700 }}><Car size={14} strokeWidth={1.8} aria-hidden="true" /> {toCar.name}</span>
+            {toCar.plate && <span style={{ fontSize:11, color:"#8e9592", fontWeight:600 }}><Hash size={12} strokeWidth={2} aria-hidden="true" />{toCar.plate}</span>}
           </div>
         </div>
         <p style={{ fontSize:12, color:"#8e9592", marginBottom:20 }}>
@@ -811,21 +816,21 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel, 
               onChange={(e) => onOperatorNoteChange?.(e.target.value)}
               rows={3}
               placeholder="מה הסיבה להעברה? מי ביקש?"
-              style={{ width: "100%", borderRadius: 8, border: "1px solid #f59e0b", padding: 10, fontSize: 13, resize: "vertical", boxSizing: "border-box" }}
+              style={{ width: "100%", borderRadius: 12, border: "1px solid #f59e0b", padding: 10, fontSize: 13, resize: "vertical", boxSizing: "border-box" }}
             />
           </div>
         )}
         <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
           <button onClick={onCancel} disabled={loading}
-                  style={{ padding:"9px 20px", borderRadius:8, border:"1px solid #ccd2cf",
+                  style={{ padding:"9px 20px", borderRadius:12, border:"1px solid #ccd2cf",
                            background:"#fff", color:"#404643", fontSize:13, cursor:"pointer" }}>
             ביטול
           </button>
           <button onClick={onConfirm} disabled={loading || (requiresOperatorNote && !operatorNote.trim())}
-                  style={{ padding:"9px 20px", borderRadius:8, border:"none",
+                  style={{ padding:"9px 20px", borderRadius:12, border:"none",
                            background: (loading || (requiresOperatorNote && !operatorNote.trim())) ? "#93c5fd" : "#154038", color:"#fff",
                            fontSize:13, fontWeight:700, cursor: (loading || (requiresOperatorNote && !operatorNote.trim())) ? "not-allowed" : "pointer" }}>
-            {loading ? "מעדכן..." : "✔ אשר העברה"}
+            {loading ? "מעדכן..." : <><Check size={16} strokeWidth={2.2} aria-hidden="true" /> אשר העברה</>}
           </button>
         </div>
       </div>
@@ -841,7 +846,7 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
     >
       <div
         dir="rtl"
-        style={{ background:"#fff", borderRadius:16, padding:24, maxWidth:420, width:"92%", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}
+        style={{ background:"#fff", borderRadius:20, padding:24, maxWidth:420, width:"92%", boxShadow:"0 8px 24px rgba(20,24,22,0.10), 0 32px 80px rgba(20,24,22,0.18)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ margin:"0 0 8px", fontSize:18, color:"#272c2a" }}>פעולות על הזמנה קיימת</h3>
@@ -855,21 +860,21 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
         )}
         <div style={{ display:"flex", gap:10, justifyContent:"space-between", alignItems:"center", flexWrap:"wrap" }}>
           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-             <button onClick={onClose} style={{ padding:"9px 16px", borderRadius:8, border:"1px solid #ccd2cf", background:"#fff", color:"#404643", cursor:"pointer" }}>סגור</button>
+             <button onClick={onClose} style={{ padding:"9px 16px", borderRadius:12, border:"1px solid #ccd2cf", background:"#fff", color:"#404643", cursor:"pointer" }}>סגור</button>
              {photoMenu}
           </div>
           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
             {canReassign && onReassign && (
-              <button onClick={onReassign} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#154038", color:"#fff", fontWeight:700, cursor:"pointer" }}>העבר</button>
+              <button onClick={onReassign} style={{ padding:"9px 16px", borderRadius:12, border:"none", background:"#154038", color:"#fff", fontWeight:700, cursor:"pointer" }}>העבר</button>
             )}
             {onDelete && (
-              <button onClick={onDelete} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#fee2e2", color:"#dc2626", fontWeight:700, cursor:"pointer" }}>🗑 מחק</button>
+              <button onClick={onDelete} style={{ padding:"9px 16px", borderRadius:12, border:"none", background:"#fee2e2", color:"#dc2626", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6 }}><Trash2 size={15} strokeWidth={1.9} aria-hidden="true" /> מחק</button>
             )}
             {booking.customer_id && onCustomer && (
-              <button onClick={onCustomer} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#154038", color:"#fff", fontWeight:700, cursor:"pointer" }}>👤 לקוח</button>
+              <button onClick={onCustomer} style={{ padding:"9px 16px", borderRadius:12, border:"none", background:"#154038", color:"#fff", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6 }}><User size={15} strokeWidth={1.9} aria-hidden="true" /> לקוח</button>
             )}
             {onEdit && (
-              <button onClick={onEdit} style={{ padding:"9px 16px", borderRadius:8, border:"none", background:"#154038", color:"#fff", fontWeight:700, cursor:"pointer" }}>עריכה</button>
+              <button onClick={onEdit} style={{ padding:"9px 16px", borderRadius:12, border:"none", background:"#154038", color:"#fff", fontWeight:700, cursor:"pointer" }}>עריכה</button>
             )}
           </div>
         </div>
@@ -1312,7 +1317,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
                     padding:"14px 18px", borderBottom:"1px solid #e3e7e5", gap:12, flexWrap:"wrap" }}>
-        <h3 style={{ ...cardTitle, margin:0 }}>📅 זמינות רכבים</h3>
+        <h3 style={{ ...cardTitle, margin:0 }}><CalendarDays size={17} strokeWidth={1.8} aria-hidden="true" /> זמינות רכבים</h3>
         <div style={{ display:"flex", alignItems:"center", gap:10, fontSize:12, color:"#707774" }}>
           {loadingGrid && <span style={{ color:"#8e9592" }}>מרענן...</span>}
           <span>מציג מ־<strong>{startDate}</strong> עד <strong>{endDate}</strong></span>
@@ -1408,10 +1413,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                       </div>
                     )}
                      {isPastDay && <span style={{ fontSize:9, color:"#707774", marginRight:4,
-                                                background:"#e3e7e5", borderRadius:4,
+                                                background:"#e3e7e5", borderRadius:8,
                                                 padding:"1px 4px" }}>עבר</span>}
                     {isToday && <span style={{ fontSize:9, color:"#f59e0b", marginRight:4,
-                                               background:"#fef3c7", borderRadius:4,
+                                               background:"#fef3c7", borderRadius:8,
                                                padding:"1px 4px" }}>היום</span>}
                   </td>
                   {activeCars.map(car => {
@@ -1436,7 +1441,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                                      boxShadow: dayMeta.isShabbat ? "inset 0 -2px 0 #7c3aed55" : (dayMeta.isHoliday ? "inset 0 -2px 0 #dc262655" : "none") }}
                             onMouseEnter={e => { if (!dragBooking) { e.currentTarget.style.background = isPastDay ? "#d1fae5" : "#bbf7d0"; e.currentTarget.style.fontWeight="700"; }}}
                             onMouseLeave={e => { if (!dragBooking) { e.currentTarget.style.background = isPastDay ? "#ecfdf5" : "#dcfce7"; e.currentTarget.style.fontWeight="normal"; }}}>
-                          {isPastDay ? "עבר" : (isDropColumn ? "⬇" : "✓")}
+                          {isPastDay ? "עבר" : (isDropColumn ? "↓" : "✓")}
                         </td>
                       );
                     }
@@ -1478,7 +1483,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                                                  if (dragBooking) return;
                                                   openBookingActions(b, car.name || `רכב #${car.id}`);
                                              }}
-                                              style={{ flex: 1, background: isDraggingThis ? "#e4f2ee" : "rgba(255,255,255,0.7)", borderRadius: 2, padding: "2px 4px", fontSize: 10, color: isDraggingThis ? "#1b5348" : "#854d0e", cursor: canDragThis ? (isDraggingThis ? "grabbing" : "grab") : "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", border: "1px solid rgba(133,77,14,0.2)", opacity: isDraggingThis ? 0.7 : 1 }}>
+                                              style={{ flex: 1, background: isDraggingThis ? "#e4f2ee" : "rgba(255,255,255,0.7)", borderRadius: 8, padding: "2px 4px", fontSize: 10, color: isDraggingThis ? "#1b5348" : "#854d0e", cursor: canDragThis ? (isDraggingThis ? "grabbing" : "grab") : "pointer", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", border: "1px solid rgba(133,77,14,0.2)", opacity: isDraggingThis ? 0.7 : 1 }}>
                                              {surnameFirst(b.customer_name)}
                                         </div>
                                     )})}
@@ -1502,7 +1507,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                       label = (
                         <div style={{ display:"flex", flexDirection:"column", fontSize:10 }}>
                           <span style={{ fontWeight:800, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{displayName}</span>
-                          <span>⬦ חד-יומי ({b.pickup_time||"08:30"})</span>
+                          <span>◇ חד-יומי ({b.pickup_time||"08:30"})</span>
                         </div>
                       );
                     } else if (isFirst) {
@@ -1510,7 +1515,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                       label = (
                         <div style={{ display:"flex", flexDirection:"column", fontSize:10 }}>
                           <span style={{ fontWeight:800, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{displayName}</span>
-                          <span>🚀 יציאה ({b.pickup_time||"08:30"})</span>
+                          <span>↗ יציאה ({b.pickup_time||"08:30"})</span>
                         </div>
                       );
                     } else if (isLast) {
@@ -1595,7 +1600,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
              background: "#fff",
              border: "1px solid #e3e7e5",
              boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
-             borderRadius: 8,
+             borderRadius: 12,
              padding: "8px 10px",
              minWidth: 200,
              maxWidth: 240,
@@ -1603,7 +1608,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
            }}
          >
            <div style={{ fontSize: 12, fontWeight: 800, color: "#141816", marginBottom: 5 }}>
-             🚗 {hoveredCar.name}
+             <Car size={14} strokeWidth={1.8} aria-hidden="true" /> {hoveredCar.name}
            </div>
            <div style={{ fontSize: 11, color: "#404643", lineHeight: 1.45 }}>
              <div><strong>מס׳:</strong> #{hoveredCar.id}</div>
@@ -1628,12 +1633,12 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
         <div style={{
           position: "fixed", bottom: 20, left: 20, zIndex: 10000,
           background: "#272c2a", color: "#fff", padding: "12px 20px",
-          borderRadius: 12, boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+          borderRadius: 16, boxShadow: "0 8px 24px rgba(20,24,22,0.10), 0 32px 80px rgba(20,24,22,0.18)",
           display: "flex", flexDirection: "column", gap: 8, minWidth: 200,
           maxWidth: 300, border: "1px solid #404643"
         }}>
           <div style={{ fontWeight: 700, fontSize: 13, borderBottom: "1px solid #404643", paddingBottom: 6, display: "flex", justifyContent: "space-between" }}>
-            <span>📤 העלאת תמונות ({uploadQueue.filter(u => u.status !== "done").length})</span>
+            <span><Upload size={14} strokeWidth={1.8} aria-hidden="true" /> העלאת תמונות ({uploadQueue.filter(u => u.status !== "done").length})</span>
             <button onClick={() => setUploadQueue([])} style={{ background: "none", border: "none", color: "#8e9592", cursor: "pointer", fontSize: 11 }}>נקה הכל</button>
           </div>
           <div style={{ maxHeight: 150, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1648,7 +1653,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                 }}>
                   {u.status === "compressing" ? "דוחס..." : 
                    u.status === "uploading" ? "מעלה..." : 
-                   u.status === "done" ? "✓ הושלם" : "✘ שגיאה"}
+                   u.status === "done" ? "✓ הושלם" : "× שגיאה"}
                 </span>
               </div>
             ))}
@@ -1671,7 +1676,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
 const fieldWrap = { display:"flex", flexDirection:"column", gap:6, minWidth:160 };
 const fieldLabel = { fontSize:12, color:"#707774", fontWeight:600 };
 const inputStyle = {
-  border:"1px solid #ccd2cf", borderRadius:8, padding:"0 12px", fontSize:13,
+  border:"1px solid #ccd2cf", borderRadius:12, padding:"0 12px", fontSize:13,
   background:"#fff", color:"#141816", height:38, boxSizing:"border-box",
   display:"block",
 };
@@ -1684,10 +1689,10 @@ const gth = { padding:"6px 6px", fontWeight:700, borderBottom:"2px solid #e3e7e5
               textAlign:"center", fontSize:11, color:"#59605d", whiteSpace:"nowrap" };
 const gtd = { padding:"5px 6px", borderBottom:"1px solid #eff3f1", fontSize:12 };
 const miniTag = { fontSize:8, fontWeight:700, color:"#fff", borderRadius:999, padding:"1px 5px" };
-const cardStyle = { background:"#fff", borderRadius:12, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" };
+const cardStyle = { background:"#fff", borderRadius:16, boxShadow:"0 1px 2px rgba(20,24,22,0.04), 0 3px 10px rgba(20,24,22,0.05)" };
 const cardTitle = { margin:"0 0 16px", fontSize:15, fontWeight:700, color:"#272c2a" };
 const multiSelectBox = {
-  border:"1px solid #ccd2cf", borderRadius:8, background:"#fff",
+  border:"1px solid #ccd2cf", borderRadius:12, background:"#fff",
   padding:"6px 10px", maxHeight:130, overflowY:"auto",
   display:"flex", flexDirection:"column", gap:4,
 };
