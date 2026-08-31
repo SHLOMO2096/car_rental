@@ -4,7 +4,15 @@
 # Differences vs docker-compose.yml (local dev):
 #  - frontend: built with Dockerfile.prod (static nginx, not Vite dev-server)
 #  - backend:  no --reload, no volume mount
+#  - no published host ports at all – Traefik is the only way in
+#  - DEBUG=false, so schema is owned by Alembic alone (see backend/app/main.py)
 #  - TLS:      Let's Encrypt (handled by infra-proxy-dev Traefik)
+#
+# IMPORTANT – Compose merge semantics:
+# When two compose files are merged, sequences (ports, volumes) are CONCATENATED,
+# so `ports: []` does nothing. Removing a value from the base file requires the
+# `!reset` tag (Compose v2.24+). Always verify a change here with:
+#   docker compose --env-file .env.development -f docker-compose.yml -f docker-compose.dev-server.yml config
 #
 # Prerequisites:
 #   1. infra-proxy-dev must already be running and have created the traefik-public network
@@ -12,15 +20,25 @@
 
 services:
 
+  db:
+    # Postgres is reachable over car_rental_internal / car_rental_default by DNS;
+    # never publish it on the dev host itself.
+    ports: !reset null
+
+  redis:
+    ports: !reset null
+
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
         VITE_API_URL: /api
-    volumes: []
-    ports: []
-    command: []
+    volumes: !reset null
+    ports: !reset null
+    command: !reset null
+    # VITE_API_URL נצרב ב-build (ראו args לעיל); משתנה ריצה כאן רק מבלבל.
+    environment: !reset null
     networks:
       - car_rental_internal
       - traefik-public
@@ -35,8 +53,14 @@ services:
       - traefik.http.services.car-rental-dev-web.loadbalancer.server.port=80
 
   backend:
-    volumes: []
+    volumes: !reset null
+    ports: !reset null
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      # הסכימה בשרת מנוהלת אך ורק דרך `alembic upgrade head` שרץ ב-scripts/deploy_development.sh.
+      # DEBUG=true היה מפעיל גם את Base.metadata.create_all וגורם ל-DuplicateTable במיגרציה הבאה,
+      # ובנוסף חושף את /docs. ערך זה גובר בכוונה על DEBUG שב-.env.development.
+      DEBUG: "false"
     networks:
       - car_rental_internal
       - traefik-public
