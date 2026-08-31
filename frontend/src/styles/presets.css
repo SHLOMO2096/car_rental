@@ -12,21 +12,21 @@
 
 /* ── צבע מותג ─────────────────────────────────────────────────────────────
    הגוונים הכהה/בהיר/קו נגזרים אוטומטית — מספיק ההקסה הזה. */
-:root[data-brand="blue"]    { --brand: #1d4ed8; }  /* ברירת המחדל הנוכחית */
-:root[data-brand="indigo"]  { --brand: #4f46e5; }
-:root[data-brand="teal"]    { --brand: #0f766e; }
-:root[data-brand="emerald"] { --brand: #047857; }
-:root[data-brand="violet"]  { --brand: #6d28d9; }
-:root[data-brand="rose"]    { --brand: #be123c; }
-:root[data-brand="amber"]   { --brand: #b45309; }
-:root[data-brand="graphite"]{ --brand: #334155; }
+:root[data-brand="pine"]     { --brand: #154038; }  /* ברירת המחדל */
+:root[data-brand="graphite"] { --brand: #2b3033; }
+:root[data-brand="navy"]     { --brand: #16324f; }
+:root[data-brand="forest"]   { --brand: #1c3d22; }
+:root[data-brand="plum"]     { --brand: #3d2340; }
+:root[data-brand="clay"]     { --brand: #5a3325; }
+:root[data-brand="indigo"]   { --brand: #3730a3; }
+:root[data-brand="teal"]     { --brand: #115e59; }
 
 /* ── סולם ניטרלים ─────────────────────────────────────────────────────────
    מחליף את אופי האפור בכל המערכת: קריר, נייטרלי או חמים. */
-:root[data-neutral="slate"] {   /* ברירת המחדל — קריר, נוטה לכחול */
-  --n-0:#ffffff; --n-50:#f8fafc; --n-100:#f1f5f9; --n-200:#e2e8f0;
-  --n-300:#cbd5e1; --n-400:#94a3b8; --n-500:#64748b; --n-600:#475569;
-  --n-700:#334155; --n-800:#1e293b; --n-900:#0f172a;
+:root[data-neutral="sage"] {    /* ברירת המחדל — אפור עם הטיה קלה לירוק */
+  --n-0:#ffffff; --n-50:#f7faf8; --n-100:#eff3f1; --n-200:#e3e7e5;
+  --n-300:#ccd2cf; --n-400:#8e9592; --n-500:#707774; --n-600:#59605d;
+  --n-700:#404643; --n-800:#272c2a; --n-900:#141816;
 }
 :root[data-neutral="zinc"] {    /* נייטרלי לגמרי, בלי הטיית גוון */
   --n-0:#ffffff; --n-50:#fafafa; --n-100:#f4f4f5; --n-200:#e4e4e7;
@@ -37,6 +37,11 @@
   --n-0:#ffffff; --n-50:#fafaf9; --n-100:#f5f5f4; --n-200:#e7e5e4;
   --n-300:#d6d3d1; --n-400:#a8a29e; --n-500:#78716c; --n-600:#57534e;
   --n-700:#44403c; --n-800:#292524; --n-900:#1c1917;
+}
+:root[data-neutral="slate"] {   /* קר, נוטה לכחול — האפור שהיה במערכת קודם */
+  --n-0:#ffffff; --n-50:#f8fafc; --n-100:#f1f5f9; --n-200:#e2e8f0;
+  --n-300:#cbd5e1; --n-400:#94a3b8; --n-500:#64748b; --n-600:#475569;
+  --n-700:#334155; --n-800:#1e293b; --n-900:#0f172a;
 }
 
 /* ── צפיפות ───────────────────────────────────────────────────────────────

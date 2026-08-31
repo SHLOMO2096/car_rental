@@ -7,7 +7,7 @@ import {
 import { useIsMobile } from "../hooks/useIsMobile";
 
 const MONTHS_HE = ["ינו","פבר","מרץ","אפר","מאי","יונ","יול","אוג","ספט","אוק","נוב","דצמ"];
-const PIE_COLORS = ["#3b82f6","#22c55e","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#f97316"];
+const PIE_COLORS = ["#2c6b5e","#22c55e","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#f97316"];
 
 export default function Reports() {
   const currentYear = new Date().getFullYear();
@@ -41,14 +41,14 @@ export default function Reports() {
   const avgPerBooking = totalBookings ? totalRevenue / totalBookings : 0;
   const bestMonth = monthly.reduce((a, b) => b.revenue > a.revenue ? b : a, { revenue: 0, name: "—" });
 
-  if (loading) return <div style={{ padding:40, textAlign:"center", color:"#94a3b8" }}>טוען דוחות...</div>;
+  if (loading) return <div style={{ padding:40, textAlign:"center", color:"#8e9592" }}>טוען דוחות...</div>;
 
   return (
     <div dir="rtl">
       <div style={s.header}>
         <h1 style={{ ...s.h1, fontSize: isMobile ? 20 : 24 }}>דוחות וסטטיסטיקות</h1>
         <div style={{ display:"flex", alignItems:"center", gap:10, width:isMobile ? "100%" : "auto" }}>
-          <label style={{ fontSize:13, fontWeight:600, color:"#475569" }}>שנה:</label>
+          <label style={{ fontSize:13, fontWeight:600, color:"#59605d" }}>שנה:</label>
           <select value={year} onChange={e => setYear(+e.target.value)} style={{ ...s.select, width:isMobile ? "100%" : "auto" }}>
             {[currentYear-1, currentYear, currentYear+1].map(y => (
               <option key={y} value={y}>{y}</option>
@@ -60,18 +60,18 @@ export default function Reports() {
       {/* KPI Cards */}
       <div style={{ ...s.kpiGrid, gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit,minmax(180px,1fr))" }}>
         {[
-          { label:"סה״כ הכנסות בשנה", value:`₪${Math.round(totalRevenue).toLocaleString()}`, icon:"💰", color:"#1d4ed8" },
+          { label:"סה״כ הכנסות בשנה", value:`₪${Math.round(totalRevenue).toLocaleString()}`, icon:"💰", color:"#154038" },
           { label:"סה״כ הזמנות בשנה", value:totalBookings,                                   icon:"📋", color:"#7c3aed" },
-          { label:"ממוצע להזמנה",      value:`₪${Math.round(avgPerBooking).toLocaleString()}`, icon:"📊", color:"#0369a1" },
+          { label:"ממוצע להזמנה",      value:`₪${Math.round(avgPerBooking).toLocaleString()}`, icon:"📊", color:"#1b5348" },
           { label:"חודש שיא",          value:bestMonth.name,                                   icon:"🏆", color:"#b45309" },
-          { label:"סה״כ הזמנות מאז",   value:summary?.total ?? "—",                           icon:"📁", color:"#475569" },
+          { label:"סה״כ הזמנות מאז",   value:summary?.total ?? "—",                           icon:"📁", color:"#59605d" },
           { label:"הזמנות פעילות כעת", value:summary?.active ?? "—",                          icon:"✅", color:"#15803d" },
         ].map(k => (
           <div key={k.label} style={s.kpiCard}>
             <div style={{ fontSize:28 }}>{k.icon}</div>
             <div>
               <div style={{ fontSize:24, fontWeight:800, color:k.color }}>{k.value}</div>
-              <div style={{ fontSize:12, color:"#94a3b8", marginTop:2 }}>{k.label}</div>
+              <div style={{ fontSize:12, color:"#8e9592", marginTop:2 }}>{k.label}</div>
             </div>
           </div>
         ))}
@@ -84,11 +84,11 @@ export default function Reports() {
           <h3 style={s.chartTitle}>הכנסות חודשיות {year}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={monthly} barSize={28}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#eff3f1" />
               <XAxis dataKey="name" tick={{ fontSize:11 }} />
               <YAxis tick={{ fontSize:11 }} tickFormatter={v => `₪${(v/1000).toFixed(0)}K`} />
               <Tooltip formatter={v => [`₪${Math.round(v).toLocaleString()}`, "הכנסה"]} />
-              <Bar dataKey="revenue" fill="#3b82f6" radius={[4,4,0,0]}
+              <Bar dataKey="revenue" fill="#2c6b5e" radius={[4,4,0,0]}
                    label={{ position:"top", fontSize:9, formatter:v=>v>0?`₪${Math.round(v/1000)}K`:"" }} />
             </BarChart>
           </ResponsiveContainer>
@@ -99,7 +99,7 @@ export default function Reports() {
           <h3 style={s.chartTitle}>מספר הזמנות לפי חודש {year}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={monthly}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#eff3f1" />
               <XAxis dataKey="name" tick={{ fontSize:11 }} />
               <YAxis tick={{ fontSize:11 }} allowDecimals={false} />
               <Tooltip formatter={v => [v, "הזמנות"]} />
@@ -117,7 +117,7 @@ export default function Reports() {
           <h3 style={s.chartTitle}>רכבים מובילים — הכנסות</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={topCars} layout="vertical" barSize={18}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#eff3f1" />
               <XAxis type="number" tick={{ fontSize:11 }}
                      tickFormatter={v => `₪${(v/1000).toFixed(0)}K`} />
               <YAxis type="category" dataKey="name" tick={{ fontSize:11 }} width={110} />
@@ -152,7 +152,7 @@ export default function Reports() {
         {!isMobile ? (
           <table style={{ width:"100%", borderCollapse:"collapse" }}>
             <thead>
-              <tr style={{ background:"#f8fafc" }}>
+              <tr style={{ background:"#f7faf8" }}>
                 {["דירוג","שם רכב","מספר הזמנות","סה״כ הכנסות","ממוצע להזמנה"].map(h => (
                   <th key={h} style={s.th}>{h}</th>
                 ))}
@@ -160,16 +160,16 @@ export default function Reports() {
             </thead>
             <tbody>
               {topCars.map((c, i) => (
-                <tr key={c.car_id} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                <tr key={c.car_id} style={{ borderBottom:"1px solid #eff3f1" }}>
                   <td style={s.td}>
-                    <span style={{ ...s.rankBadge, background: i<3 ? ["#fef3c7","#f1f5f9","#fef3c7"][i]:"#f8fafc",
-                      color: i<3 ? ["#b45309","#475569","#92400e"][i]:"#64748b" }}>
+                    <span style={{ ...s.rankBadge, background: i<3 ? ["#fef3c7","#eff3f1","#fef3c7"][i]:"#f7faf8",
+                      color: i<3 ? ["#b45309","#59605d","#92400e"][i]:"#707774" }}>
                       {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}
                     </span>
                   </td>
                   <td style={s.td}><strong>{c.name}</strong></td>
                   <td style={s.td}>{c.bookings}</td>
-                  <td style={s.td}><strong style={{ color:"#1d4ed8" }}>₪{Math.round(c.revenue).toLocaleString()}</strong></td>
+                  <td style={s.td}><strong style={{ color:"#154038" }}>₪{Math.round(c.revenue).toLocaleString()}</strong></td>
                   <td style={s.td}>₪{c.bookings ? Math.round(c.revenue/c.bookings).toLocaleString() : "—"}</td>
                 </tr>
               ))}
@@ -196,29 +196,29 @@ const s = {
   header:    { display:"flex", justifyContent:"space-between", alignItems:"center",
                marginBottom:24, flexWrap:"wrap", gap:12 },
   h1:        { fontSize:24, fontWeight:800, margin:0 },
-  select:    { padding:"8px 14px", borderRadius:8, border:"1px solid #e2e8f0",
+  select:    { padding:"8px 14px", borderRadius:8, border:"1px solid #e3e7e5",
                fontSize:14, cursor:"pointer", background:"#fff" },
   kpiGrid:   { display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",
                gap:14, marginBottom:24 },
   kpiCard:   { background:"#fff", borderRadius:12, padding:"16px 20px",
                display:"flex", gap:14, alignItems:"center",
-               border:"1px solid #e2e8f0", boxShadow:"0 1px 3px rgba(0,0,0,0.05)" },
+               border:"1px solid #e3e7e5", boxShadow:"0 1px 3px rgba(0,0,0,0.05)" },
   chartsRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 },
   chartCard: { background:"#fff", borderRadius:12, padding:20,
-               border:"1px solid #e2e8f0", boxShadow:"0 1px 3px rgba(0,0,0,0.05)" },
-  chartTitle:{ margin:"0 0 16px", fontSize:15, fontWeight:700, color:"#1e293b" },
+               border:"1px solid #e3e7e5", boxShadow:"0 1px 3px rgba(0,0,0,0.05)" },
+  chartTitle:{ margin:"0 0 16px", fontSize:15, fontWeight:700, color:"#272c2a" },
   tableCard: { background:"#fff", borderRadius:12, padding:20,
-               border:"1px solid #e2e8f0", boxShadow:"0 1px 3px rgba(0,0,0,0.05)", marginBottom:16 },
-  th:        { padding:"10px 14px", fontSize:12, fontWeight:700, color:"#475569",
-               textAlign:"right", borderBottom:"1px solid #e2e8f0" },
+               border:"1px solid #e3e7e5", boxShadow:"0 1px 3px rgba(0,0,0,0.05)", marginBottom:16 },
+  th:        { padding:"10px 14px", fontSize:12, fontWeight:700, color:"#59605d",
+               textAlign:"right", borderBottom:"1px solid #e3e7e5" },
   td:        { padding:"12px 14px", fontSize:13 },
   rankBadge: { display:"inline-block", borderRadius:6, padding:"2px 8px",
                fontSize:12, fontWeight:700 },
   mobileCardsWrap: { display:"grid", gap:10 },
   mobileCard: {
-    border:"1px solid #e2e8f0", borderRadius:10, padding:12,
-    background:"#f8fafc",
+    border:"1px solid #e3e7e5", borderRadius:10, padding:12,
+    background:"#f7faf8",
   },
-  mobileTitle: { fontSize:14, fontWeight:800, color:"#1e293b", marginBottom:6 },
-  mobileMeta: { fontSize:12, color:"#475569", marginBottom:3 },
+  mobileTitle: { fontSize:14, fontWeight:800, color:"#272c2a", marginBottom:6 },
+  mobileMeta: { fontSize:12, color:"#59605d", marginBottom:3 },
 };

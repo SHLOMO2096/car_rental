@@ -159,7 +159,7 @@ export default function Cars() {
       {/* Summary / filter chips */}
       <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
         <FilterChip
-          label="סה״כ" value={cars.length} color="#3b82f6"
+          label="סה״כ" value={cars.length} color="#2c6b5e"
           active={activeFilter === "all"}
           onClick={() => setActiveFilter("all")}
         />
@@ -169,7 +169,7 @@ export default function Cars() {
           onClick={() => setActiveFilter("active")}
         />
         <FilterChip
-          label="⏸ לא פעילים" value={cars.filter(c=>!c.is_active).length} color="#94a3b8"
+          label="⏸ לא פעילים" value={cars.filter(c=>!c.is_active).length} color="#8e9592"
           active={activeFilter === "inactive"}
           onClick={() => setActiveFilter("inactive")}
         />
@@ -208,7 +208,7 @@ export default function Cars() {
 
                     return (
                       <div key={isHybrid ? "hybrid" : "regular"}>
-                        <h4 style={{ fontSize: 13, color: "#64748b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                        <h4 style={{ fontSize: 13, color: "#707774", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
                           {isHybrid ? "🌿 היברידי" : "⛽ רגיל"}
                           <span style={{ fontWeight: 400, fontSize: 11 }}>({subCars.length})</span>
                         </h4>
@@ -343,10 +343,10 @@ function FilterChip({ label, value, color, active, onClick }) {
     <button
       onClick={onClick}
       style={{
-        background: active ? `${color}20` : "#f8fafc",
+        background: active ? `${color}20` : "#f7faf8",
         border: active ? `2px solid ${color}` : `1px solid ${color}30`,
         borderRadius: 20, padding: "5px 16px", fontSize: 13,
-        color: active ? color : "#64748b",
+        color: active ? color : "#707774",
         cursor: "pointer", fontWeight: active ? 700 : 500,
         transition: "all 0.15s",
         outline: "none",
@@ -365,7 +365,7 @@ function Field({ label, children }) {
   );
 }
 function Loader() {
-  return <div style={{ padding:40, textAlign:"center", color:"#94a3b8" }}>טוען...</div>;
+  return <div style={{ padding:40, textAlign:"center", color:"#8e9592" }}>טוען...</div>;
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
@@ -373,33 +373,33 @@ const s = {
   pageHeader: { display:"flex", justifyContent:"space-between", alignItems:"center",
                 marginBottom:20, flexWrap:"wrap", gap:12 },
   h1:         { fontSize:24, fontWeight:800, margin:0 },
-  searchInput:{ padding:"8px 14px", borderRadius:8, border:"1px solid #e2e8f0",
+  searchInput:{ padding:"8px 14px", borderRadius:8, border:"1px solid #e3e7e5",
                 fontSize:14, outline:"none", minWidth:220 },
-  select:     { padding:"8px 14px", borderRadius:8, border:"1px solid #e2e8f0",
+  select:     { padding:"8px 14px", borderRadius:8, border:"1px solid #e3e7e5",
                 fontSize:14, cursor:"pointer", background:"#fff" },
   folderSection: { marginBottom: 12 },
   folderHeader: { display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "12px 16px", background: "#f8fafc", borderRadius: 12,
-                  border: "1px solid #e2e8f0", cursor: "pointer", userSelect: "none",
+                  padding: "12px 16px", background: "#f7faf8", borderRadius: 12,
+                  border: "1px solid #e3e7e5", cursor: "pointer", userSelect: "none",
                   transition: "background 0.2s" },
-  folderBadge: { background: "#e2e8f0", color: "#475569", borderRadius: 12,
+  folderBadge: { background: "#e3e7e5", color: "#59605d", borderRadius: 12,
                  padding: "2px 8px", fontSize: 12, fontWeight: 700 },
   grid:       { display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap: 16, marginTop: 16 },
   card:       { background:"#fff", borderRadius:14, padding:18,
-                border:"1px solid #e2e8f0", boxShadow:"0 1px 4px rgba(0,0,0,0.05)",
+                border:"1px solid #e3e7e5", boxShadow:"0 1px 4px rgba(0,0,0,0.05)",
                 transition:"transform 0.15s, box-shadow 0.15s" },
   carName:    { fontWeight:800, fontSize:16, marginTop:8 },
-  carSub:     { fontSize:12, color:"#94a3b8", marginTop:2 },
-  // price:      { fontSize:15, fontWeight:700, color:"#1d4ed8", marginTop:6, display: "flex", alignItems: "center", gap: 6 },
-  // priceHint:  { fontSize:11, color: "#94a3b8", fontWeight: 400 },
-  desc:       { fontSize:12, color:"#64748b", marginTop:6, lineHeight:1.5 },
-  typeTag:    { background:"#eff6ff", color:"#3b82f6", borderRadius:20,
+  carSub:     { fontSize:12, color:"#8e9592", marginTop:2 },
+  // price:      { fontSize:15, fontWeight:700, color:"#154038", marginTop:6, display: "flex", alignItems: "center", gap: 6 },
+  // priceHint:  { fontSize:11, color: "#8e9592", fontWeight: 400 },
+  desc:       { fontSize:12, color:"#707774", marginTop:6, lineHeight:1.5 },
+  typeTag:    { background:"#eef5f2", color:"#2c6b5e", borderRadius:20,
                 padding:"2px 10px", fontSize:11, fontWeight:600 },
-  btnPrimary: { background:"#1d4ed8", color:"#fff", border:"none", borderRadius:8,
+  btnPrimary: { background:"#154038", color:"#fff", border:"none", borderRadius:8,
                 padding:"8px 18px", fontWeight:700, cursor:"pointer", fontSize:14 },
-  btnSecondary:{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0",
+  btnSecondary:{ background:"#eff3f1", color:"#59605d", border:"1px solid #e3e7e5",
                  borderRadius:8, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
-  btnEdit:    { background:"#eff6ff", color:"#3b82f6", border:"1px solid #bfdbfe",
+  btnEdit:    { background:"#eef5f2", color:"#2c6b5e", border:"1px solid #b9d4cb",
                 borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:13 },
   btnBook:    { background:"#f0fdf4", color:"#15803d", border:"1px solid #86efac",
                 borderRadius:7, padding:"5px 12px", cursor:"pointer", fontSize:13, fontWeight:700 },
@@ -409,12 +409,12 @@ const s = {
                 borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:13 },
   btnDanger:  { background:"#fef2f2", color:"#dc2626", border:"1px solid #fecaca",
                 borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:13 },
-  input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e2e8f0",
+  input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e3e7e5",
                 fontSize:14, outline:"none", boxSizing:"border-box" },
-  label:      { display:"block", fontSize:12, fontWeight:600, color:"#475569", marginBottom:5 },
+  label:      { display:"block", fontSize:12, fontWeight:600, color:"#59605d", marginBottom:5 },
   formGrid:   { display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginBottom:12 },
   modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 },
   errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:8,
                 padding:"10px 14px", fontSize:13, marginTop:8 },
-  empty:      { gridColumn:"1/-1", textAlign:"center", padding:40, color:"#94a3b8" },
+  empty:      { gridColumn:"1/-1", textAlign:"center", padding:40, color:"#8e9592" },
 };

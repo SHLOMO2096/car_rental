@@ -190,7 +190,7 @@ export default function Attendance() {
   }
 
   if (loading) {
-    return <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>טוען נוכחות...</div>;
+    return <div style={{ padding: 40, textAlign: "center", color: "#8e9592" }}>טוען נוכחות...</div>;
   }
 
   return (
@@ -248,7 +248,7 @@ export default function Attendance() {
             </button>
           </div>
 
-          <div style={{ marginTop: 10, color: "#94a3b8", fontSize: 12, lineHeight: 1.6 }}>
+          <div style={{ marginTop: 10, color: "#8e9592", fontSize: 12, lineHeight: 1.6 }}>
             הערה: אפשר להיות מחובר במקביל ממחשב ומטלפון. יציאה מהמכשיר הזה לא תסגור מכשירים אחרים.
           </div>
         </div>
@@ -257,12 +257,12 @@ export default function Attendance() {
       <div style={s.card}>
         <div style={s.cardTitle}>מכשירים פתוחים במשמרת</div>
         {openSessions.length === 0 ? (
-          <div style={{ color: "#94a3b8", fontSize: 13 }}>אין מכשירים פתוחים.</div>
+          <div style={{ color: "#8e9592", fontSize: 13 }}>אין מכשירים פתוחים.</div>
         ) : (
           <div style={s.tableWrap}>
             <table style={s.table}>
               <thead>
-                <tr style={{ background: "#f8fafc" }}>
+                <tr style={{ background: "#f7faf8" }}>
                   {["מכשיר", "נכנס ב", "מצב"].map((h) => (
                     <th key={h} style={s.th}>{h}</th>
                   ))}
@@ -270,11 +270,11 @@ export default function Attendance() {
               </thead>
               <tbody>
                 {openSessions.map((sess) => (
-                  <tr key={sess.id} style={{ borderTop: "1px solid #e2e8f0" }}>
+                  <tr key={sess.id} style={{ borderTop: "1px solid #e3e7e5" }}>
                     <td style={s.td}>
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         <strong>{sess.device_id === deviceId ? "(זה המכשיר הזה)" : "מכשיר"}</strong>
-                        <span style={{ color: "#94a3b8", fontSize: 11, direction: "ltr" }}>{sess.device_id}</span>
+                        <span style={{ color: "#8e9592", fontSize: 11, direction: "ltr" }}>{sess.device_id}</span>
                       </div>
                     </td>
                     <td style={s.td}>{fmtDateTime(sess.clock_in_at)}</td>
@@ -297,7 +297,7 @@ export default function Attendance() {
           </div>
 
           {adminLoading ? (
-            <div style={{ color: "#94a3b8", fontSize: 13 }}>טוען עובדים...</div>
+            <div style={{ color: "#8e9592", fontSize: 13 }}>טוען עובדים...</div>
           ) : (
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" }}>
               <div style={{ minWidth: 220 }}>
@@ -324,20 +324,20 @@ export default function Attendance() {
             </div>
           )}
 
-          <div style={{ marginTop: 10, color: "#94a3b8", fontSize: 12, lineHeight: 1.6 }}>
+          <div style={{ marginTop: 10, color: "#8e9592", fontSize: 12, lineHeight: 1.6 }}>
             כאן ניתן לראות דיווחי נוכחות של עובדים ולערוך זמנים רטרואקטיבית. כל שינוי נרשם בלוג הביקורת.
           </div>
 
           <div style={{ marginTop: 12 }}>
             {adminShiftsLoading ? (
-              <div style={{ color: "#94a3b8", fontSize: 13 }}>טוען משמרות...</div>
+              <div style={{ color: "#8e9592", fontSize: 13 }}>טוען משמרות...</div>
             ) : adminShifts.length === 0 ? (
-              <div style={{ color: "#94a3b8", fontSize: 13 }}>אין משמרות בטווח הנבחר.</div>
+              <div style={{ color: "#8e9592", fontSize: 13 }}>אין משמרות בטווח הנבחר.</div>
             ) : (
               <div style={s.tableWrap}>
                 <table style={s.table}>
                   <thead>
-                    <tr style={{ background: "#f8fafc" }}>
+                    <tr style={{ background: "#f7faf8" }}>
                       {["תאריך", "התחלה", "סיום", "שעות", ""].map((h) => (
                         <th key={h} style={s.th}>{h}</th>
                       ))}
@@ -352,7 +352,7 @@ export default function Attendance() {
                       const canSave = canManage && !!ed.start && !!ed.end && hrs > 0;
 
                       return (
-                        <tr key={sh.id} style={{ borderTop: "1px solid #e2e8f0" }}>
+                        <tr key={sh.id} style={{ borderTop: "1px solid #e3e7e5" }}>
                           <td style={s.td}>{sh.work_date}</td>
                           <td style={s.td}>
                             <input
@@ -398,7 +398,7 @@ export default function Attendance() {
                                 שמור
                               </button>
                             ) : (
-                              <span style={{ color: "#94a3b8", fontSize: 12 }}>אין הרשאת עריכה</span>
+                              <span style={{ color: "#8e9592", fontSize: 12 }}>אין הרשאת עריכה</span>
                             )}
                           </td>
                         </tr>
@@ -421,23 +421,23 @@ const s = {
 
   grid: { display: "grid", gap: 12, marginBottom: 12 },
 
-  card: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", marginBottom: 12 },
-  cardTitle: { fontSize: 14, fontWeight: 900, color: "#0f172a", marginBottom: 10 },
+  card: { background: "#fff", border: "1px solid #e3e7e5", borderRadius: 12, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", marginBottom: 12 },
+  cardTitle: { fontSize: 14, fontWeight: 900, color: "#141816", marginBottom: 10 },
 
-  row: { display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13, padding: "6px 0", borderBottom: "1px dashed #e2e8f0" },
-  label: { color: "#64748b", fontWeight: 700 },
+  row: { display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13, padding: "6px 0", borderBottom: "1px dashed #e3e7e5" },
+  label: { color: "#707774", fontWeight: 700 },
 
-  smallLabel: { display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 },
-  input: { width: "100%", border: "1px solid #cbd5e1", borderRadius: 10, padding: "9px 10px", fontSize: 13, boxSizing: "border-box" },
+  smallLabel: { display: "block", fontSize: 12, fontWeight: 700, color: "#59605d", marginBottom: 6 },
+  input: { width: "100%", border: "1px solid #ccd2cf", borderRadius: 10, padding: "9px 10px", fontSize: 13, boxSizing: "border-box" },
 
-  btnPrimary: { background: "#3b82f6", color: "#fff", border: "none", borderRadius: 10, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
-  btnSecondary: { background: "#fff", color: "#0f172a", border: "1px solid #cbd5e1", borderRadius: 10, padding: "9px 12px", fontWeight: 800, cursor: "pointer" },
+  btnPrimary: { background: "#2c6b5e", color: "#fff", border: "none", borderRadius: 10, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
+  btnSecondary: { background: "#fff", color: "#141816", border: "1px solid #ccd2cf", borderRadius: 10, padding: "9px 12px", fontWeight: 800, cursor: "pointer" },
   btnWarn: { background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa", borderRadius: 10, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
   btnDanger: { background: "rgba(239,68,68,0.12)", color: "#dc2626", border: "1px solid rgba(239,68,68,0.35)", borderRadius: 10, padding: "10px 14px", fontWeight: 900, cursor: "pointer" },
 
-  tableWrap: { overflow: "auto", borderRadius: 10, border: "1px solid #e2e8f0" },
+  tableWrap: { overflow: "auto", borderRadius: 10, border: "1px solid #e3e7e5" },
   table: { width: "100%", borderCollapse: "collapse" },
-  th: { padding: "12px 12px", textAlign: "right", fontSize: 12, color: "#475569", fontWeight: 900, whiteSpace: "nowrap" },
-  td: { padding: "10px 12px", fontSize: 13, color: "#0f172a", verticalAlign: "top" },
+  th: { padding: "12px 12px", textAlign: "right", fontSize: 12, color: "#59605d", fontWeight: 900, whiteSpace: "nowrap" },
+  td: { padding: "10px 12px", fontSize: 13, color: "#141816", verticalAlign: "top" },
 };
 

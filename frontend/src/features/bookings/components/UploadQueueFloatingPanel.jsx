@@ -8,7 +8,7 @@ export default function UploadQueueFloatingPanel({ uploadQueue, onClear }) {
         bottom: 20,
         left: 20,
         zIndex: 10000,
-        background: "#1e293b",
+        background: "#272c2a",
         color: "#fff",
         padding: "12px 20px",
         borderRadius: 12,
@@ -18,14 +18,14 @@ export default function UploadQueueFloatingPanel({ uploadQueue, onClear }) {
         gap: 8,
         minWidth: 200,
         maxWidth: 300,
-        border: "1px solid #334155",
+        border: "1px solid #404643",
       }}
     >
       <div
         style={{
           fontWeight: 700,
           fontSize: 13,
-          borderBottom: "1px solid #334155",
+          borderBottom: "1px solid #404643",
           paddingBottom: 6,
           display: "flex",
           justifyContent: "space-between",
@@ -34,7 +34,7 @@ export default function UploadQueueFloatingPanel({ uploadQueue, onClear }) {
         <span>📤 העלאת תמונות ({uploadQueue.filter((u) => u.status !== "done").length})</span>
         <button
           onClick={onClear}
-          style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 11 }}
+          style={{ background: "none", border: "none", color: "#8e9592", cursor: "pointer", fontSize: 11 }}
         >
           נקה הכל
         </button>
@@ -58,7 +58,7 @@ export default function UploadQueueFloatingPanel({ uploadQueue, onClear }) {
             </span>
             <span
               style={{
-                color: u.status === "done" ? "#22c55e" : u.status === "error" ? "#ef4444" : "#3b82f6",
+                color: u.status === "done" ? "#22c55e" : u.status === "error" ? "#ef4444" : "#2c6b5e",
                 fontWeight: 600,
               }}
             >

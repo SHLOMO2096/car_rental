@@ -360,7 +360,7 @@ export default function BookingsPage() {
     carsMap,
   });
 
-  if (loading) return <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>טוען...</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: "#8e9592" }}>טוען...</div>;
 
   return (
     <div dir="rtl">
@@ -394,7 +394,7 @@ export default function BookingsPage() {
         isMobile={isMobile}
       />
 
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>{filtered.length} הזמנות נמצאו</div>
+      <div style={{ fontSize: 13, color: "#707774", marginBottom: 14 }}>{filtered.length} הזמנות נמצאו</div>
 
       <BookingsList
         bookings={paginated}
@@ -493,7 +493,7 @@ export default function BookingsPage() {
         message={actionConfirm?.message || ""}
         messageList={actionConfirm?.messageList || null}
         confirmLabel={actionConfirm?.confirmLabel || "אישור"}
-        confirmColor={actionConfirm?.confirmColor || "#1d4ed8"}
+        confirmColor={actionConfirm?.confirmColor || "#154038"}
         onConfirm={() => closeActionConfirm(true)}
         onCancel={() => closeActionConfirm(false)}
       />

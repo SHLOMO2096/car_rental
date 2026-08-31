@@ -366,7 +366,7 @@ export default function Suggestions() {
                     {item.affected_booking_notes && (
                       <div style={{ ...s.affectedRow, alignItems: "flex-start" }}>
                         <span style={s.affectedLabel}>הערות:</span>
-                        <span style={{ color: "#334155" }}>{item.affected_booking_notes}</span>
+                        <span style={{ color: "#404643" }}>{item.affected_booking_notes}</span>
                       </div>
                     )}
                   </div>
@@ -434,31 +434,31 @@ export default function Suggestions() {
 const s = {
   header: { marginBottom: 14 },
   h1: { margin: 0, fontSize: 24, fontWeight: 800 },
-  subtitle: { color: "#64748b", marginTop: 6, fontSize: 13 },
+  subtitle: { color: "#707774", marginTop: 6, fontSize: 13 },
   card: {
     background: "#fff",
-    border: "1px solid #e2e8f0",
+    border: "1px solid #e3e7e5",
     borderRadius: 12,
     padding: 16,
     boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
   },
   row: { display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" },
-  radioLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#334155" },
+  radioLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#404643" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 },
-  label: { display: "block", fontSize: 12, color: "#475569", marginBottom: 5, fontWeight: 600 },
+  label: { display: "block", fontSize: 12, color: "#59605d", marginBottom: 5, fontWeight: 600 },
   input: {
     width: "100%",
     boxSizing: "border-box",
     padding: "8px 10px",
     borderRadius: 8,
-    border: "1px solid #e2e8f0",
+    border: "1px solid #e3e7e5",
     fontSize: 14,
     outline: "none",
     background: "#fff",
   },
   footer: { marginTop: 12, display: "flex", justifyContent: "flex-end" },
   primaryBtn: {
-    background: "#1d4ed8",
+    background: "#154038",
     color: "#fff",
     border: "none",
     borderRadius: 8,
@@ -476,9 +476,9 @@ const s = {
     cursor: "pointer",
   },
   secondaryBtn: {
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    border: "1px solid #bfdbfe",
+    background: "#eef5f2",
+    color: "#154038",
+    border: "1px solid #b9d4cb",
     borderRadius: 8,
     padding: "7px 14px",
     fontWeight: 700,
@@ -487,24 +487,24 @@ const s = {
   listWrap: { marginTop: 16, display: "grid", gap: 10 },
   resultCard: {
     background: "#fff",
-    border: "1px solid #e2e8f0",
+    border: "1px solid #e3e7e5",
     borderRadius: 12,
     padding: 12,
   },
   resultTop: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 },
   typeBadge: {
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    border: "1px solid #bfdbfe",
+    background: "#eef5f2",
+    color: "#154038",
+    border: "1px solid #b9d4cb",
     borderRadius: 999,
     padding: "2px 10px",
     fontSize: 12,
     fontWeight: 700,
   },
-  score: { color: "#475569", fontSize: 12, fontWeight: 700 },
-  resultTitle: { marginTop: 8, fontWeight: 700, fontSize: 14, color: "#0f172a" },
-  resultSub: { marginTop: 4, color: "#475569", fontSize: 13 },
-  metaRow: { marginTop: 8, display: "flex", gap: 14, flexWrap: "wrap", color: "#334155", fontSize: 12 },
+  score: { color: "#59605d", fontSize: 12, fontWeight: 700 },
+  resultTitle: { marginTop: 8, fontWeight: 700, fontSize: 14, color: "#141816" },
+  resultSub: { marginTop: 4, color: "#59605d", fontSize: 13 },
+  metaRow: { marginTop: 8, display: "flex", gap: 14, flexWrap: "wrap", color: "#404643", fontSize: 12 },
   errorBox: {
     marginTop: 12,
     background: "#fef2f2",

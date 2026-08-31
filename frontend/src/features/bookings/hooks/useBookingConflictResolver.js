@@ -123,7 +123,7 @@ export function useBookingConflictResolver({
         message: `להעביר את הזמנה #${existing.id} (${existing.customer_name})?\nלאחר ההעברה תתבצע בדיקה אם אפשר לאשר את ההזמנה החדשה.`,
         messageList: [`${sourceLabel} ← ${targetLabel}`],
         confirmLabel: "העבר הזמנה",
-        confirmColor: "#2563eb",
+        confirmColor: "#154038",
       });
       if (!ok) return;
 
@@ -188,7 +188,7 @@ export function useBookingConflictResolver({
       const ok = await askActionConfirm({
         message: `הרכב המבוקש תפוס. ליצור את ההזמנה החדשה על ${targetCar?.name || toCarId} במקום הרכב המקורי?`,
         confirmLabel: "צור על רכב חלופי",
-        confirmColor: "#2563eb",
+        confirmColor: "#154038",
       });
       if (!ok) return;
 

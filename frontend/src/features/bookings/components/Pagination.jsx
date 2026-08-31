@@ -11,8 +11,8 @@ export default function Pagination({ page, totalPages, onChange }) {
           onClick={() => onChange(p)}
           style={{
             ...s.pageBtn,
-            background: p === page ? "#1d4ed8" : "#f1f5f9",
-            color: p === page ? "#fff" : "#475569",
+            background: p === page ? "#154038" : "#eff3f1",
+            color: p === page ? "#fff" : "#59605d",
           }}
         >
           {p}

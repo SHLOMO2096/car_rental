@@ -344,9 +344,9 @@ export default function Customers() {
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
                   width: "100%", padding: "12px 42px 12px 14px",
-                  borderRadius: 12, border: "2px solid #3b82f6",
+                  borderRadius: 12, border: "2px solid #2c6b5e",
                   fontSize: 15, boxSizing: "border-box", outline: "none",
-                  boxShadow: "0 2px 8px rgba(59,130,246,0.15)",
+                  boxShadow: "0 2px 8px rgba(21,64,56,0.15)",
                   fontWeight: 500,
                 }}
               />
@@ -401,7 +401,7 @@ export default function Customers() {
             <div {...modalTableDrag.bind} style={{ ...s.historyTableWrap, ...modalTableDrag.style }}>
           <table style={s.table}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "#f7faf8" }}>
                 {["#", "שם", "ת.ז / ח.פ", "כתובת", "טלפון", "מייל", "פעולות"].map((h) => <th key={h} style={s.th}>{h}</th>)}
               </tr>
             </thead>
@@ -490,7 +490,7 @@ export default function Customers() {
             <div style={s.historyTableWrap}>
               <table style={s.table}>
                 <thead>
-                  <tr style={{ background: "#f8fafc" }}>
+                  <tr style={{ background: "#f7faf8" }}>
                     {["#", "רכב", "מתאריך", "עד תאריך", "סטטוס", "סכום", "צילום"].map((h) => <th key={h} style={s.th}>{h}</th>)}
                   </tr>
                 </thead>
@@ -502,7 +502,7 @@ export default function Customers() {
                       <td style={s.td}>#{b.id}</td>
                       <td style={s.td}>
                         {b.car?.name || `רכב #${b.car_id}`}
-                        {b.car?.plate && <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>🪪 {b.car.plate}</div>}
+                        {b.car?.plate && <div style={{ fontSize: 11, color: "#707774", marginTop: 2 }}>🪪 {b.car.plate}</div>}
                       </td>
                       <td style={s.td}>{formatDate(b.start_date)}</td>
                       <td style={s.td}>{formatDate(b.end_date)}</td>
@@ -543,7 +543,7 @@ export default function Customers() {
             <div style={s.historyTableWrap}>
               <table style={s.table}>
                 <thead>
-                  <tr style={{ background: "#f8fafc" }}>
+                  <tr style={{ background: "#f7faf8" }}>
                     {["שורה", "רמה", "שדה", "פירוט"].map((h) => <th key={h} style={s.th}>{h}</th>)}
                   </tr>
                 </thead>
@@ -680,60 +680,60 @@ const s = {
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" },
   topActions: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
   h1: { fontSize: 24, fontWeight: 800, margin: 0 },
-  searchInput: { minWidth: 320, padding: "8px 14px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, outline: "none" },
-  card: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, marginBottom: 14 },
+  searchInput: { minWidth: 320, padding: "8px 14px", borderRadius: 8, border: "1px solid #e3e7e5", fontSize: 14, outline: "none" },
+  card: { background: "#fff", border: "1px solid #e3e7e5", borderRadius: 12, padding: 14, marginBottom: 14 },
   cardTitle: { margin: "0 0 10px", fontSize: 14 },
   formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8 },
   formGridSingle: { display: "grid", gap: 12 },
-  fieldLabel: { display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 },
-  input: { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, boxSizing: "border-box" },
-  btnPrimary: { background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
-  btnSecondary: { background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
+  fieldLabel: { display: "block", fontSize: 12, fontWeight: 700, color: "#59605d", marginBottom: 6 },
+  input: { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e3e7e5", fontSize: 14, boxSizing: "border-box" },
+  btnPrimary: { background: "#154038", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
+  btnSecondary: { background: "#eff3f1", color: "#59605d", border: "1px solid #e3e7e5", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
   btnImport: { background: "#7c3aed", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
-  btnEmailPrimary: { background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
+  btnEmailPrimary: { background: "#154038", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
   infoBox: { background: "#f0fdfa", color: "#115e59", border: "1px solid #99f6e4", borderRadius: 10, padding: 12, fontSize: 12, lineHeight: 1.7 },
-  counter: { fontSize: 13, color: "#64748b", marginBottom: 10 },
-  tableWrap: { background: "#fff", borderRadius: 12, overflow: "auto", border: "1px solid #e2e8f0" },
+  counter: { fontSize: 13, color: "#707774", marginBottom: 10 },
+  tableWrap: { background: "#fff", borderRadius: 12, overflow: "auto", border: "1px solid #e3e7e5" },
   table: { width: "100%", borderCollapse: "collapse" },
-  th: { padding: "11px 12px", textAlign: "right", fontSize: 12, color: "#475569", borderBottom: "1px solid #e2e8f0" },
-  tr: { borderBottom: "1px solid #f1f5f9" },
+  th: { padding: "11px 12px", textAlign: "right", fontSize: 12, color: "#59605d", borderBottom: "1px solid #e3e7e5" },
+  tr: { borderBottom: "1px solid #eff3f1" },
   td: { padding: "10px 12px", fontSize: 13, verticalAlign: "top" },
-  empty: { textAlign: "center", padding: 28, color: "#94a3b8" },
+  empty: { textAlign: "center", padding: 28, color: "#8e9592" },
   actionsWrap: { display: "flex", gap: 6, flexWrap: "wrap" },
   btnBook: { background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
   btnPhoto: { background: "#fdf4ff", color: "#a21caf", border: "1px solid #f0abfc", borderRadius: 7, padding: "4px 8px", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "inline-block" },
-  btnHistory: { background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
+  btnHistory: { background: "#eef5f2", color: "#154038", border: "1px solid #b9d4cb", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
   btnEdit: { background: "#fff7ed", color: "#c2410c", border: "1px solid #fdba74", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
   btnDelete: { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnEmail: { background: "#ecfeff", color: "#0f766e", border: "1px solid #99f6e4", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
+  btnEmail: { background: "#ecfeff", color: "#154038", border: "1px solid #99f6e4", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
   btnWhatsApp: { background: "#ecfdf5", color: "#047857", border: "1px solid #6ee7b7", borderRadius: 7, padding: "6px 10px", fontWeight: 700, cursor: "pointer", textDecoration: "none" },
   summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginBottom: 12 },
-  summaryCard: { background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 6 },
-  summaryLabel: { color: "#64748b", fontSize: 12 },
-  historyMeta: { display: "flex", gap: 12, flexWrap: "wrap", color: "#475569", fontSize: 12, marginBottom: 12 },
-  historyTableWrap: { background: "#fff", borderRadius: 12, overflow: "auto", border: "1px solid #e2e8f0" },
+  summaryCard: { background: "#f7faf8", border: "1px solid #e3e7e5", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 6 },
+  summaryLabel: { color: "#707774", fontSize: 12 },
+  historyMeta: { display: "flex", gap: 12, flexWrap: "wrap", color: "#59605d", fontSize: 12, marginBottom: 12 },
+  historyTableWrap: { background: "#fff", borderRadius: 12, overflow: "auto", border: "1px solid #e3e7e5" },
   modalFooter: { display: "flex", justifyContent: "flex-end", marginTop: 14 },
   modalFooterActions: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16, flexWrap: "wrap" },
   audienceRow: { display: "flex", gap: 8, flexWrap: "wrap" },
   audienceOption: {
     display: "flex", alignItems: "center", gap: 4,
     padding: "6px 12px", borderRadius: 20, fontSize: 13,
-    border: "1px solid #e2e8f0", background: "#f8fafc",
-    color: "#475569", cursor: "pointer", fontWeight: 500,
+    border: "1px solid #e3e7e5", background: "#f7faf8",
+    color: "#59605d", cursor: "pointer", fontWeight: 500,
   },
   audienceOptionActive: {
-    border: "1px solid #0d9488", background: "#f0fdfa", color: "#0f766e", fontWeight: 700,
+    border: "1px solid #0d9488", background: "#f0fdfa", color: "#154038", fontWeight: 700,
   },
   mobileCardsWrap: { display: "grid", gap: 10 },
   mobileCard: {
-    background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
+    background: "#fff", border: "1px solid #e3e7e5", borderRadius: 12,
     padding: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
   },
-  mobileCardTitle: { fontSize: 15, fontWeight: 800, color: "#0f172a", marginBottom: 6 },
-  mobileMeta: { fontSize: 12, color: "#475569", marginBottom: 4 },
+  mobileCardTitle: { fontSize: 15, fontWeight: 800, color: "#141816", marginBottom: 6 },
+  mobileMeta: { fontSize: 12, color: "#59605d", marginBottom: 4 },
   mobileEmpty: {
-    textAlign: "center", background: "#fff", border: "1px solid #e2e8f0",
-    borderRadius: 12, padding: 24, color: "#94a3b8",
+    textAlign: "center", background: "#fff", border: "1px solid #e3e7e5",
+    borderRadius: 12, padding: 24, color: "#8e9592",
   },
 };
 
@@ -774,28 +774,28 @@ function RichTextEditor({ value, onChange }) {
 
   const TB_BTN = {
     background: "none", border: "1px solid transparent", borderRadius: 5,
-    padding: "3px 8px", cursor: "pointer", fontSize: 13, color: "#334155",
+    padding: "3px 8px", cursor: "pointer", fontSize: 13, color: "#404643",
     fontFamily: "inherit", lineHeight: 1.4,
   };
 
   return (
-    <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+    <div style={{ border: "1px solid #e3e7e5", borderRadius: 8, overflow: "hidden" }}>
       {/* Toolbar */}
       <div style={{
         display: "flex", gap: 2, padding: "6px 8px",
-        background: "#f8fafc", borderBottom: "1px solid #e2e8f0", flexWrap: "wrap",
+        background: "#f7faf8", borderBottom: "1px solid #e3e7e5", flexWrap: "wrap",
       }}>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("bold"); }} style={TB_BTN} title="מודגש"><b>B</b></button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("italic"); }} style={TB_BTN} title="נטוי"><i>I</i></button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("underline"); }} style={TB_BTN} title="קו תחתון"><u>U</u></button>
-        <span style={{ width: 1, background: "#e2e8f0", margin: "2px 4px", display: "inline-block" }} />
+        <span style={{ width: 1, background: "#e3e7e5", margin: "2px 4px", display: "inline-block" }} />
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("formatBlock", "h3"); }} style={TB_BTN} title="כותרת">H₃</button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("formatBlock", "p"); }} style={TB_BTN} title="פסקה רגילה">¶</button>
-        <span style={{ width: 1, background: "#e2e8f0", margin: "2px 4px", display: "inline-block" }} />
+        <span style={{ width: 1, background: "#e3e7e5", margin: "2px 4px", display: "inline-block" }} />
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("insertUnorderedList"); }} style={TB_BTN} title="רשימת תבליטים">• רשימה</button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("insertOrderedList"); }} style={TB_BTN} title="רשימה ממוספרת">1. רשימה</button>
-        <span style={{ width: 1, background: "#e2e8f0", margin: "2px 4px", display: "inline-block" }} />
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("removeFormat"); }} style={{ ...TB_BTN, color: "#94a3b8" }} title="נקה עיצוב">✕</button>
+        <span style={{ width: 1, background: "#e3e7e5", margin: "2px 4px", display: "inline-block" }} />
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec("removeFormat"); }} style={{ ...TB_BTN, color: "#8e9592" }} title="נקה עיצוב">✕</button>
       </div>
       {/* Editable area */}
       <div
@@ -806,7 +806,7 @@ function RichTextEditor({ value, onChange }) {
         style={{
           minHeight: 200, padding: "12px 14px", outline: "none",
           fontSize: 14, lineHeight: 1.8, direction: "rtl", textAlign: "right",
-          color: "#0f172a", background: "#fff",
+          color: "#141816", background: "#fff",
         }}
       />
     </div>

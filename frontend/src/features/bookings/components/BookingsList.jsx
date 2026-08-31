@@ -32,8 +32,8 @@ export default function BookingsList({
     flexWrap: "wrap",
     padding: "4px 6px",
     borderRadius: 999,
-    border: "1px solid #e2e8f0",
-    background: "#f8fafc",
+    border: "1px solid #e3e7e5",
+    background: "#f7faf8",
   };
 
   const actionChip = (variant) => {
@@ -52,8 +52,8 @@ export default function BookingsList({
       whiteSpace: "nowrap",
     };
     if (variant === "success") return { ...base, color: "#166534", background: "#dcfce7", borderColor: "#bbf7d0" };
-    if (variant === "info") return { ...base, color: "#1d4ed8", background: "#dbeafe", borderColor: "#bfdbfe" };
-    return { ...base, color: "#475569", background: "#fff", borderColor: "#e2e8f0" };
+    if (variant === "info") return { ...base, color: "#154038", background: "#d7e8e1", borderColor: "#b9d4cb" };
+    return { ...base, color: "#59605d", background: "#fff", borderColor: "#e3e7e5" };
   };
 
   if (!isMobile) {
@@ -61,7 +61,7 @@ export default function BookingsList({
       <div {...dragScroll.bind} style={{ ...s.tableWrap, ...dragScroll.style }}>
         <table style={s.table}>
           <thead>
-            <tr style={{ background: "#f8fafc" }}>
+            <tr style={{ background: "#f7faf8" }}>
               {["#", "לקוח", "רכב", "מתאריך", "עד תאריך", "סכום", "סטטוס", "פעולות"].map((h) => (
                 <th key={h} style={s.th}>
                   {h}
@@ -117,7 +117,7 @@ export default function BookingsList({
                     )}
                   </td>
                   <td style={s.td}>
-                    <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
+                    <span style={{ fontWeight: 700, color: "#154038" }}>
                       {b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}
                     </span>
                   </td>
@@ -159,7 +159,7 @@ export default function BookingsList({
                           alignItems: "center",
                           justifyContent: "center",
                           background: "#fff",
-                          border: "1px solid #e2e8f0",
+                          border: "1px solid #e3e7e5",
                           borderRadius: 10,
                         }}
                         title="ערוך"
@@ -206,7 +206,7 @@ export default function BookingsList({
             })}
             {bookings.length === 0 && (
               <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: 40, color: "#94a3b8" }}>
+                <td colSpan={8} style={{ textAlign: "center", padding: 40, color: "#8e9592" }}>
                   לא נמצאו הזמנות
                 </td>
               </tr>
@@ -271,7 +271,7 @@ export default function BookingsList({
             </div>
 
             <div style={s.mobileFooter}>
-              <span style={{ fontWeight: 700, color: "#1d4ed8" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
+              <span style={{ fontWeight: 700, color: "#154038" }}>{b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}</span>
               <div style={actionsToolbar}>
                 {overdue && (
                   <>
@@ -302,7 +302,7 @@ export default function BookingsList({
                     alignItems: "center",
                     justifyContent: "center",
                     background: "#fff",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #e3e7e5",
                     borderRadius: 10,
                   }}
                   title="ערוך"
@@ -346,7 +346,7 @@ export default function BookingsList({
                 )}
               </div>
             </div>
-            <BookingAuditMeta b={b} style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #f1f5f9" }} />
+            <BookingAuditMeta b={b} style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #eff3f1" }} />
           </div>
         );
       })}

@@ -224,10 +224,10 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
   const btnStyle =
     variant === "compact"
       ? {
-          background: photoCount > 0 ? "#eff6ff" : "#f8fafc",
-          color: photoCount > 0 ? "#1d4ed8" : "#475569",
+          background: photoCount > 0 ? "#eef5f2" : "#f7faf8",
+          color: photoCount > 0 ? "#154038" : "#59605d",
           border: "1px solid",
-          borderColor: photoCount > 0 ? "#bfdbfe" : "#e2e8f0",
+          borderColor: photoCount > 0 ? "#b9d4cb" : "#e3e7e5",
           width: 34,
           height: 34,
           padding: 0,
@@ -241,10 +241,10 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
           position: "relative",
         }
       : {
-          background: photoCount > 0 ? "#eff6ff" : "#f8fafc",
-          color: photoCount > 0 ? "#1d4ed8" : "#475569",
+          background: photoCount > 0 ? "#eef5f2" : "#f7faf8",
+          color: photoCount > 0 ? "#154038" : "#59605d",
           border: "1px solid",
-          borderColor: photoCount > 0 ? "#bfdbfe" : "#e2e8f0",
+          borderColor: photoCount > 0 ? "#b9d4cb" : "#e3e7e5",
           padding: "8px 16px",
           borderRadius: 8,
           display: "flex",
@@ -274,7 +274,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
           <span
             style={{
               fontSize: 11,
-              background: "#1d4ed8",
+              background: "#154038",
               color: "#fff",
               borderRadius: 99,
               minWidth: 18,
@@ -303,10 +303,10 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
           <div style={{
             position: "absolute", bottom: "100%", left: 0, marginBottom: 8,
             zIndex: 10002, background: "#fff", borderRadius: 12, 
-            boxShadow: "0 10px 40px rgba(0,0,0,0.2)", border: "1px solid #e2e8f0",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.2)", border: "1px solid #e3e7e5",
             minWidth: 190, overflow: "hidden"
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 12, color: "#64748b", background: "#f8fafc" }}>
+            <div style={{ padding: "10px 14px", borderBottom: "1px solid #eff3f1", fontWeight: 700, fontSize: 12, color: "#707774", background: "#f7faf8" }}>
               פעולות תמונה #{booking.id}
             </div>
             
@@ -326,7 +326,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
               onClick={() => { onContinuousCamera(); onToggle(); }}
               style={{ 
                 width: "100%", textAlign: "right", padding: "12px 16px", border: "none", 
-                background: "#f0f9ff", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", color: "#0369a1", fontWeight: 700
+                background: "#f0f9ff", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", color: "#1b5348", fontWeight: 700
               }}
             >
               📸 צילום רציף
@@ -336,7 +336,7 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
               onClick={handlePickFiles}
               style={{
                 width: "100%", textAlign: "right", padding: "12px 16px", border: "none",
-                background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderTop: "1px solid #f1f5f9"
+                background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderTop: "1px solid #eff3f1"
               }}
             >
               📁 בחר מהגלריה

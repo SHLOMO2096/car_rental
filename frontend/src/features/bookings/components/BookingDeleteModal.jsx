@@ -20,8 +20,8 @@ export default function BookingDeleteModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ margin: "0 0 8px", fontSize: 18, color: "#991b1b" }}>מחיקת הזמנה</h3>
-        <div style={{ fontSize: 13, color: "#475569", marginBottom: 4 }}><strong>לקוח:</strong> {booking.customer_name}</div>
-        <div style={{ fontSize: 13, color: "#475569", marginBottom: 4 }}><strong>תאריכים:</strong> {booking.start_date} - {booking.end_date}</div>
+        <div style={{ fontSize: 13, color: "#59605d", marginBottom: 4 }}><strong>לקוח:</strong> {booking.customer_name}</div>
+        <div style={{ fontSize: 13, color: "#59605d", marginBottom: 4 }}><strong>תאריכים:</strong> {booking.start_date} - {booking.end_date}</div>
         <div style={{ fontSize: 12, color: "#991b1b", background: "#fef2f2", borderRadius: 10, padding: "10px 12px", margin: "14px 0 18px" }}>
           המחיקה מבוצעת כפעולת soft delete ומתועדת ב-audit log.
         </div>
@@ -40,7 +40,7 @@ export default function BookingDeleteModal({
           </div>
         )}
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button onClick={onCancel} disabled={loading} style={{ padding: "9px 16px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#374151", cursor: "pointer" }}>
+          <button onClick={onCancel} disabled={loading} style={{ padding: "9px 16px", borderRadius: 8, border: "1px solid #ccd2cf", background: "#fff", color: "#404643", cursor: "pointer" }}>
             ביטול
           </button>
           <button

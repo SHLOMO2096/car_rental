@@ -297,7 +297,7 @@ export default function BookingFormModal({
                 </div>
               ))}
               {preview.result.note && (
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: "#707774", marginTop: 2 }}>
                   ℹ️ {preview.result.note}
                 </div>
               )}
@@ -386,14 +386,14 @@ export default function BookingFormModal({
           style={{
             margin: "12px 0 0",
             padding: "8px 12px",
-            background: "#f8fafc",
+            background: "#f7faf8",
             borderRadius: 8,
-            border: "1px solid #e2e8f0",
+            border: "1px solid #e3e7e5",
             display: "flex",
             flexWrap: "wrap",
             gap: "4px 16px",
             fontSize: 11,
-            color: "#64748b",
+            color: "#707774",
           }}
         >
           {editBooking.created_by_name && (
@@ -416,7 +416,7 @@ export default function BookingFormModal({
         <div
           style={{
             marginTop: 12,
-            border: "1px solid #e2e8f0",
+            border: "1px solid #e3e7e5",
             borderRadius: 10,
             background: "#ffffff",
             overflow: "hidden",
@@ -425,35 +425,35 @@ export default function BookingFormModal({
           <div
             style={{
               padding: "10px 12px",
-              background: "#f8fafc",
-              borderBottom: "1px solid #e2e8f0",
+              background: "#f7faf8",
+              borderBottom: "1px solid #e3e7e5",
               fontSize: 12,
               fontWeight: 700,
-              color: "#334155",
+              color: "#404643",
             }}
           >
             תיעוד פעולות אחרונות
           </div>
           <div style={{ padding: "8px 12px", display: "grid", gap: 8, maxHeight: 180, overflowY: "auto" }}>
-            {auditLoading && <div style={{ fontSize: 12, color: "#64748b" }}>טוען היסטוריית שינויים...</div>}
+            {auditLoading && <div style={{ fontSize: 12, color: "#707774" }}>טוען היסטוריית שינויים...</div>}
             {!auditLoading && (!auditHistory || auditHistory.length === 0) && (
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>אין עדיין אירועי תיעוד להצגה</div>
+              <div style={{ fontSize: 12, color: "#8e9592" }}>אין עדיין אירועי תיעוד להצגה</div>
             )}
             {!auditLoading &&
               auditHistory?.map((entry) => {
                 const summary = summarizeAuditEntry(entry);
                 const severityColor =
-                  entry?.severity === "critical" ? "#b91c1c" : entry?.severity === "warning" ? "#b45309" : "#475569";
+                  entry?.severity === "critical" ? "#b91c1c" : entry?.severity === "warning" ? "#b45309" : "#59605d";
                 return (
-                  <div key={entry.id} style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 8 }}>
+                  <div key={entry.id} style={{ borderBottom: "1px solid #eff3f1", paddingBottom: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", fontSize: 12 }}>
                       <span style={{ fontWeight: 700, color: severityColor }}>{formatAuditAction(entry.action)}</span>
-                      <span style={{ color: "#64748b" }}>{formatDateTime(entry.created_at)}</span>
+                      <span style={{ color: "#707774" }}>{formatDateTime(entry.created_at)}</span>
                     </div>
-                    <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>
+                    <div style={{ fontSize: 11, color: "#59605d", marginTop: 4 }}>
                       בוצע ע"י <strong>{entry.actor_user_name || `משתמש #${entry.actor_user_id || "לא ידוע"}`}</strong>
                     </div>
-                    {summary && <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>{summary}</div>}
+                    {summary && <div style={{ fontSize: 11, color: "#707774", marginTop: 4 }}>{summary}</div>}
                   </div>
                 );
               })}

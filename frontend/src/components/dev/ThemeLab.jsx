@@ -9,20 +9,21 @@ import { useEffect, useState } from "react";
 const STORE_KEY = "theme-lab";
 
 const BRANDS = [
-  { id: "blue",     label: "כחול",   hex: "#1d4ed8" },
-  { id: "indigo",   label: "אינדיגו", hex: "#4f46e5" },
-  { id: "teal",     label: "טורקיז",  hex: "#0f766e" },
-  { id: "emerald",  label: "ירוק",   hex: "#047857" },
-  { id: "violet",   label: "סגול",   hex: "#6d28d9" },
-  { id: "rose",     label: "ורוד",   hex: "#be123c" },
-  { id: "amber",    label: "ענבר",   hex: "#b45309" },
-  { id: "graphite", label: "גרפיט",  hex: "#334155" },
+  { id: "pine",     label: "אורן",    hex: "#154038" },
+  { id: "graphite", label: "גרפיט",   hex: "#2b3033" },
+  { id: "navy",     label: "נייבי",   hex: "#16324f" },
+  { id: "forest",   label: "יער",     hex: "#1c3d22" },
+  { id: "plum",     label: "שזיף",    hex: "#3d2340" },
+  { id: "clay",     label: "חימר",    hex: "#5a3325" },
+  { id: "indigo",   label: "אינדיגו", hex: "#3730a3" },
+  { id: "teal",     label: "טורקיז",  hex: "#115e59" },
 ];
 
 const NEUTRALS = [
-  { id: "slate", label: "קריר" },
+  { id: "sage",  label: "ירקרק" },
   { id: "zinc",  label: "נייטרלי" },
   { id: "stone", label: "חמים" },
+  { id: "slate", label: "קר" },
 ];
 
 // כל זוג: [גופן ממשק, גופן כותרות, מה לטעון מ-Google Fonts]
@@ -47,7 +48,7 @@ const FONTS = [
     display: '"Segoe UI", "Arial Hebrew", Arial, sans-serif', load: null },
 ];
 
-const DEFAULTS = { brand: "blue", neutral: "slate", font: "assistant-frank", text: 15, radius: 8 };
+const DEFAULTS = { brand: "pine", neutral: "sage", font: "assistant-frank", text: 15, radius: 8 };
 
 function loadFont(spec) {
   if (!spec) return;

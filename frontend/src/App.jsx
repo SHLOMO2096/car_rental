@@ -97,7 +97,7 @@ function Layout({ children }) {
         />
       )}
       <aside style={{
-        width:220, background:"#1e293b", display:"flex",
+        width:220, background:"#272c2a", display:"flex",
         flexDirection:"column",
         position:isMobile ? "fixed" : "sticky",
         top:0,
@@ -112,8 +112,8 @@ function Layout({ children }) {
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ fontSize:26 }}>🚘</div>
             <div>
-              <div style={{ color:"#60a5fa", fontWeight:800, fontSize:14 }}>השכרת רכבים</div>
-              <div style={{ color:"#475569", fontSize:11 }}>מערכת ניהול</div>
+              <div style={{ color:"#6bbdab", fontWeight:800, fontSize:14 }}>השכרת רכבים</div>
+              <div style={{ color:"#59605d", fontSize:11 }}>מערכת ניהול</div>
             </div>
           </div>
         </div>
@@ -122,10 +122,10 @@ function Layout({ children }) {
           {links.map(({ to, label, icon }) => (
             <NavLink key={to} to={to} end={to==="/"} onClick={() => isMobile && setMenuOpen(false)} style={({ isActive }) => ({
               display:"flex", alignItems:"center", gap:10,
-              padding:"10px 18px", color: isActive ? "#60a5fa" : "#94a3b8",
-              background: isActive ? "rgba(96,165,250,0.1)" : "transparent",
+              padding:"10px 18px", color: isActive ? "#6bbdab" : "#8e9592",
+              background: isActive ? "rgba(107,189,171,0.12)" : "transparent",
               textDecoration:"none", fontSize:14, fontWeight:600,
-              borderRight: isActive ? "3px solid #60a5fa" : "3px solid transparent",
+              borderRight: isActive ? "3px solid #6bbdab" : "3px solid transparent",
               transition:"all 0.15s",
             })}>
               <span style={{ fontSize:16 }}>{icon}</span>
@@ -137,18 +137,18 @@ function Layout({ children }) {
         <div style={{ padding:"14px 18px", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
             <div style={{
-              width:34, height:34, borderRadius:"50%", background:"#3b82f6",
+              width:34, height:34, borderRadius:"50%", background:"#2c6b5e",
               display:"flex", alignItems:"center", justifyContent:"center",
               color:"#fff", fontWeight:800, fontSize:14, flexShrink:0,
             }}>
               {user?.full_name?.[0] || "?"}
             </div>
             <div style={{ minWidth:0 }}>
-              <div style={{ color:"#f1f5f9", fontSize:13, fontWeight:600,
+              <div style={{ color:"#eff3f1", fontSize:13, fontWeight:600,
                 overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                 {user?.full_name}
               </div>
-              <div style={{ color:"#64748b", fontSize:11 }}>
+              <div style={{ color:"#707774", fontSize:11 }}>
                 {isAdmin() ? "מנהל" : "סוכן"}
               </div>
             </div>
@@ -158,7 +158,7 @@ function Layout({ children }) {
             border:"1px solid rgba(239,68,68,0.25)", color:"#fca5a5",
             borderRadius:7, padding:"7px 0", fontSize:13, cursor:"pointer", fontWeight:600,
           }}>🚪 יציאה</button>
-          <div style={{ marginTop:10, color:"#64748b", fontSize:11, lineHeight:1.5 }}>
+          <div style={{ marginTop:10, color:"#707774", fontSize:11, lineHeight:1.5 }}>
             <div>גרסה: v{APP_VERSION}</div>
             <div>Build: {BUILD_TIME}</div>
           </div>
@@ -166,24 +166,24 @@ function Layout({ children }) {
       </aside>
 
       {/* Main content */}
-      <main style={{ flex:1, background:"#f8fafc", padding:isMobile ? "14px 10px" : "28px 24px",
+      <main style={{ flex:1, background:"#f7faf8", padding:isMobile ? "14px 10px" : "28px 24px",
                      overflowY:"auto", minWidth:0 }}>
         {isMobile && (
           <div style={{
             display:"flex", alignItems:"center", justifyContent:"space-between",
-            marginBottom:10, background:"#fff", border:"1px solid #e2e8f0",
+            marginBottom:10, background:"#fff", border:"1px solid #e3e7e5",
             borderRadius:10, padding:"8px 10px",
           }}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
               style={{
-                border:"1px solid #cbd5e1", borderRadius:8, background:"#fff",
+                border:"1px solid #ccd2cf", borderRadius:8, background:"#fff",
                 padding:"6px 10px", cursor:"pointer", fontSize:13, fontWeight:700,
               }}
             >
               ☰ תפריט
             </button>
-            <div style={{ fontSize:12, color:"#64748b", fontWeight:700 }}>{user?.full_name || "משתמש"}</div>
+            <div style={{ fontSize:12, color:"#707774", fontWeight:700 }}>{user?.full_name || "משתמש"}</div>
           </div>
         )}
         {children}
@@ -198,18 +198,18 @@ function Layout({ children }) {
         title="משמרת פעילה"
         maxWidth={520}
       >
-        <div style={{ color: "#334155", fontSize: 14, lineHeight: 1.7 }}>
+        <div style={{ color: "#404643", fontSize: 14, lineHeight: 1.7 }}>
           <div style={{ marginBottom: 10 }}>
             יש לך משמרת פעילה. יציאה מהחשבון לא מסיימת משמרת אוטומטית.
           </div>
 
           {!!logoutAttendancePrompt.status?.open_shift?.shift_start_at && (
-            <div style={{ marginBottom: 10, fontSize: 13, color: "#475569" }}>
+            <div style={{ marginBottom: 10, fontSize: 13, color: "#59605d" }}>
               התחלה: {new Date(logoutAttendancePrompt.status.open_shift.shift_start_at).toLocaleString("he-IL")}
             </div>
           )}
 
-          <div style={{ marginBottom: 18, fontSize: 13, color: "#475569" }}>
+          <div style={{ marginBottom: 18, fontSize: 13, color: "#59605d" }}>
             מכשירים פתוחים: {logoutAttendancePrompt.status?.open_device_sessions?.length || 0}
           </div>
 
@@ -218,9 +218,9 @@ function Layout({ children }) {
               onClick={() => setLogoutAttendancePrompt({ open: false, busy: false, status: null })}
               disabled={logoutAttendancePrompt.busy}
               style={{
-                background: "#f1f5f9",
-                color: "#475569",
-                border: "1px solid #e2e8f0",
+                background: "#eff3f1",
+                color: "#59605d",
+                border: "1px solid #e3e7e5",
                 borderRadius: 8,
                 padding: "9px 16px",
                 fontWeight: 700,
@@ -238,8 +238,8 @@ function Layout({ children }) {
               disabled={logoutAttendancePrompt.busy}
               style={{
                 background: "#fff",
-                color: "#0f172a",
-                border: "1px solid #cbd5e1",
+                color: "#141816",
+                border: "1px solid #ccd2cf",
                 borderRadius: 8,
                 padding: "9px 16px",
                 fontWeight: 800,
@@ -346,7 +346,7 @@ function BuildInfoBadge() {
       bottom: 12,
       zIndex: 9999,
       background: "rgba(15,23,42,0.88)",
-      color: "#cbd5e1",
+      color: "#ccd2cf",
       border: "1px solid rgba(148,163,184,0.35)",
       borderRadius: 8,
       padding: "6px 10px",
@@ -363,8 +363,8 @@ function BuildInfoBadge() {
 
 function RouteLoader() {
   return (
-    <div dir="rtl" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
-      <div style={{ color: "#64748b", fontSize: 14, fontWeight: 600 }}>טוען מסך...</div>
+    <div dir="rtl" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f7faf8" }}>
+      <div style={{ color: "#707774", fontSize: 14, fontWeight: 600 }}>טוען מסך...</div>
     </div>
   );
 }

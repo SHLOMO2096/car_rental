@@ -7,7 +7,7 @@ export function useActionConfirm() {
   const [actionConfirm, setActionConfirm] = useState(null);
   const actionConfirmResolveRef = useRef(null);
 
-  function askActionConfirm({ message, messageList = null, confirmLabel = "אישור", confirmColor = "#1d4ed8" }) {
+  function askActionConfirm({ message, messageList = null, confirmLabel = "אישור", confirmColor = "#154038" }) {
     return new Promise((resolve) => {
       actionConfirmResolveRef.current = resolve;
       setActionConfirm({ message, messageList, confirmLabel, confirmColor });

@@ -135,7 +135,7 @@ export default function Settings() {
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155", cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#404643", cursor: "pointer" }}>
             <input
               type="checkbox"
               checked={!!general.email_show_price_breakdown}
@@ -161,19 +161,19 @@ export default function Settings() {
       {canManagePayroll && (
         <div style={{ ...s.card, marginTop: 24 }}>
           <h2 style={s.cardTitle}>שכר שעתי לעובדים</h2>
-          <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+          <p style={{ fontSize: 13, color: "#707774", marginBottom: 16 }}>
             עריכה נשמרת מיידית (ביציאה מהשדה). השינוי מתועד בלוג הביקורת.
           </p>
 
           {payrollLoading ? (
-            <div style={{ color: "#94a3b8", fontSize: 13 }}>טוען עובדים...</div>
+            <div style={{ color: "#8e9592", fontSize: 13 }}>טוען עובדים...</div>
           ) : payrollUsers.length === 0 ? (
-            <div style={{ color: "#94a3b8", fontSize: 13 }}>אין עובדים להצגה.</div>
+            <div style={{ color: "#8e9592", fontSize: 13 }}>אין עובדים להצגה.</div>
           ) : (
             <div style={s.tableWrap}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "#f8fafc" }}>
+                  <tr style={{ background: "#f7faf8" }}>
                     {["שם", "אימייל", "פעיל", "שכר שעתי (₪)"].map((h) => (
                       <th key={h} style={s.th}>{h}</th>
                     ))}
@@ -181,7 +181,7 @@ export default function Settings() {
                 </thead>
                 <tbody>
                   {payrollUsers.map((u) => (
-                    <tr key={u.id} style={{ borderTop: "1px solid #e2e8f0", opacity: u.is_active ? 1 : 0.55 }}>
+                    <tr key={u.id} style={{ borderTop: "1px solid #e3e7e5", opacity: u.is_active ? 1 : 0.55 }}>
                       <td style={s.td}><strong>{u.full_name}</strong></td>
                       <td style={s.td}>{u.email}</td>
                       <td style={s.td}>{u.is_active ? "כן" : "לא"}</td>
@@ -198,7 +198,7 @@ export default function Settings() {
                             placeholder="ריק = ללא חישוב"
                           />
                           {savingRateUserId === u.id && (
-                            <span style={{ color: "#64748b", fontSize: 12 }}>שומר...</span>
+                            <span style={{ color: "#707774", fontSize: 12 }}>שומר...</span>
                           )}
                         </div>
                       </td>
@@ -221,19 +221,19 @@ export default function Settings() {
 }
 
 const s = {
-  card: { background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" },
-  cardTitle: { margin: "0 0 10px", fontSize: 18, fontWeight: 700, color: "#1e293b" },
-  tableWrap: { overflow: "auto", borderRadius: 10, border: "1px solid #e2e8f0" },
-  th: { padding: "12px 12px", textAlign: "right", fontSize: 12, color: "#475569", fontWeight: 900, whiteSpace: "nowrap" },
-  td: { padding: "10px 12px", fontSize: 13, color: "#0f172a", verticalAlign: "top" },
+  card: { background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e3e7e5", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" },
+  cardTitle: { margin: "0 0 10px", fontSize: 18, fontWeight: 700, color: "#272c2a" },
+  tableWrap: { overflow: "auto", borderRadius: 10, border: "1px solid #e3e7e5" },
+  th: { padding: "12px 12px", textAlign: "right", fontSize: 12, color: "#59605d", fontWeight: 900, whiteSpace: "nowrap" },
+  td: { padding: "10px 12px", fontSize: 13, color: "#141816", verticalAlign: "top" },
   filterRow: {
-    display: "flex", gap: 12, padding: 16, background: "#f8fafc", 
-    borderRadius: 8, border: "1px solid #e2e8f0", flexWrap: "wrap", alignItems: "flex-end" 
+    display: "flex", gap: 12, padding: 16, background: "#f7faf8", 
+    borderRadius: 8, border: "1px solid #e3e7e5", flexWrap: "wrap", alignItems: "flex-end" 
   },
   field: { display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 140 },
-  label: { fontSize: 12, fontWeight: 600, color: "#475569" },
-  input: { padding: "8px 12px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 14, outline: "none" },
+  label: { fontSize: 12, fontWeight: 600, color: "#59605d" },
+  input: { padding: "8px 12px", borderRadius: 6, border: "1px solid #ccd2cf", fontSize: 14, outline: "none" },
   btnRemove: { background: "#fee2e2", color: "#dc2626", border: "none", padding: "8px 12px", borderRadius: 6, cursor: "pointer", transition: "background 0.2s" },
-  btnAdd: { background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "8px 16px", borderRadius: 6, cursor: "pointer", fontWeight: 600 },
-  btnSave: { background: "#1d4ed8", color: "#fff", border: "none", padding: "8px 20px", borderRadius: 6, cursor: "pointer", fontWeight: 700, transition: "opacity 0.2s" },
+  btnAdd: { background: "#eff3f1", color: "#59605d", border: "1px solid #ccd2cf", padding: "8px 16px", borderRadius: 6, cursor: "pointer", fontWeight: 600 },
+  btnSave: { background: "#154038", color: "#fff", border: "none", padding: "8px 20px", borderRadius: 6, cursor: "pointer", fontWeight: 700, transition: "opacity 0.2s" },
 };

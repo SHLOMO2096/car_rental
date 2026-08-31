@@ -191,7 +191,7 @@ export default function Payroll() {
 
 
   if (loading) {
-    return <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>טוען נתוני שכר...</div>;
+    return <div style={{ padding: 40, textAlign: "center", color: "#8e9592" }}>טוען נתוני שכר...</div>;
   }
 
   const rows = report?.rows || [];
@@ -234,7 +234,7 @@ export default function Payroll() {
         <div style={s.tableWrap}>
           <table style={s.table}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "#f7faf8" }}>
                 {[
                   "עובד", "שכר שעתי", "כמות משמרות", "סה״כ שעות", "לתשלום",
                 ].map((h) => (
@@ -245,12 +245,12 @@ export default function Payroll() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ ...s.td, padding: 18, color: "#94a3b8", textAlign: "center" }}>
+                  <td colSpan={5} style={{ ...s.td, padding: 18, color: "#8e9592", textAlign: "center" }}>
                     אין נתונים בטווח (או אין משמרות סגורות).
                   </td>
                 </tr>
               ) : rows.map((r) => (
-                <tr key={r.user_id} style={{ borderTop: "1px solid #e2e8f0" }}>
+                <tr key={r.user_id} style={{ borderTop: "1px solid #e3e7e5" }}>
                   <td style={s.td}><strong>{r.full_name}</strong></td>
                   <td style={s.td}>₪{Number(r.hourly_rate || 0).toFixed(2)}</td>
                   <td style={s.td}>{r.shifts_count}</td>
@@ -262,7 +262,7 @@ export default function Payroll() {
           </table>
         </div>
 
-        <div style={{ marginTop: 10, color: "#94a3b8", fontSize: 12, lineHeight: 1.6 }}>
+        <div style={{ marginTop: 10, color: "#8e9592", fontSize: 12, lineHeight: 1.6 }}>
           הערה: ימים/משמרות שלא הסתיימו (אין סיום משמרת) לא נכנסים לחישוב.
         </div>
       </div>
@@ -271,14 +271,14 @@ export default function Payroll() {
         <div style={s.card}>
           <h3 style={s.cardTitle}>תיקון שעות נוכחות (למנהל בלבד) — {selectedUser?.full_name}</h3>
           {shiftsLoading ? (
-            <div style={{ color: "#94a3b8", fontSize: 13 }}>טוען משמרות...</div>
+            <div style={{ color: "#8e9592", fontSize: 13 }}>טוען משמרות...</div>
           ) : shifts.length === 0 ? (
-            <div style={{ color: "#94a3b8", fontSize: 13 }}>אין משמרות בטווח הנבחר.</div>
+            <div style={{ color: "#8e9592", fontSize: 13 }}>אין משמרות בטווח הנבחר.</div>
           ) : (
             <div style={s.tableWrap}>
               <table style={s.table}>
                 <thead>
-                  <tr style={{ background: "#f8fafc" }}>
+                  <tr style={{ background: "#f7faf8" }}>
                     {["תאריך", "התחלה", "סיום", "שעות", ""].map((h) => (
                       <th key={h} style={s.th}>{h}</th>
                     ))}
@@ -295,7 +295,7 @@ export default function Payroll() {
                     const canSave = !!ed.start && !!ed.end && Number.isFinite(startMs) && Number.isFinite(endMs) && endMs >= startMs;
 
                     return (
-                      <tr key={sh.id} style={{ borderTop: "1px solid #e2e8f0" }}>
+                      <tr key={sh.id} style={{ borderTop: "1px solid #e3e7e5" }}>
                         <td style={s.td}>{sh.work_date}</td>
                         <td style={s.td}>
                           <input
@@ -351,7 +351,7 @@ export default function Payroll() {
             </div>
           )}
 
-          <div style={{ marginTop: 10, color: "#94a3b8", fontSize: 12, lineHeight: 1.6 }}>
+          <div style={{ marginTop: 10, color: "#8e9592", fontSize: 12, lineHeight: 1.6 }}>
             לאחר שמירה אנחנו מרעננים את הדוח כדי שהשכר יתעדכן לפי השעות החדשות.
           </div>
         </div>
@@ -359,7 +359,7 @@ export default function Payroll() {
 
       {/* helpful debug */}
       {usersById.size === 0 && (
-        <div style={{ color: "#94a3b8", fontSize: 12 }}>לא נטענו משתמשים.</div>
+        <div style={{ color: "#8e9592", fontSize: 12 }}>לא נטענו משתמשים.</div>
       )}
     </div>
   );
@@ -368,22 +368,22 @@ export default function Payroll() {
 const s = {
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 18 },
   h1: { fontSize: 24, fontWeight: 800, margin: 0 },
-  label: { fontSize: 13, fontWeight: 700, color: "#475569" },
-  input: { border: "1px solid #cbd5e1", borderRadius: 8, padding: "8px 10px", fontSize: 13 },
-  btnPrimary: { background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, padding: "9px 14px", fontWeight: 800, cursor: "pointer" },
-  btnSecondary: { background: "#fff", color: "#0f172a", border: "1px solid #cbd5e1", borderRadius: 8, padding: "9px 14px", fontWeight: 800, cursor: "pointer" },
+  label: { fontSize: 13, fontWeight: 700, color: "#59605d" },
+  input: { border: "1px solid #ccd2cf", borderRadius: 8, padding: "8px 10px", fontSize: 13 },
+  btnPrimary: { background: "#2c6b5e", color: "#fff", border: "none", borderRadius: 8, padding: "9px 14px", fontWeight: 800, cursor: "pointer" },
+  btnSecondary: { background: "#fff", color: "#141816", border: "1px solid #ccd2cf", borderRadius: 8, padding: "9px 14px", fontWeight: 800, cursor: "pointer" },
 
   kpiRow: { display: "flex", gap: 10, marginBottom: 18 },
-  kpiCard: { flex: 1, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" },
-  kpiLabel: { color: "#94a3b8", fontSize: 12, fontWeight: 700 },
-  kpiValue: { color: "#0f172a", fontSize: 22, fontWeight: 900, marginTop: 6 },
+  kpiCard: { flex: 1, background: "#fff", border: "1px solid #e3e7e5", borderRadius: 12, padding: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" },
+  kpiLabel: { color: "#8e9592", fontSize: 12, fontWeight: 700 },
+  kpiValue: { color: "#141816", fontSize: 22, fontWeight: 900, marginTop: 6 },
 
-  card: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", marginBottom: 18 },
-  cardTitle: { margin: "0 0 12px", fontSize: 16, fontWeight: 900, color: "#0f172a" },
+  card: { background: "#fff", border: "1px solid #e3e7e5", borderRadius: 12, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", marginBottom: 18 },
+  cardTitle: { margin: "0 0 12px", fontSize: 16, fontWeight: 900, color: "#141816" },
 
-  tableWrap: { overflow: "auto", borderRadius: 10, border: "1px solid #e2e8f0" },
+  tableWrap: { overflow: "auto", borderRadius: 10, border: "1px solid #e3e7e5" },
   table: { width: "100%", borderCollapse: "collapse" },
-  th: { padding: "12px 12px", textAlign: "right", fontSize: 12, color: "#475569", fontWeight: 800, whiteSpace: "nowrap" },
-  td: { padding: "10px 12px", fontSize: 13, color: "#0f172a", verticalAlign: "top" },
+  th: { padding: "12px 12px", textAlign: "right", fontSize: 12, color: "#59605d", fontWeight: 800, whiteSpace: "nowrap" },
+  td: { padding: "10px 12px", fontSize: 13, color: "#141816", verticalAlign: "top" },
 };
 

@@ -70,7 +70,7 @@ export default function Users() {
         <div {...dragScroll.bind} style={{ ...s.tableWrap, ...dragScroll.style }}>
           <table style={{ width:"100%", borderCollapse:"collapse" }}>
             <thead>
-              <tr style={{ background:"#f8fafc" }}>
+              <tr style={{ background:"#f7faf8" }}>
                 {["#","שם מלא","אימייל","תפקיד","סטטוס","נוצר","פעולות"].map(h => (
                   <th key={h} style={s.th}>{h}</th>
                 ))}
@@ -78,7 +78,7 @@ export default function Users() {
             </thead>
             <tbody>
               {users.map(u => (
-                <tr key={u.id} style={{ borderBottom:"1px solid #f1f5f9", opacity: u.is_active ? 1 : 0.5 }}>
+                <tr key={u.id} style={{ borderBottom:"1px solid #eff3f1", opacity: u.is_active ? 1 : 0.5 }}>
                   <td style={s.td}><span style={s.idBadge}>#{u.id}</span></td>
                   <td style={s.td}><strong>{u.full_name}</strong></td>
                   <td style={s.td}>{u.email}</td>
@@ -101,16 +101,16 @@ export default function Users() {
       ) : (
         <div style={{ display:"grid", gap:10 }}>
           {users.map(u => (
-            <div key={u.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:14, opacity: u.is_active ? 1 : 0.55 }}>
+            <div key={u.id} style={{ background:"#fff", border:"1px solid #e3e7e5", borderRadius:12, padding:14, opacity: u.is_active ? 1 : 0.55 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
                 <span style={s.idBadge}>#{u.id}</span>
                 <Badge label={u.is_active ? "פעיל" : "מושבת"} color={u.is_active ? "green" : "gray"} />
               </div>
               <div style={{ fontWeight:700, fontSize:15, marginBottom:2 }}>{u.full_name}</div>
-              <div style={{ fontSize:12, color:"#64748b", marginBottom:6 }}>{u.email}</div>
+              <div style={{ fontSize:12, color:"#707774", marginBottom:6 }}>{u.email}</div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", marginBottom:8 }}>
                 <Badge label={u.role === "admin" ? "מנהל" : "סוכן"} color={u.role === "admin" ? "blue" : "gray"} />
-                <span style={{ fontSize:11, color:"#94a3b8" }}>נוצר: {new Date(u.created_at).toLocaleDateString("he-IL")}</span>
+                <span style={{ fontSize:11, color:"#8e9592" }}>נוצר: {new Date(u.created_at).toLocaleDateString("he-IL")}</span>
               </div>
               <div style={{ display:"flex", gap:8 }}>
                 <button onClick={() => openEdit(u)} style={s.btnEdit}>✏️ ערוך</button>
@@ -169,20 +169,20 @@ const s = {
   header:     { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 },
   h1:         { fontSize:24, fontWeight:800, margin:0 },
   tableWrap:  { background:"#fff", borderRadius:12, overflow:"auto",
-                border:"1px solid #e2e8f0", boxShadow:"0 1px 4px rgba(0,0,0,0.05)" },
-  th:         { padding:"12px 14px", fontSize:12, fontWeight:700, color:"#475569",
-                textAlign:"right", borderBottom:"1px solid #e2e8f0" },
+                border:"1px solid #e3e7e5", boxShadow:"0 1px 4px rgba(0,0,0,0.05)" },
+  th:         { padding:"12px 14px", fontSize:12, fontWeight:700, color:"#59605d",
+                textAlign:"right", borderBottom:"1px solid #e3e7e5" },
   td:         { padding:"12px 14px", fontSize:13 },
-  idBadge:    { background:"#f1f5f9", color:"#475569", borderRadius:6,
+  idBadge:    { background:"#eff3f1", color:"#59605d", borderRadius:6,
                 padding:"2px 7px", fontSize:12, fontWeight:700 },
-  label:      { display:"block", fontSize:12, fontWeight:600, color:"#475569", marginBottom:5 },
-  input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e2e8f0",
+  label:      { display:"block", fontSize:12, fontWeight:600, color:"#59605d", marginBottom:5 },
+  input:      { width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e3e7e5",
                 fontSize:14, outline:"none", boxSizing:"border-box" },
-  btnPrimary: { background:"#1d4ed8", color:"#fff", border:"none", borderRadius:8,
+  btnPrimary: { background:"#154038", color:"#fff", border:"none", borderRadius:8,
                 padding:"8px 18px", fontWeight:700, cursor:"pointer" },
-  btnSecondary:{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0",
+  btnSecondary:{ background:"#eff3f1", color:"#59605d", border:"1px solid #e3e7e5",
                  borderRadius:8, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
-  btnEdit:    { background:"#eff6ff", color:"#3b82f6", border:"1px solid #bfdbfe",
+  btnEdit:    { background:"#eef5f2", color:"#2c6b5e", border:"1px solid #b9d4cb",
                 borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:12 },
   btnWarn:    { background:"#fff7ed", color:"#c2410c", border:"1px solid #fed7aa",
                 borderRadius:7, padding:"5px 10px", cursor:"pointer", fontSize:12 },

@@ -101,7 +101,7 @@ export default function ConflictResolverModal({
                   return (
                     <label
                       key={cat.name}
-                      style={{ ...s.conflictFilterItem, background: checked ? "#eff6ff" : "transparent" }}
+                      style={{ ...s.conflictFilterItem, background: checked ? "#eef5f2" : "transparent" }}
                     >
                       <input
                         type="checkbox"
@@ -132,10 +132,10 @@ export default function ConflictResolverModal({
                       fontSize: 10,
                       padding: "1px 6px",
                       borderRadius: 4,
-                      border: "1px solid #cbd5e1",
-                      background: "#f1f5f9",
+                      border: "1px solid #ccd2cf",
+                      background: "#eff3f1",
                       cursor: "pointer",
-                      color: "#64748b",
+                      color: "#707774",
                     }}
                   >
                     נקה
@@ -144,7 +144,7 @@ export default function ConflictResolverModal({
               </span>
               <div
                 style={{
-                  border: "1px solid #cbd5e1",
+                  border: "1px solid #ccd2cf",
                   borderRadius: 8,
                   background: "#fff",
                   maxHeight: 130,
@@ -166,8 +166,8 @@ export default function ConflictResolverModal({
                         padding: "3px 10px",
                         cursor: "pointer",
                         fontSize: 12,
-                        color: "#374151",
-                        background: checked ? "#eff6ff" : "transparent",
+                        color: "#404643",
+                        background: checked ? "#eef5f2" : "transparent",
                       }}
                     >
                       <input
@@ -184,10 +184,10 @@ export default function ConflictResolverModal({
                   );
                 })}
                 {conflictModelOptions.length === 0 && (
-                  <div style={{ padding: "4px 10px", fontSize: 12, color: "#94a3b8" }}>אין דגמים</div>
+                  <div style={{ padding: "4px 10px", fontSize: 12, color: "#8e9592" }}>אין דגמים</div>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+              <div style={{ fontSize: 11, color: "#8e9592", marginTop: 2 }}>
                 {conflictModal.modelFilter.length === 0 ? "מוצגים כל הדגמים" : `${conflictModal.modelFilter.length} דגמים נבחרו`}
               </div>
             </label>
@@ -231,7 +231,7 @@ export default function ConflictResolverModal({
             </div>
             <div style={s.conflictLegend}>
               <span>
-                <b style={{ color: "#0f172a" }}>אפור:</b> הזמנה קיימת (ניתן לגרירה מהתאריך הראשון שלה)
+                <b style={{ color: "#141816" }}>אפור:</b> הזמנה קיימת (ניתן לגרירה מהתאריך הראשון שלה)
               </span>
               <span>
                 <b style={{ color: "#991b1b" }}>אדום:</b> הזמנה שחוסמת כרגע את הרכב המבוקש
@@ -240,7 +240,7 @@ export default function ConflictResolverModal({
                 <b style={{ color: "#166534" }}>ירוק:</b> תא פנוי לשחרור
               </span>
               <span>
-                <b style={{ color: "#1d4ed8" }}>כחול:</b> טווח יעד פעיל לגרירה
+                <b style={{ color: "#154038" }}>כחול:</b> טווח יעד פעיל לגרירה
               </span>
             </div>
           </div>
@@ -292,10 +292,10 @@ export default function ConflictResolverModal({
                             }}
                             style={{
                               ...s.conflictTd,
-                              background: isRangePreviewCell ? "#bfdbfe" : canDrop ? "#dbeafe" : "#dcfce7",
-                              color: canDrop ? "#1d4ed8" : "#166534",
+                              background: isRangePreviewCell ? "#b9d4cb" : canDrop ? "#d7e8e1" : "#dcfce7",
+                              color: canDrop ? "#154038" : "#166534",
                               cursor: canDrop ? "copy" : "default",
-                              outline: isRangePreviewCell ? "1px dashed #2563eb" : "none",
+                              outline: isRangePreviewCell ? "1px dashed #154038" : "none",
                               outlineOffset: "-1px",
                             }}
                           >
@@ -333,15 +333,15 @@ export default function ConflictResolverModal({
                           style={{
                             ...s.conflictTd,
                             background: isRangePreviewCell
-                              ? "#bfdbfe"
+                              ? "#b9d4cb"
                               : isBlocker
                                 ? "#fee2e2"
                                 : isExistingDragged
-                                  ? "#dbeafe"
-                                  : "#f8fafc",
-                            color: isBlocker ? "#991b1b" : "#334155",
+                                  ? "#d7e8e1"
+                                  : "#f7faf8",
+                            color: isBlocker ? "#991b1b" : "#404643",
                             padding: 4,
-                            outline: isRangePreviewCell ? "1px dashed #2563eb" : "none",
+                            outline: isRangePreviewCell ? "1px dashed #154038" : "none",
                             outlineOffset: "-1px",
                           }}
                         >
@@ -353,7 +353,7 @@ export default function ConflictResolverModal({
                               ...s.conflictCellCard,
                               opacity: isExistingDragged ? 0.62 : 1,
                               cursor: isDragHandleCell ? "grab" : "default",
-                              borderColor: isBlocker ? "#fca5a5" : isExistingDragged ? "#93c5fd" : "#cbd5e1",
+                              borderColor: isBlocker ? "#fca5a5" : isExistingDragged ? "#93c5fd" : "#ccd2cf",
                               background: isBlocker ? "#fff1f2" : "#ffffff",
                             }}
                             title={isDragHandleCell ? "גרור להעברה לרכב אחר (הזמנה מלאה)" : "תפוס"}

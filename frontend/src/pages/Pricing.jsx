@@ -61,14 +61,14 @@ export default function Pricing() {
 
   return (
     <div dir="rtl">
-      <h2 style={{ margin: "0 0 20px", color: "#1e293b", fontSize: 22, fontWeight: 800 }}>
+      <h2 style={{ margin: "0 0 20px", color: "#272c2a", fontSize: 22, fontWeight: 800 }}>
         💰 ניהול מחירים
       </h2>
 
       {/* Tabs */}
       <div style={{
         display: "flex", gap: 4, marginBottom: 24,
-        borderBottom: "2px solid #e2e8f0",
+        borderBottom: "2px solid #e3e7e5",
         overflowX: "auto", WebkitOverflowScrolling: "touch",
         scrollbarWidth: "none",
       }}>
@@ -77,8 +77,8 @@ export default function Pricing() {
             background: "none", border: "none", cursor: "pointer",
             padding: isMobile ? "10px 12px" : "10px 18px",
             fontSize: isMobile ? 13 : 14, fontWeight: 700, whiteSpace: "nowrap",
-            color: tab === t.id ? "#2563eb" : "#64748b",
-            borderBottom: tab === t.id ? "3px solid #2563eb" : "3px solid transparent",
+            color: tab === t.id ? "#154038" : "#707774",
+            borderBottom: tab === t.id ? "3px solid #154038" : "3px solid transparent",
             marginBottom: -2, transition: "all 0.15s", flexShrink: 0,
           }}>
             {t.icon} {t.label}
@@ -186,7 +186,7 @@ function SeasonsTab({ canManage, isMobile }) {
   return (
     <div>
       {canManage && (
-        <button onClick={openNew} style={btn("#2563eb")}>+ עונה חדשה</button>
+        <button onClick={openNew} style={btn("#154038")}>+ עונה חדשה</button>
       )}
 
       {loading ? <Spinner /> : (
@@ -196,21 +196,21 @@ function SeasonsTab({ canManage, isMobile }) {
           gap: 14, marginTop: 16,
         }}>
           {seasons.length === 0 && (
-            <p style={{ color: "#94a3b8" }}>אין עונות מוגדרות</p>
+            <p style={{ color: "#8e9592" }}>אין עונות מוגדרות</p>
           )}
           {seasons.map(s => (
             <div key={s.id} style={{
               background: "#fff",
-              border: `1px solid ${s.is_active ? "#bfdbfe" : "#e2e8f0"}`,
+              border: `1px solid ${s.is_active ? "#b9d4cb" : "#e3e7e5"}`,
               borderRadius: 12, padding: 16,
               opacity: s.is_active ? 1 : 0.6,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 800, fontSize: 15, color: "#1e293b", marginBottom: 4 }}>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: "#272c2a", marginBottom: 4 }}>
                     {s.name}
                   </div>
-                  <div style={{ fontSize: 12, color: "#64748b" }}>
+                  <div style={{ fontSize: 12, color: "#707774" }}>
                     {s.is_recurring
                       ? `${fmtDateCurrentYear(s.valid_from)} – ${fmtDateCurrentYear(s.valid_until)} (חוזר שנתי)`
                       : `${fmtDateFull(s.valid_from)} – ${fmtDateFull(s.valid_until)}`
@@ -219,13 +219,13 @@ function SeasonsTab({ canManage, isMobile }) {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
                   {s.season_type && (
-                    <span style={badgeStyle(s.season_type === "peak" ? "#fef3c7" : "#e0f2fe",
-                                            s.season_type === "peak" ? "#92400e" : "#0369a1")}>
+                    <span style={badgeStyle(s.season_type === "peak" ? "#fef3c7" : "#e4f2ee",
+                                            s.season_type === "peak" ? "#92400e" : "#1b5348")}>
                       {s.season_type === "peak" ? "⬆ שיא" : "⬇ שפל"}
                     </span>
                   )}
-                  <span style={badgeStyle(s.is_active ? "#dcfce7" : "#f1f5f9",
-                                          s.is_active ? "#166534" : "#64748b")}>
+                  <span style={badgeStyle(s.is_active ? "#dcfce7" : "#eff3f1",
+                                          s.is_active ? "#166534" : "#707774")}>
                     {s.is_active ? "פעיל" : "כבוי"}
                   </span>
                 </div>
@@ -246,7 +246,7 @@ function SeasonsTab({ canManage, isMobile }) {
 
               {canManage && (
                 <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                  <button onClick={() => openEdit(s)} style={smallBtn("#e0f2fe", "#0369a1")}>✏️ ערוך</button>
+                  <button onClick={() => openEdit(s)} style={smallBtn("#e4f2ee", "#1b5348")}>✏️ ערוך</button>
                   <button onClick={() => remove(s)}   style={smallBtn("#fef2f2", "#dc2626")}>🗑 מחק</button>
                 </div>
               )}
@@ -291,7 +291,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
       <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer" }}>
         <ToggleSwitch checked={!!form.is_recurring}
                       onChange={v => f("is_recurring", v)} />
-        <span style={{ fontSize: 13, color: "#374151" }}>חוזר שנתי (התעלם מהשנה)</span>
+        <span style={{ fontSize: 13, color: "#404643" }}>חוזר שנתי (התעלם מהשנה)</span>
       </label>
 
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
@@ -299,7 +299,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
           <input type="date" value={form.valid_from || ""}
                  onChange={e => f("valid_from", e.target.value)} style={inp} />
           {form.is_recurring && form.valid_from && (
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 3 }}>
+            <div style={{ fontSize: 11, color: "#707774", marginTop: 3 }}>
               יוצג: {fmtMonthDay(form.valid_from)}
             </div>
           )}
@@ -308,14 +308,14 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
           <input type="date" value={form.valid_until || ""}
                  onChange={e => f("valid_until", e.target.value)} style={inp} />
           {form.is_recurring && form.valid_until && (
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 3 }}>
+            <div style={{ fontSize: 11, color: "#707774", marginTop: 3 }}>
               יוצג: {fmtMonthDay(form.valid_until)}
             </div>
           )}
         </Field>
       </div>
 
-      <div style={{ background: "#f8fafc", borderRadius: 10, padding: 14 }}>
+      <div style={{ background: "#f7faf8", borderRadius: 10, padding: 14 }}>
         <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", marginBottom: hasAdj ? 12 : 0 }}>
           <ToggleSwitch checked={hasAdj}
                         onChange={v => setForm(prev => ({
@@ -324,7 +324,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
                           adjustment_direction: v ? "add"     : null,
                           adjustment_value:     v ? prev.adjustment_value : "",
                         }))} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>התאמת מחיר לעונה</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#404643" }}>התאמת מחיר לעונה</span>
         </label>
 
         {hasAdj && (
@@ -361,7 +361,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
       <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer" }}>
         <input type="checkbox" checked={form.is_active !== false}
                onChange={e => f("is_active", e.target.checked)} />
-        <span style={{ fontSize: 13, color: "#374151" }}>עונה פעילה</span>
+        <span style={{ fontSize: 13, color: "#404643" }}>עונה פעילה</span>
       </label>
 
       <FormFooter saving={saving} onCancel={onCancel} onSave={onSave} />
@@ -465,7 +465,7 @@ function RulesTab({ canManage, isMobile }) {
   return (
     <div style={{
       display: "flex", overflow: "hidden", position: "relative",
-      border: "1px solid #e2e8f0", borderRadius: 10,
+      border: "1px solid #e3e7e5", borderRadius: 10,
       height: "calc(100dvh - 190px)", minHeight: 460,
     }}>
       {/* Mobile overlay */}
@@ -477,7 +477,7 @@ function RulesTab({ canManage, isMobile }) {
       )}
 
       {/* ── LEFT: main panel ─────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflow: "hidden", position: "relative", background: "#f8fafc" }}>
+      <div style={{ flex: 1, overflow: "hidden", position: "relative", background: "#f7faf8" }}>
 
         {/* Mobile hamburger */}
         {isMobile && (
@@ -485,8 +485,8 @@ function RulesTab({ canManage, isMobile }) {
             onClick={() => setSidebarOpen(true)}
             style={{
               position: "absolute", top: 12, right: 12, zIndex: 5,
-              background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6,
-              padding: "6px 10px", cursor: "pointer", fontSize: 13, color: "#374151",
+              background: "#fff", border: "1px solid #e3e7e5", borderRadius: 6,
+              padding: "6px 10px", cursor: "pointer", fontSize: 13, color: "#404643",
             }}
           >
             ☰ היררכיה
@@ -497,14 +497,14 @@ function RulesTab({ canManage, isMobile }) {
           /* Edit / create panel */
           <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "#fff" }}>
             <div style={{
-              padding: "14px 20px", borderBottom: "1px solid #e2e8f0",
+              padding: "14px 20px", borderBottom: "1px solid #e3e7e5",
               display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexShrink: 0,
             }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15 }}>
                   {form.id ? "עריכת כלל מחיר" : "כלל מחיר חדש"}
                 </div>
-                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: "#8e9592", marginTop: 2 }}>
                   {form.entity_type === "global_"
                     ? "גלובלי"
                     : `${ENTITY_HE[form.entity_type] || ""}: ${form.entity_value || ""}`}
@@ -512,7 +512,7 @@ function RulesTab({ canManage, isMobile }) {
               </div>
               <button
                 onClick={closeForm}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 4, borderRadius: 4, fontSize: 18, lineHeight: 1 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#8e9592", padding: 4, borderRadius: 4, fontSize: 18, lineHeight: 1 }}
               >✕</button>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
@@ -530,11 +530,11 @@ function RulesTab({ canManage, isMobile }) {
           <div style={{
             height: "100%", display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
-            color: "#9ca3af", gap: 10,
+            color: "#8e9592", gap: 10,
             paddingTop: isMobile ? 56 : 0,
           }}>
             <div style={{
-              width: 48, height: 48, border: "2px solid #e2e8f0", borderRadius: 8,
+              width: 48, height: 48, border: "2px solid #e3e7e5", borderRadius: 8,
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
             }}>💰</div>
             <p style={{ fontSize: 13, textAlign: "center", lineHeight: 1.7, margin: 0 }}>
@@ -548,7 +548,7 @@ function RulesTab({ canManage, isMobile }) {
       {/* ── RIGHT: sidebar tree ──────────────────────────────────────────── */}
       <div style={{
         width: 290, background: "#fff",
-        borderRight: "1px solid #e2e8f0",
+        borderRight: "1px solid #e3e7e5",
         display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden",
         ...(isMobile ? {
           position: "fixed", top: 0, bottom: 0,
@@ -561,7 +561,7 @@ function RulesTab({ canManage, isMobile }) {
       }}>
         {/* Sidebar header */}
         <div style={{
-          padding: "12px 14px", borderBottom: "1px solid #e2e8f0",
+          padding: "12px 14px", borderBottom: "1px solid #e3e7e5",
           display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
         }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", textTransform: "uppercase" }}>
@@ -570,7 +570,7 @@ function RulesTab({ canManage, isMobile }) {
           {canManage && (
             <button
               onClick={() => { openNew(); closeSidebar(); }}
-              style={{ ...btn("#2563eb"), padding: "5px 10px", fontSize: 12 }}
+              style={{ ...btn("#154038"), padding: "5px 10px", fontSize: 12 }}
             >
               + כלל חדש
             </button>
@@ -602,7 +602,7 @@ function RulesTab({ canManage, isMobile }) {
         ) : (
           <div style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
             {Object.keys(carTree).length === 0 && (
-              <p style={{ color: "#9ca3af", fontSize: 12, padding: 14 }}>אין רכבים מוגדרים</p>
+              <p style={{ color: "#8e9592", fontSize: 12, padding: 14 }}>אין רכבים מוגדרים</p>
             )}
 
             {Object.entries(carTree).map(([cat, models]) => {
@@ -636,7 +636,7 @@ function RulesTab({ canManage, isMobile }) {
                         >＋</button>
                       </>
                     )}
-                    <span style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, color: "#8e9592", flexShrink: 0 }}>
                       {totalCars} כללים
                     </span>
                   </div>
@@ -656,7 +656,7 @@ function RulesTab({ canManage, isMobile }) {
                           onMouseLeave={e => e.currentTarget.style.background = ""}
                         >
                           <span
-                            style={{ flex: 1, fontSize: 13, color: "#374151", cursor: "pointer" }}
+                            style={{ flex: 1, fontSize: 13, color: "#404643", cursor: "pointer" }}
                             onClick={() => setOpenGroups(p => ({ ...p, [grpKey]: !p[grpKey] }))}
                           >
                             {mdl}
@@ -673,7 +673,7 @@ function RulesTab({ canManage, isMobile }) {
                               >＋</button>
                             </>
                           )}
-                          <span style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>{cars.length}</span>
+                          <span style={{ fontSize: 11, color: "#8e9592", flexShrink: 0 }}>{cars.length}</span>
                         </div>
 
                         {/* Car rows */}
@@ -690,26 +690,26 @@ function RulesTab({ canManage, isMobile }) {
                                 display: "flex", alignItems: "center", gap: 7,
                                 padding: "5px 14px", paddingRight: 38,
                                 cursor: "pointer", userSelect: "none",
-                                background: isSelected ? "#eff6ff" : "",
-                                borderRight: isSelected ? "2px solid #2563eb" : "2px solid transparent",
+                                background: isSelected ? "#eef5f2" : "",
+                                borderRight: isSelected ? "2px solid #154038" : "2px solid transparent",
                               }}
                               onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#f9fafb"; }}
                               onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = ""; }}
                             >
                               <div style={{
                                 width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-                                background: isSelected ? "#2563eb" : carHasOverride ? "#f59e0b" : "#d1d5db",
+                                background: isSelected ? "#154038" : carHasOverride ? "#f59e0b" : "#ccd2cf",
                               }} />
                               <span style={{
                                 flex: 1, fontSize: 12, minWidth: 0,
                                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                                color: isSelected ? "#1d4ed8" : "#4b5563",
+                                color: isSelected ? "#154038" : "#4b5563",
                               }}>
                                 {car.plate}
                               </span>
                               <span style={{
                                 fontSize: 10, flexShrink: 0,
-                                color: carHasOverride ? "#92400e" : "#9ca3af",
+                                color: carHasOverride ? "#92400e" : "#8e9592",
                                 background: carHasOverride ? "#fef3c7" : "none",
                                 padding: carHasOverride ? "1px 5px" : 0,
                                 borderRadius: 3,
@@ -785,7 +785,7 @@ function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCanc
 
       {/* 4 שדות מחיר */}
       <div>
-        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 8 }}>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#404643", marginBottom: 8 }}>
           מחירים (מלא לפחות שדה אחד)
         </label>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 10 }}>
@@ -793,7 +793,7 @@ function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCanc
             const hasValue = form[key] !== "" && form[key] != null;
             return (
               <div key={key}>
-                <label style={{ display: "block", fontSize: 11, color: "#64748b", marginBottom: 4 }}>{label}</label>
+                <label style={{ display: "block", fontSize: 11, color: "#707774", marginBottom: 4 }}>{label}</label>
                 <input
                   type="number" min={0.01} step={0.01}
                   value={form[key] ?? ""}
@@ -801,7 +801,7 @@ function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCanc
                   placeholder="יורש"
                   style={{
                     ...inp,
-                    border: `1px solid ${hasValue ? "#f59e0b" : "#d1d5db"}`,
+                    border: `1px solid ${hasValue ? "#f59e0b" : "#ccd2cf"}`,
                     background: hasValue ? "#fffbeb" : "#fff",
                   }}
                 />
@@ -816,7 +816,7 @@ function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCanc
       <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer" }}>
         <ToggleSwitch checked={!!form.exclude_sabbath_holidays}
                       onChange={v => f("exclude_sabbath_holidays", v)} />
-        <span style={{ fontSize: 13, color: "#374151" }}>
+        <span style={{ fontSize: 13, color: "#404643" }}>
           לא לחשב שבתות וחגים (ימים אסורים במלאכה)
         </span>
       </label>
@@ -824,7 +824,7 @@ function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCanc
       <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer" }}>
         <input type="checkbox" checked={form.is_active !== false}
                onChange={e => f("is_active", e.target.checked)} />
-        <span style={{ fontSize: 13, color: "#374151" }}>כלל פעיל</span>
+        <span style={{ fontSize: 13, color: "#404643" }}>כלל פעיל</span>
       </label>
 
       <FormFooter saving={saving} onCancel={onCancel} onSave={onSave} onDelete={onDelete} />
@@ -981,36 +981,36 @@ function SeasonRulesTab({ canManage, isMobile }) {
   return (
     <div>
       {canManage && (
-        <button onClick={openNew} style={btn("#2563eb")}>+ כלל עונה חדש</button>
+        <button onClick={openNew} style={btn("#154038")}>+ כלל עונה חדש</button>
       )}
 
       {loading ? <Spinner /> : (
         <div style={{ overflowX: "auto", marginTop: 16 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 500 }}>
             <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
+              <tr style={{ background: "#f7faf8", borderBottom: "2px solid #e3e7e5" }}>
                 {["עונה", "כלל מחיר", "חצי יום", "יום", "שבוע", "חודש", "פעולות"].map(h => (
-                  <th key={h} style={{ padding: "10px 12px", textAlign: "right", color: "#475569", fontWeight: 700 }}>{h}</th>
+                  <th key={h} style={{ padding: "10px 12px", textAlign: "right", color: "#59605d", fontWeight: 700 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {srules.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 20, color: "#94a3b8", textAlign: "center" }}>
+                <tr><td colSpan={7} style={{ padding: 20, color: "#8e9592", textAlign: "center" }}>
                   אין כללי עונה מוגדרים
                 </td></tr>
               )}
               {srules.map(sr => (
-                <tr key={sr.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <tr key={sr.id} style={{ borderBottom: "1px solid #eff3f1" }}>
                   <td style={tdStyle}><span style={badgeStyle("#fef3c7", "#92400e")}>{seasonName(sr.season_id)}</span></td>
-                  <td style={tdStyle}>{sr.price_rule_id ? ruleName(sr.price_rule_id) : <em style={{ color: "#94a3b8" }}>כל הכללים</em>}</td>
+                  <td style={tdStyle}>{sr.price_rule_id ? ruleName(sr.price_rule_id) : <em style={{ color: "#8e9592" }}>כל הכללים</em>}</td>
                   {APPLIES_FIELDS.map(({ key }) => (
                     <td key={key} style={{ ...tdStyle, textAlign: "center" }}>{sr[key] ? "✅" : "—"}</td>
                   ))}
                   <td style={tdStyle}>
                     {canManage && (
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => openEdit(sr)} style={smallBtn("#e0f2fe", "#0369a1")}>✏️</button>
+                        <button onClick={() => openEdit(sr)} style={smallBtn("#e4f2ee", "#1b5348")}>✏️</button>
                         <button onClick={() => remove(sr.id)} style={smallBtn("#fef2f2", "#dc2626")}>🗑</button>
                       </div>
                     )}
@@ -1039,7 +1039,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
             {/* בחירת כללי מחיר */}
             <Field label={isCreateMode ? "כללי מחיר (ריק = כל הכללים)" : "כלל מחיר"}>
               <div style={{
-                border: "1px solid #d1d5db", borderRadius: 7, maxHeight: 220,
+                border: "1px solid #ccd2cf", borderRadius: 7, maxHeight: 220,
                 overflowY: "auto", background: "#fff",
               }}>
                 {/* "כל הכללים" — רק בעת יצירה */}
@@ -1047,8 +1047,8 @@ function SeasonRulesTab({ canManage, isMobile }) {
                   <label style={{
                     display: "flex", alignItems: "center", gap: 8,
                     padding: "8px 12px", cursor: "pointer", fontSize: 13,
-                    borderBottom: "1px solid #f1f5f9",
-                    background: form.price_rule_ids.length === 0 ? "#eff6ff" : "",
+                    borderBottom: "1px solid #eff3f1",
+                    background: form.price_rule_ids.length === 0 ? "#eef5f2" : "",
                   }}>
                     <input type="checkbox"
                            checked={form.price_rule_ids.length === 0}
@@ -1063,8 +1063,8 @@ function SeasonRulesTab({ canManage, isMobile }) {
                     <label key={r.id} style={{
                       display: "flex", alignItems: "center", gap: 8,
                       padding: "8px 12px", cursor: "pointer", fontSize: 13,
-                      borderBottom: "1px solid #f1f5f9",
-                      background: checked ? "#eff6ff" : "",
+                      borderBottom: "1px solid #eff3f1",
+                      background: checked ? "#eef5f2" : "",
                     }}>
                       <input
                         type={isCreateMode ? "checkbox" : "radio"}
@@ -1073,7 +1073,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
                           ? toggleRuleId(r.id)
                           : setForm(p => ({ ...p, price_rule_ids: [sid] }))}
                       />
-                      <span style={{ color: "#374151" }}>
+                      <span style={{ color: "#404643" }}>
                         {ENTITY_HE[r.entity_type] || r.entity_type}: {r.entity_value || "גלובלי"}
                       </span>
                     </label>
@@ -1168,23 +1168,23 @@ function HolidaysTab({ canManage, isMobile }) {
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
         {canManage && (
           <>
-            <button onClick={() => setForm({ name: "", date: "" })} style={btn("#2563eb")}>+ חג ידני</button>
+            <button onClick={() => setForm({ name: "", date: "" })} style={btn("#154038")}>+ חג ידני</button>
             <button onClick={generate} disabled={generating} style={btn("#0d9488")}>
               {generating ? "מייבא..." : `🔄 ייבוא אוטומטי ${year}`}
             </button>
           </>
         )}
         <div style={{ display: "flex", gap: 6, alignItems: "center", marginRight: "auto" }}>
-          <button onClick={() => setYear(y => y - 1)} style={smallBtn("#f1f5f9", "#475569")}>‹</button>
-          <span style={{ fontWeight: 700, color: "#1e293b", fontSize: 15, minWidth: 40, textAlign: "center" }}>{year}</span>
-          <button onClick={() => setYear(y => y + 1)} style={smallBtn("#f1f5f9", "#475569")}>›</button>
+          <button onClick={() => setYear(y => y - 1)} style={smallBtn("#eff3f1", "#59605d")}>‹</button>
+          <span style={{ fontWeight: 700, color: "#272c2a", fontSize: 15, minWidth: 40, textAlign: "center" }}>{year}</span>
+          <button onClick={() => setYear(y => y + 1)} style={smallBtn("#eff3f1", "#59605d")}>›</button>
         </div>
       </div>
 
       {loading ? <Spinner /> : (
         <>
           {holidays.length === 0 && (
-            <div style={{ textAlign: "center", padding: 48, color: "#94a3b8" }}>
+            <div style={{ textAlign: "center", padding: 48, color: "#8e9592" }}>
               <div style={{ fontSize: 36, marginBottom: 10 }}>✡️</div>
               <div>אין חגים לשנת {year}</div>
               {canManage && <div style={{ fontSize: 13, marginTop: 4 }}>לחץ "ייבוא אוטומטי" להוספה</div>}
@@ -1197,22 +1197,22 @@ function HolidaysTab({ canManage, isMobile }) {
           }}>
             {holidays.map(h => (
               <div key={h.id} style={{
-                background: "#fff", border: "1px solid #e2e8f0",
+                background: "#fff", border: "1px solid #e3e7e5",
                 borderRadius: 10, padding: 14,
                 display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
               }}>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, color: "#1e293b", fontSize: 14 }}>{h.name}</div>
-                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>
+                  <div style={{ fontWeight: 700, color: "#272c2a", fontSize: 14 }}>{h.name}</div>
+                  <div style={{ fontSize: 12, color: "#707774", marginTop: 3 }}>
                     {new Date(h.date).toLocaleDateString("he-IL")}
-                    <span style={{ marginRight: 8, fontSize: 11, color: h.is_auto_generated ? "#0369a1" : "#15803d" }}>
+                    <span style={{ marginRight: 8, fontSize: 11, color: h.is_auto_generated ? "#1b5348" : "#15803d" }}>
                       {h.is_auto_generated ? "⚙️ אוטו" : "✋ ידני"}
                     </span>
                   </div>
                 </div>
                 {canManage && (
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => setForm({ ...h })} style={smallBtn("#e0f2fe", "#0369a1")}>✏️</button>
+                    <button onClick={() => setForm({ ...h })} style={smallBtn("#e4f2ee", "#1b5348")}>✏️</button>
                     <button onClick={() => remove(h)}         style={smallBtn("#fef2f2", "#dc2626")}>🗑</button>
                   </div>
                 )}
@@ -1248,7 +1248,7 @@ function Field({ label, children }) {
   return (
     <div style={{ marginBottom: 0 }}>
       {label && (
-        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 4 }}>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#404643", marginBottom: 4 }}>
           {label}
         </label>
       )}
@@ -1266,8 +1266,8 @@ function FormFooter({ saving, onCancel, onSave, onDelete }) {
           🗑 מחק כלל
         </button>
       )}
-      <button onClick={onCancel} disabled={saving} style={smallBtn("#f1f5f9", "#475569")}>ביטול</button>
-      <button onClick={onSave}   disabled={saving} style={btn("#2563eb")}>
+      <button onClick={onCancel} disabled={saving} style={smallBtn("#eff3f1", "#59605d")}>ביטול</button>
+      <button onClick={onSave}   disabled={saving} style={btn("#154038")}>
         {saving ? "שומר..." : "שמור"}
       </button>
     </div>
@@ -1280,7 +1280,7 @@ function ToggleSwitch({ checked, onChange }) {
       onClick={() => onChange(!checked)}
       style={{
         width: 40, height: 22, borderRadius: 11, cursor: "pointer",
-        background: checked ? "#2563eb" : "#d1d5db",
+        background: checked ? "#154038" : "#ccd2cf",
         position: "relative", transition: "background 0.2s", flexShrink: 0,
       }}
     >
@@ -1297,7 +1297,7 @@ function ToggleSwitch({ checked, onChange }) {
 }
 
 function Spinner() {
-  return <div style={{ color: "#94a3b8", padding: 32, textAlign: "center" }}>⏳ טוען...</div>;
+  return <div style={{ color: "#8e9592", padding: 32, textAlign: "center" }}>⏳ טוען...</div>;
 }
 
 function fmtMonthDay(dateStr) {
@@ -1309,11 +1309,11 @@ function fmtMonthDay(dateStr) {
 // ── styles ────────────────────────────────────────────────────────────────────
 const inp = {
   width: "100%", padding: "8px 10px", borderRadius: 7,
-  border: "1px solid #d1d5db", fontSize: 13, direction: "rtl",
+  border: "1px solid #ccd2cf", fontSize: 13, direction: "rtl",
   fontFamily: "inherit", boxSizing: "border-box", outline: "none",
 };
 
-const tdStyle = { padding: "10px 12px", color: "#374151" };
+const tdStyle = { padding: "10px 12px", color: "#404643" };
 
 const badgeStyle = (bg, color) => ({
   background: bg, color,
@@ -1335,6 +1335,6 @@ const smallBtn = (bg, color) => ({
 
 const rowActionBtn = {
   background: "none", border: "none", cursor: "pointer",
-  color: "#9ca3af", padding: "2px 4px", borderRadius: 3,
+  color: "#8e9592", padding: "2px 4px", borderRadius: 3,
   fontSize: 12, lineHeight: 1, flexShrink: 0,
 };
