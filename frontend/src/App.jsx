@@ -21,6 +21,9 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Payroll = lazy(() => import("./pages/Payroll"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 
+// כלי פיתוח — לא נכנס ל-build של פרודקשן (import.meta.env.DEV נקבע בזמן build).
+const ThemeLab = import.meta.env.DEV ? lazy(() => import("./components/dev/ThemeLab")) : null;
+
 const APP_VERSION = __APP_VERSION__;
 const BUILD_TIME = new Date(__BUILD_TIME__).toLocaleString("he-IL");
 
@@ -323,6 +326,12 @@ export default function App() {
           } />
         </Routes>
       </Suspense>
+
+      {ThemeLab && (
+        <Suspense fallback={null}>
+          <ThemeLab />
+        </Suspense>
+      )}
     </BrowserRouter>
   );
 }

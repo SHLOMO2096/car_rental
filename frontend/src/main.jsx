@@ -4,6 +4,7 @@ import App from "./App";
 
 // שכבת העיצוב — סדר הייבוא חשוב: טוקנים, בסיס, ואז רכיבים.
 import "./styles/tokens.css";
+import "./styles/presets.css";
 import "./styles/base.css";
 import "./styles/components.css";
 

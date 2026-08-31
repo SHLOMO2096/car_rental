@@ -1,13 +1,14 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    Components — הרכיבים החוזרים של המערכת.
    ─────────────────────────────────────────────────────────────────────────────
-   כאן נמצא מה ש-inline styles לא יכול לבטא: hover, focus, active, disabled.
-   הרשימה מכוונת: רק רכיבים שכבר חוזרים בקוד. לא בונים ספרייה מראש.
-   שימו לב — סגנון inline תמיד גובר על מחלקה, אז מסך שעובר לכאן צריך
-   להסיר את אובייקט ה-style שלו ולא להשאיר את שניהם.
+   כאן נמצא מה ש-inline styles לא יכול לבטא: hover, focus, active, disabled,
+   media queries ו-keyframes. הרשימה מכוונת — רק רכיבים שכבר חוזרים בקוד.
+
+   שימו לב: סגנון inline תמיד גובר על מחלקה. מסך שעובר לכאן חייב להסיר
+   את אובייקט ה-style שלו ולא להשאיר את שניהם.
    ───────────────────────────────────────────────────────────────────────────*/
 
-/* ── כפתורים ──────────────────────────────────────────────────────────────*/
+/* ═══ כפתורים ═══════════════════════════════════════════════════════════════*/
 .btn {
   display: inline-flex;
   align-items: center;
@@ -25,25 +26,14 @@
               box-shadow var(--duration) var(--ease);
 }
 
-.btn:disabled {
-  cursor: not-allowed;
-  opacity: .55;
-}
+.btn:disabled { cursor: not-allowed; opacity: .55; }
 
 .btn--block { width: 100%; }
+.btn--sm    { padding: 6px var(--space-4); font-size: var(--text-sm); }
 
-.btn--primary {
-  background: var(--c-brand);
-  color: #fff;
-}
-.btn--primary:hover:not(:disabled) {
-  background: var(--c-brand-strong);
-  box-shadow: var(--shadow-md);
-}
-.btn--primary:active:not(:disabled) {
-  background: var(--c-brand-strong);
-  box-shadow: none;
-}
+.btn--primary { background: var(--c-brand); color: var(--c-on-brand); }
+.btn--primary:hover:not(:disabled) { background: var(--c-brand-strong); box-shadow: var(--shadow-md); }
+.btn--primary:active:not(:disabled) { background: var(--c-brand-strong); box-shadow: none; }
 
 .btn--secondary {
   background: var(--c-ground-2);
@@ -51,35 +41,29 @@
   border-color: var(--c-line);
   font-weight: 600;
 }
-.btn--secondary:hover:not(:disabled) {
-  background: var(--c-line);
-  border-color: var(--c-line-strong);
-}
+.btn--secondary:hover:not(:disabled) { background: var(--c-line); border-color: var(--c-line-strong); }
 
-.btn--danger {
-  background: var(--c-danger);
-  color: #fff;
-}
-.btn--danger:hover:not(:disabled) { background: #b91c1c; }
+.btn--danger { background: var(--c-danger); color: #fff; }
+.btn--danger:hover:not(:disabled) { background: var(--c-danger-strong); box-shadow: var(--shadow-md); }
 
-.btn--ghost {
-  background: transparent;
-  color: var(--c-text-2);
-}
+.btn--ghost { background: transparent; color: var(--c-text-2); }
 .btn--ghost:hover:not(:disabled) { background: var(--c-ground-2); }
 
-/* ── שדות ─────────────────────────────────────────────────────────────────*/
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+/* כפתור אייקון בלבד — יעד מגע 34px גם כשהאייקון קטן */
+.btn--icon {
+  padding: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--c-muted);
 }
+.btn--icon:hover:not(:disabled) { background: var(--c-ground-2); color: var(--c-text); }
 
-.label {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--c-text-2);
-}
+/* ═══ שדות ══════════════════════════════════════════════════════════════════*/
+.field { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.label { font-size: var(--text-sm); font-weight: 600; color: var(--c-text-2); }
 
 .input {
   width: 100%;
@@ -92,45 +76,44 @@
   transition: border-color var(--duration) var(--ease),
               box-shadow var(--duration) var(--ease);
 }
-
 .input::placeholder { color: var(--c-faint); }
-
 .input:hover:not(:disabled) { border-color: var(--c-line-strong); }
-
-/* מחליף outline:"none" — הטבעת נשארת, רק מעוצבת בצבע המותג */
 .input:focus {
   outline: none;
   border-color: var(--c-brand);
-  box-shadow: 0 0 0 3px var(--c-brand-soft);
+  box-shadow: var(--ring-brand);
 }
+.input:disabled { background: var(--c-ground-2); color: var(--c-muted); cursor: not-allowed; }
+.input[aria-invalid="true"] { border-color: var(--c-danger); }
+.input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--c-danger-bg); }
 
-.input:disabled {
-  background: var(--c-ground-2);
-  color: var(--c-muted);
-  cursor: not-allowed;
-}
-
-.input[aria-invalid="true"] {
-  border-color: var(--c-danger);
-}
-.input[aria-invalid="true"]:focus {
-  box-shadow: 0 0 0 3px var(--c-danger-bg);
-}
-
-/* ── כרטיס ────────────────────────────────────────────────────────────────*/
+/* ═══ כרטיס ═════════════════════════════════════════════════════════════════*/
 .card {
   background: var(--c-surface);
   border: 1px solid var(--c-line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
+.card--raised { border-color: transparent; box-shadow: var(--shadow-lg); }
 
-.card--raised {
-  border-color: transparent;
-  box-shadow: var(--shadow-lg);
+/* ═══ תגיות ═════════════════════════════════════════════════════════════════*/
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-pill);
+  background: var(--c-ground);
+  color: var(--c-text-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
 }
+.badge--brand   { background: var(--c-brand-soft);   border-color: var(--c-brand-line);   color: var(--c-brand); }
+.badge--success { background: var(--c-success-bg);   border-color: var(--c-success-line); color: var(--c-success); }
+.badge--warning { background: var(--c-warning-bg);   border-color: var(--c-warning-line); color: var(--c-warning); }
+.badge--danger  { background: var(--c-danger-bg);    border-color: var(--c-danger-line);  color: var(--c-danger); }
 
-/* ── הודעות ───────────────────────────────────────────────────────────────*/
+/* ═══ הודעות ════════════════════════════════════════════════════════════════*/
 .alert {
   padding: 10px var(--space-4);
   border: 1px solid transparent;
@@ -138,22 +121,147 @@
   font-size: var(--text-sm);
   line-height: var(--leading-body);
 }
+.alert--error   { background: var(--c-danger-bg);  border-color: var(--c-danger-line);  color: var(--c-danger); }
+.alert--warning { background: var(--c-warning-bg); border-color: var(--c-warning-line); color: var(--c-warning); font-weight: 600; }
+.alert--success { background: var(--c-success-bg); border-color: var(--c-success-line); color: var(--c-success); }
 
-.alert--error {
-  background: var(--c-danger-bg);
-  border-color: var(--c-danger-line);
-  color: var(--c-danger);
+/* ═══ מודאל ═════════════════════════════════════════════════════════════════*/
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: rgba(15, 23, 42, .45);
+  animation: overlay-in var(--duration) var(--ease);
 }
 
-.alert--warning {
-  background: var(--c-warning-bg);
-  border-color: var(--c-warning-line);
-  color: var(--c-warning);
-  font-weight: 600;
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-modal);
+  animation: modal-in var(--duration) var(--ease);
+}
+.modal--wide   { max-width: 640px; }
+.modal--narrow { max-width: 380px; }
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
-.alert--success {
-  background: var(--c-success-bg);
-  border-color: var(--c-success-line);
-  color: var(--c-success);
+.modal-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--c-ink-2);
 }
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
+  flex-wrap: wrap;
+}
+
+/* במובייל המודאל נצמד לתחתית המסך במקום לצוף במרכז —
+   מה שקודם דרש את useIsMobile ב-JS, עכשיו נעשה ב-CSS. */
+@media (max-width: 640px) {
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal {
+    max-width: 100%;
+    max-height: 95vh;
+    padding: var(--space-6);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: sheet-in var(--duration) var(--ease);
+  }
+}
+
+/* ═══ טוסט ══════════════════════════════════════════════════════════════════*/
+.toast-host {
+  position: fixed;
+  top: var(--space-5);
+  inset-inline-start: var(--space-5);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 280px;
+  max-width: 380px;
+  padding: 10px var(--space-4);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-lg);
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: toast-in var(--duration) var(--ease);
+}
+.toast__icon  { flex-shrink: 0; margin-top: 1px; }
+.toast__body  { flex: 1; min-width: 0; }
+.toast__title { font-weight: 700; font-size: var(--text-sm); margin-bottom: 2px; }
+.toast__text  { font-size: var(--text-sm); line-height: 1.45; }
+
+.toast--success { background: var(--c-success-bg); border-color: var(--c-success-line); color: var(--c-success); }
+.toast--error   { background: var(--c-danger-bg);  border-color: var(--c-danger-line);  color: var(--c-danger); }
+.toast--warning { background: var(--c-warning-bg); border-color: var(--c-warning-line); color: var(--c-warning); }
+.toast--info    { background: var(--c-brand-soft); border-color: var(--c-brand-line);   color: var(--c-brand); }
+
+/* ═══ טבלה ══════════════════════════════════════════════════════════════════*/
+.table-wrap {
+  overflow-x: auto;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.table { width: 100%; border-collapse: collapse; }
+
+.table th {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-ground);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--c-text-2);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--c-line-soft);
+  font-size: var(--text-base);
+  vertical-align: middle;
+}
+
+.table tbody tr { transition: background var(--duration-fast) var(--ease); }
+.table tbody tr:hover { background: var(--c-ground); }
+.table tbody tr:last-child td { border-bottom: 0; }
+
+.table .num { font-variant-numeric: tabular-nums; }
+
+/* ═══ אנימציות ══════════════════════════════════════════════════════════════*/
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-in   { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes sheet-in   { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes toast-in   { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }

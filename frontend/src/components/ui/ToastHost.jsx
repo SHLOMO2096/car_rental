@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { useToastStore } from "../../store/toast";
 
-const TYPE_STYLE = {
-  success: { bg: "#ecfdf5", border: "#a7f3d0", color: "#047857", icon: "✅" },
-  error: { bg: "#fef2f2", border: "#fecaca", color: "#dc2626", icon: "⛔" },
-  warning: { bg: "#fff7ed", border: "#fdba74", color: "#c2410c", icon: "⚠️" },
-  info: { bg: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8", icon: "ℹ️" },
+// אייקוני קו במקום אימוג׳י — יורשים את צבע הטוסט במקום להישאר צבעוניים תמיד.
+const ICON = {
+  success: <path d="m4.5 12.5 5 5 10-10" />,
+  error:   <><circle cx="12" cy="12" r="9" /><path d="M15 9l-6 6M9 9l6 6" /></>,
+  warning: <><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" /></>,
+  info:    <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></>,
 };
 
 function ToastItem({ item, onRemove }) {
@@ -14,41 +15,31 @@ function ToastItem({ item, onRemove }) {
     return () => window.clearTimeout(id);
   }, [item.duration, item.id, onRemove]);
 
-  const style = TYPE_STYLE[item.type] || TYPE_STYLE.info;
+  const type = ICON[item.type] ? item.type : "info";
 
   return (
-    <div style={{
-      background: style.bg,
-      border: `1px solid ${style.border}`,
-      color: style.color,
-      borderRadius: 10,
-      padding: "10px 12px",
-      boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
-      minWidth: 280,
-      maxWidth: 380,
-      display: "flex",
-      gap: 10,
-      alignItems: "flex-start",
-    }}>
-      <div style={{ fontSize: 18, lineHeight: 1 }}>{style.icon}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {item.title && <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 2 }}>{item.title}</div>}
-        <div style={{ fontSize: 13, lineHeight: 1.45 }}>{item.message}</div>
+    <div className={`toast toast--${type}`} role={type === "error" ? "alert" : "status"}>
+      <svg className="toast__icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+           aria-hidden="true">
+        {ICON[type]}
+      </svg>
+
+      <div className="toast__body">
+        {item.title && <div className="toast__title">{item.title}</div>}
+        <div className="toast__text">{item.message}</div>
       </div>
+
       <button
+        type="button"
         onClick={() => onRemove(item.id)}
-        style={{
-          background: "transparent",
-          border: "none",
-          color: style.color,
-          cursor: "pointer",
-          fontSize: 16,
-          lineHeight: 1,
-          padding: 0,
-        }}
         aria-label="סגור הודעה"
+        style={close}
       >
-        ×
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
       </button>
     </div>
   );
@@ -59,25 +50,23 @@ export default function ToastHost() {
   const remove = useToastStore((s) => s.remove);
 
   return (
-    <div
-      dir="rtl"
-      style={{
-        position: "fixed",
-        top: 16,
-        left: 16,
-        zIndex: 9999,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        pointerEvents: "none",
-      }}
-    >
+    <div dir="rtl" className="toast-host" aria-live="polite">
       {items.map((item) => (
-        <div key={item.id} style={{ pointerEvents: "auto" }}>
-          <ToastItem item={item} onRemove={remove} />
-        </div>
+        <ToastItem key={item.id} item={item} onRemove={remove} />
       ))}
     </div>
   );
 }
 
+const close = {
+  display: "flex",
+  alignItems: "center",
+  background: "transparent",
+  border: "none",
+  color: "inherit",
+  cursor: "pointer",
+  padding: 2,
+  marginTop: 1,
+  opacity: .7,
+  borderRadius: "var(--radius-sm)",
+};

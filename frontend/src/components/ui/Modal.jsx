@@ -1,37 +1,66 @@
 // ══════════════════════════════════════════════════════════════════════════════
-import { useEffect } from "react";
-import { useIsMobile } from "../../hooks/useIsMobile";
+import { useEffect, useId, useRef } from "react";
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
+  'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export default function Modal({ open, onClose, title, children, wide = false, maxWidth = null }) {
-  const isMobile = useIsMobile(640);
+  const panelRef = useRef(null);
+  const restoreRef = useRef(null);
+  const titleId = useId();
+
+  // מלכודת מיקוד: כל עוד המודאל פתוח, Tab לא יוצא ממנו,
+  // ובסגירה המיקוד חוזר לאלמנט שממנו הוא נפתח.
   useEffect(() => {
     if (!open) return;
-    const handler = e => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+
+    restoreRef.current = document.activeElement;
+    const panel = panelRef.current;
+    panel?.querySelector(FOCUSABLE)?.focus() ?? panel?.focus();
+
+    function onKeyDown(e) {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab" || !panel) return;
+
+      const items = [...panel.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+      if (items.length === 0) { e.preventDefault(); return; }
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      restoreRef.current?.focus?.();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
 
   return (
-    <div dir="rtl" onClick={onClose} style={{
-      position:"fixed", inset:0, background:"rgba(0,0,0,0.45)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      zIndex:9999, padding:isMobile ? 8 : 16,
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background:"#fff", borderRadius:isMobile ? 12 : 16, padding:isMobile ? 16 : 28,
-        width:"100%", maxWidth: isMobile ? "100%" : (maxWidth || (wide ? 640 : 480)),
-        maxHeight:isMobile ? "95vh" : "90vh", overflowY:"auto",
-        boxShadow:"0 20px 60px rgba(0,0,0,0.25)",
-      }}>
-        <div style={{ display:"flex", justifyContent:"space-between",
-                      alignItems:"center", marginBottom:20 }}>
-          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:"#1e293b" }}>{title}</h2>
-          <button onClick={onClose} style={{
-            background:"none", border:"none", cursor:"pointer",
-            fontSize:20, color:"#94a3b8", lineHeight:1,
-          }}>✕</button>
+    <div dir="rtl" className="modal-overlay" onClick={onClose}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className={`modal${wide ? " modal--wide" : ""}`}
+        style={maxWidth ? { maxWidth } : undefined}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <h2 id={titleId} className="modal-title">{title}</h2>
+          <button type="button" className="btn btn--icon" onClick={onClose} aria-label="סגור">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
         </div>
         {children}
       </div>
