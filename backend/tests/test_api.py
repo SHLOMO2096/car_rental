@@ -1,5 +1,5 @@
 import os
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 
 import pytest
@@ -537,6 +537,48 @@ class TestRBAC:
         assert r.status_code == 200
         data = r.json()
         assert "total" in data and "active" in data
+
+
+class TestDashboardKpis:
+    """המדדים התפעוליים של לוח הבקרה — ניצולת, פנויים, החזרות וחריגות."""
+
+    def test_kpis_reflect_fleet_and_bookings(self, client, db, auth_headers, sample_car, admin_user):
+        today = date.today()
+
+        # הזמנה פעילה שמכסה את היום — הרכב תפוס
+        db.add(Booking(car_id=sample_car.id, customer_name="Busy Now",
+                       start_date=today - timedelta(days=1), end_date=today + timedelta(days=1),
+                       status=BookingStatus.active, created_by=admin_user.id))
+        # הזמנה שהיה אמור לחזור אתמול ועדיין פעילה — חריגה
+        db.add(Booking(car_id=sample_car.id, customer_name="Late",
+                       start_date=today - timedelta(days=5), end_date=today - timedelta(days=1),
+                       status=BookingStatus.active, created_by=admin_user.id))
+        # החזרה שצפויה היום
+        db.add(Booking(car_id=sample_car.id, customer_name="Back Today",
+                       start_date=today - timedelta(days=2), end_date=today,
+                       status=BookingStatus.active, created_by=admin_user.id))
+        db.commit()
+
+        data = client.get("/api/bookings/kpi", headers=auth_headers).json()
+
+        assert data["fleet_size"] >= 1
+        assert data["busy_today"] >= 1
+        assert data["free_today"] == data["fleet_size"] - data["busy_today"]
+        assert data["returns_today"] >= 1
+        assert data["overdue"] >= 1
+        assert 0 <= data["utilization"] <= 100
+
+    def test_soft_deleted_bookings_do_not_count(self, client, db, auth_headers, sample_car, admin_user):
+        today = date.today()
+        b = Booking(car_id=sample_car.id, customer_name="Deleted",
+                    start_date=today, end_date=today,
+                    status=BookingStatus.active, created_by=admin_user.id,
+                    deleted_at=datetime.now(timezone.utc))
+        db.add(b); db.commit()
+
+        data = client.get("/api/bookings/kpi", headers=auth_headers).json()
+        assert data["returns_today"] == 0
+        assert data["busy_today"] == 0
 
     def test_agent_cannot_manage_users(self, client, agent_headers):
         r = client.get("/api/auth/users", headers=agent_headers)

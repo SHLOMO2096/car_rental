@@ -215,12 +215,64 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         return {"total": total, "active": active, "revenue": float(revenue or 0)}
 
     # ── Dashboard KPIs (non-admin safe) ────────────────────────────────────────
-    def kpi_counts(self, db: Session) -> dict:
-        """Lightweight counts used by the main dashboard (total + active only)."""
-        q = db.query(func.count(Booking.id)).filter(Booking.deleted_at == None)  # noqa: E711
+    def kpi_counts(self, db: Session, today: date | None = None) -> dict:
+        """מדדי לוח הבקרה.
+
+        ``total``/``active`` נשמרים לתאימות אחורה. השאר הם המספרים שמנהל
+        השכרה באמת פותח את המסך בשבילם — כמה מהצי עובד עכשיו, מה פנוי למכירה
+        היום, אילו החזרות צפויות, ומה כבר חרג.
+        """
+        if today is None:
+            today = date.today()
+
+        live = [Booking.deleted_at == None]  # noqa: E711
+        q = db.query(func.count(Booking.id)).filter(*live)
         total = int(q.scalar() or 0)
         active = int(q.filter(Booking.status == BookingStatus.active).scalar() or 0)
-        return {"total": total, "active": active}
+
+        fleet_size = int(
+            db.query(func.count(Car.id)).filter(Car.is_active == True).scalar() or 0  # noqa: E712
+        )
+
+        # רכבים שתפוסים היום: הזמנה פעילה שהיום נמצא בטווח שלה
+        busy_today_q = (
+            db.query(func.count(func.distinct(Booking.car_id)))
+            .filter(*live)
+            .filter(Booking.status == BookingStatus.active)
+            .filter(Booking.start_date <= today, Booking.end_date >= today)
+        )
+        busy_today = int(busy_today_q.scalar() or 0)
+        free_today = max(0, fleet_size - busy_today)
+
+        returns_today = int(
+            db.query(func.count(Booking.id))
+            .filter(*live)
+            .filter(Booking.status == BookingStatus.active)
+            .filter(Booking.end_date == today)
+            .scalar() or 0
+        )
+
+        # חריגה: תאריך ההחזרה עבר וההזמנה עדיין פעילה
+        overdue = int(
+            db.query(func.count(Booking.id))
+            .filter(*live)
+            .filter(Booking.status == BookingStatus.active)
+            .filter(Booking.end_date < today)
+            .scalar() or 0
+        )
+
+        utilization = round(busy_today / fleet_size * 100) if fleet_size else 0
+
+        return {
+            "total": total,
+            "active": active,
+            "fleet_size": fleet_size,
+            "busy_today": busy_today,
+            "free_today": free_today,
+            "returns_today": returns_today,
+            "overdue": overdue,
+            "utilization": utilization,
+        }
 
     def update(self, db: Session, db_obj: Booking, obj_in: BookingUpdate | dict) -> Booking:
         from app.services.pricing import calculate_total_price, price_result_to_breakdown_json

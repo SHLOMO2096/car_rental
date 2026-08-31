@@ -16,9 +16,29 @@ import { PhotoMenu, CameraCaptureModal, ImageGallery } from "../components/photo
 import { createDashboardPermissionModel } from "./dashboardPermissions";
 import {
   SlidersHorizontal, X, AlertCircle, Trash2, User, Maximize2, Minimize2, Check,
-  ClipboardList, CircleCheck, ArrowLeftRight, CalendarDays, Car, Hash,
+  ArrowLeftRight, CalendarDays, Car, Hash,
   Upload,
 } from "lucide-react";
+
+const kpiCell = (isMobile) => ({
+  background: "#fff",
+  padding: isMobile ? "13px 14px" : "16px 18px",
+});
+const kpiLabel = { fontSize: 13, color: "#707774", marginBottom: 6 };
+const kpiValue = (isMobile) => ({
+  fontSize: isMobile ? 23 : 27,
+  fontWeight: 700,
+  lineHeight: 1,
+  color: "#141816",
+  fontVariantNumeric: "tabular-nums",
+});
+const kpiUnit = { fontSize: 15, color: "#707774", fontWeight: 600, marginInlineStart: 2 };
+const kpiHint = { fontSize: 13, color: "#8e9592", marginTop: 8 };
+const kpiBadge = {
+  display: "inline-flex", alignItems: "center", gap: 4, marginTop: 7,
+  fontSize: 12, fontWeight: 700, padding: "2px 9px", borderRadius: 999,
+  background: "#fef2f2", color: "#dc2626",
+};
 
 const DAY_NAMES   = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
 // פלטה קטגוריאלית לזיהוי דגם ברשת הזמינות.
@@ -476,22 +496,50 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* ── Stats cards (below the grid) ── */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile ? "repeat(2,1fr)" : "repeat(auto-fit,minmax(180px,1fr))", gap:12, margin:"20px 0" }}>
-        {[
-          { label:"סה״כ הזמנות",   value: kpis?.total  ?? "—", color:"#2c6b5e", Icon: ClipboardList },
-          { label:"הזמנות פעילות", value: kpis?.active ?? "—", color:"#22c55e", Icon: CircleCheck },
-        ].map(s => (
-          <div key={s.label} style={{ background:"#fff", borderRadius:16, padding:isMobile ? "14px 16px" : "20px 24px",
-               border:`1px solid ${s.color}30`, display:"flex", gap:12, alignItems:"center",
-               boxShadow:"0 1px 2px rgba(20,24,22,0.04), 0 3px 10px rgba(20,24,22,0.05)" }}>
-            <s.Icon size={isMobile ? 24 : 30} strokeWidth={1.6} color={s.color} aria-hidden="true" />
-            <div>
-              <div style={{ fontSize: isMobile ? 22 : 28, fontWeight:800, color:s.color }}>{s.value}</div>
-              <div style={{ fontSize:11, color:"#8e9592" }}>{s.label}</div>
-            </div>
+      {/* ── מדדי תפעול ────────────────────────────────────────────────────────
+           הרצועה עונה על מה שמנהל שואל בפתיחת המסך: כמה מהצי עובד, מה פנוי
+           למכירה עכשיו, מה חוזר היום, ומה כבר חרג. ── */}
+      <div style={{ display:"grid",
+                    gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(auto-fit,minmax(170px,1fr))",
+                    gap:1, background:"#e3e7e5", border:"1px solid #e3e7e5",
+                    borderRadius:16, overflow:"hidden", margin:"20px 0" }}>
+
+        <div style={kpiCell(isMobile)}>
+          <div style={kpiLabel}>ניצולת היום</div>
+          <div style={kpiValue(isMobile)}>
+            {kpis?.utilization ?? "—"}<span style={kpiUnit}>%</span>
           </div>
-        ))}
+          <div style={{ height:4, background:"#eff3f1", borderRadius:2, marginTop:10, overflow:"hidden" }}>
+            <div style={{ width:`${kpis?.utilization ?? 0}%`, height:"100%", background:"#154038",
+                          transition:"width 0.4s cubic-bezier(.2,.7,.3,1)" }} />
+          </div>
+        </div>
+
+        <div style={kpiCell(isMobile)}>
+          <div style={kpiLabel}>פנויים היום</div>
+          <div style={kpiValue(isMobile)}>{kpis?.free_today ?? "—"}</div>
+          <div style={kpiHint}>מתוך {kpis?.fleet_size ?? "—"} רכבים</div>
+        </div>
+
+        <div style={kpiCell(isMobile)}>
+          <div style={kpiLabel}>החזרות היום</div>
+          <div style={kpiValue(isMobile)}>{kpis?.returns_today ?? "—"}</div>
+          <div style={kpiHint}>{kpis?.active ?? "—"} הזמנות פעילות</div>
+        </div>
+
+        <div style={kpiCell(isMobile)}>
+          <div style={kpiLabel}>איחורי החזרה</div>
+          <div style={{ ...kpiValue(isMobile), color: kpis?.overdue ? "#dc2626" : undefined }}>
+            {kpis?.overdue ?? "—"}
+          </div>
+          {kpis?.overdue > 0 ? (
+            <span style={kpiBadge}>
+              <AlertCircle size={12} strokeWidth={2} aria-hidden="true" /> דורש טיפול
+            </span>
+          ) : (
+            <div style={kpiHint}>אין חריגות</div>
+          )}
+        </div>
       </div>
 
       {/* ── Filter Modal/Sheet (Universal: Mobile Bottom Sheet, Desktop Center Modal) ── */}
