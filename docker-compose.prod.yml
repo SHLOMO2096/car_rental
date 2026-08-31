@@ -17,6 +17,19 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    networks:
+      - car_rental_internal
+    # משמש רק למוני rate-limit — אין צורך בשמירה לדיסק.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -29,6 +42,9 @@ services:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       SECRET_KEY: ${SECRET_KEY}
       FRONTEND_URL: ${FRONTEND_URL}
+      # ללא Redis ה-rate-limit הוא per-process ונשבר ברגע שיש יותר מ-replica אחת.
+      RATE_LIMIT_BACKEND: ${RATE_LIMIT_BACKEND:-redis}
+      RATE_LIMIT_REDIS_URL: ${RATE_LIMIT_REDIS_URL:-redis://redis:6379/0}
       EMAILS_ENABLED: ${EMAILS_ENABLED:-false}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -43,6 +59,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      # לא service_healthy בכוונה: ה-rate limiter הוא fail-soft (נופל חזרה למונה
+      # in-process אם Redis לא זמין), ואסור ש-Redis חולה ימנע מה-API לעלות בכלל.
+      redis:
+        condition: service_started
     restart: always
     labels:
       - traefik.enable=true
