@@ -454,7 +454,6 @@ const s = {
     borderRadius: 12,
     border: "1px solid #e3e7e5",
     fontSize: 14,
-    outline: "none",
     background: "#fff",
   },
   footer: { marginTop: 12, display: "flex", justifyContent: "flex-end" },

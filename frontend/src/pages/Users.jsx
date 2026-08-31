@@ -178,7 +178,7 @@ const s = {
                 padding:"2px 7px", fontSize:12, fontWeight:700 },
   label:      { display:"block", fontSize:12, fontWeight:600, color:"#59605d", marginBottom:5 },
   input:      { width:"100%", padding:"9px 12px", borderRadius:12, border:"1px solid #e3e7e5",
-                fontSize:14, outline:"none", boxSizing:"border-box" },
+                fontSize:14, boxSizing:"border-box" },
   btnPrimary: { background:"#154038", color:"#fff", border:"none", borderRadius:12,
                 padding:"8px 18px", fontWeight:700, cursor:"pointer" },
   btnSecondary:{ background:"#eff3f1", color:"#59605d", border:"1px solid #e3e7e5",

@@ -233,7 +233,7 @@ const s = {
   },
   field: { display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 140 },
   label: { fontSize: 12, fontWeight: 600, color: "#59605d" },
-  input: { padding: "8px 12px", borderRadius: 10, border: "1px solid #ccd2cf", fontSize: 14, outline: "none" },
+  input: { padding: "8px 12px", borderRadius: 10, border: "1px solid #ccd2cf", fontSize: 14 },
   btnRemove: { background: "#fee2e2", color: "#dc2626", border: "none", padding: "8px 12px", borderRadius: 10, cursor: "pointer", transition: "background 0.2s" },
   btnAdd: { background: "#eff3f1", color: "#59605d", border: "1px solid #ccd2cf", padding: "8px 16px", borderRadius: 10, cursor: "pointer", fontWeight: 600 },
   btnSave: { background: "#154038", color: "#fff", border: "none", padding: "8px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 700, transition: "opacity 0.2s" },

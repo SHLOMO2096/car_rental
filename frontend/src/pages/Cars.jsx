@@ -350,7 +350,6 @@ function FilterChip({ label, value, color, active, onClick }) {
         color: active ? color : "#707774",
         cursor: "pointer", fontWeight: active ? 700 : 500,
         transition: "all 0.15s",
-        outline: "none",
       }}
     >
       {label}: <strong>{value}</strong>
@@ -375,7 +374,7 @@ const s = {
                 marginBottom:20, flexWrap:"wrap", gap:12 },
   h1:         { fontSize:24, fontWeight:800, margin:0 },
   searchInput:{ padding:"8px 14px", borderRadius:12, border:"1px solid #e3e7e5",
-                fontSize:14, outline:"none", minWidth:220 },
+                fontSize:14, minWidth:220 },
   select:     { padding:"8px 14px", borderRadius:12, border:"1px solid #e3e7e5",
                 fontSize:14, cursor:"pointer", background:"#fff" },
   folderSection: { marginBottom: 12 },
@@ -411,7 +410,7 @@ const s = {
   btnDanger:  { background:"#fef2f2", color:"#dc2626", border:"1px solid #fecaca",
                 borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:13 },
   input:      { width:"100%", padding:"9px 12px", borderRadius:12, border:"1px solid #e3e7e5",
-                fontSize:14, outline:"none", boxSizing:"border-box" },
+                fontSize:14, boxSizing:"border-box" },
   label:      { display:"block", fontSize:12, fontWeight:600, color:"#59605d", marginBottom:5 },
   formGrid:   { display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginBottom:12 },
   modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 },

@@ -67,6 +67,13 @@ p { margin: 0; }
   border-radius: var(--radius-sm);
 }
 
+/* מיקוד שהגיע מלחיצת עכבר לא מציג טבעת — רק ניווט מקלדת מציג.
+   בלי הכלל הזה היינו צריכים outline:"none" מקומי בכל שדה, וזה בדיוק
+   מה שהסתיר את חיווי המיקוד במערכת קודם. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

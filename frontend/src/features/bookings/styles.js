@@ -16,7 +16,6 @@ export const s = {
     borderRadius: 12,
     border: "1px solid #e3e7e5",
     fontSize: 14,
-    outline: "none",
     minWidth: 220,
   },
   select: {
@@ -110,7 +109,6 @@ export const s = {
     borderRadius: 12,
     border: "1px solid #e3e7e5",
     fontSize: 14,
-    outline: "none",
     boxSizing: "border-box",
   },
   label: {
@@ -460,7 +458,6 @@ export const s = {
     borderRadius: 12,
     border: "1px solid #ccd2cf",
     fontSize: 13,
-    outline: "none",
     background: "#fff",
   },
   dateFilterHint: { fontSize: 12, color: "#154038", fontWeight: 600, marginRight: 4 },

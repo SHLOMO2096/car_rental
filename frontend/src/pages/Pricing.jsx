@@ -1314,7 +1314,7 @@ function fmtMonthDay(dateStr) {
 const inp = {
   width: "100%", padding: "8px 10px", borderRadius: 10,
   border: "1px solid #ccd2cf", fontSize: 13, direction: "rtl",
-  fontFamily: "inherit", boxSizing: "border-box", outline: "none",
+  fontFamily: "inherit", boxSizing: "border-box",
 };
 
 const tdStyle = { padding: "10px 12px", color: "#404643" };

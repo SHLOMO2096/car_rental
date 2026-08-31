@@ -350,7 +350,7 @@ export default function Customers() {
                 style={{
                   width: "100%", padding: "12px 42px 12px 14px",
                   borderRadius: 16, border: "2px solid #2c6b5e",
-                  fontSize: 15, boxSizing: "border-box", outline: "none",
+                  fontSize: 15, boxSizing: "border-box",
                   boxShadow: "0 2px 8px rgba(21,64,56,0.15)",
                   fontWeight: 500,
                 }}
@@ -685,7 +685,7 @@ const s = {
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" },
   topActions: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
   h1: { fontSize: 24, fontWeight: 800, margin: 0 },
-  searchInput: { minWidth: 320, padding: "8px 14px", borderRadius: 12, border: "1px solid #e3e7e5", fontSize: 14, outline: "none" },
+  searchInput: { minWidth: 320, padding: "8px 14px", borderRadius: 12, border: "1px solid #e3e7e5", fontSize: 14 },
   card: { background: "#fff", border: "1px solid #e3e7e5", borderRadius: 16, padding: 14, marginBottom: 14 },
   cardTitle: { margin: "0 0 10px", fontSize: 14 },
   formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8 },
@@ -809,7 +809,7 @@ function RichTextEditor({ value, onChange }) {
         dir="rtl"
         onInput={handleInput}
         style={{
-          minHeight: 200, padding: "12px 14px", outline: "none",
+          minHeight: 200, padding: "12px 14px",
           fontSize: 14, lineHeight: 1.8, direction: "rtl", textAlign: "right",
           color: "#141816", background: "#fff",
         }}
