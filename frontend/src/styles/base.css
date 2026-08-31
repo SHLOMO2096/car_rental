@@ -1,0 +1,79 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Base — טיפוגרפיה גלובלית, איפוס מינימלי ומצבי מיקוד.
+   ─────────────────────────────────────────────────────────────────────────────
+   הקובץ הזה משפיע על כל המסכים, כולל אלה שעדיין כתובים ב-inline styles:
+   הם ירשו את הגופן החדש אבל ישמרו על הגדלים שהוגדרו בהם מפורשות.
+   ───────────────────────────────────────────────────────────────────────────*/
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--c-ground);
+  color: var(--c-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* פקדים מובנים לא יורשים גופן מהדפדפן — בלי זה כל 91 שדות הקלט
+   וכל 152 הכפתורים ממשיכים להיות מוצגים בגופן ברירת המחדל של המערכת. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  color: var(--c-ink);
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+p { margin: 0; }
+
+/* טבלאות מספרים — יישור עמודות ספרות */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ── מיקוד ────────────────────────────────────────────────────────────────
+   טבעת מיקוד אחת לכל המערכת. מחליפה את 14 המופעים של outline:"none"
+   שהסירו את חיווי המיקוד של הדפדפן בלי להעמיד תחליף.
+   :focus-visible מציג אותה רק לניווט מקלדת, לא בלחיצת עכבר.            */
+:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

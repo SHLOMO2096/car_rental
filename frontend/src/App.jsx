@@ -86,8 +86,7 @@ function Layout({ children }) {
   }
 
   return (
-    <div dir="rtl" style={{ display:"flex", minHeight:"100vh",
-                             fontFamily:"'Segoe UI','Arial Hebrew',Arial,sans-serif" }}>
+    <div dir="rtl" style={{ display:"flex", minHeight:"100vh" }}>
       {isMobile && menuOpen && (
         <div
           onClick={() => setMenuOpen(false)}

@@ -1,0 +1,159 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Components — הרכיבים החוזרים של המערכת.
+   ─────────────────────────────────────────────────────────────────────────────
+   כאן נמצא מה ש-inline styles לא יכול לבטא: hover, focus, active, disabled.
+   הרשימה מכוונת: רק רכיבים שכבר חוזרים בקוד. לא בונים ספרייה מראש.
+   שימו לב — סגנון inline תמיד גובר על מחלקה, אז מסך שעובר לכאן צריך
+   להסיר את אובייקט ה-style שלו ולא להשאיר את שניהם.
+   ───────────────────────────────────────────────────────────────────────────*/
+
+/* ── כפתורים ──────────────────────────────────────────────────────────────*/
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: 9px var(--space-6);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration) var(--ease),
+              border-color var(--duration) var(--ease),
+              box-shadow var(--duration) var(--ease);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.btn--block { width: 100%; }
+
+.btn--primary {
+  background: var(--c-brand);
+  color: #fff;
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--c-brand-strong);
+  box-shadow: var(--shadow-md);
+}
+.btn--primary:active:not(:disabled) {
+  background: var(--c-brand-strong);
+  box-shadow: none;
+}
+
+.btn--secondary {
+  background: var(--c-ground-2);
+  color: var(--c-text-2);
+  border-color: var(--c-line);
+  font-weight: 600;
+}
+.btn--secondary:hover:not(:disabled) {
+  background: var(--c-line);
+  border-color: var(--c-line-strong);
+}
+
+.btn--danger {
+  background: var(--c-danger);
+  color: #fff;
+}
+.btn--danger:hover:not(:disabled) { background: #b91c1c; }
+
+.btn--ghost {
+  background: transparent;
+  color: var(--c-text-2);
+}
+.btn--ghost:hover:not(:disabled) { background: var(--c-ground-2); }
+
+/* ── שדות ─────────────────────────────────────────────────────────────────*/
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--c-text-2);
+}
+
+.input {
+  width: 100%;
+  padding: 10px var(--space-4);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  font-size: var(--text-base);
+  color: var(--c-ink-2);
+  transition: border-color var(--duration) var(--ease),
+              box-shadow var(--duration) var(--ease);
+}
+
+.input::placeholder { color: var(--c-faint); }
+
+.input:hover:not(:disabled) { border-color: var(--c-line-strong); }
+
+/* מחליף outline:"none" — הטבעת נשארת, רק מעוצבת בצבע המותג */
+.input:focus {
+  outline: none;
+  border-color: var(--c-brand);
+  box-shadow: 0 0 0 3px var(--c-brand-soft);
+}
+
+.input:disabled {
+  background: var(--c-ground-2);
+  color: var(--c-muted);
+  cursor: not-allowed;
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--c-danger);
+}
+.input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px var(--c-danger-bg);
+}
+
+/* ── כרטיס ────────────────────────────────────────────────────────────────*/
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card--raised {
+  border-color: transparent;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── הודעות ───────────────────────────────────────────────────────────────*/
+.alert {
+  padding: 10px var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+
+.alert--error {
+  background: var(--c-danger-bg);
+  border-color: var(--c-danger-line);
+  color: var(--c-danger);
+}
+
+.alert--warning {
+  background: var(--c-warning-bg);
+  border-color: var(--c-warning-line);
+  color: var(--c-warning);
+  font-weight: 600;
+}
+
+.alert--success {
+  background: var(--c-success-bg);
+  border-color: var(--c-success-line);
+  color: var(--c-success);
+}

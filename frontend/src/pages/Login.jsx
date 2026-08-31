@@ -1,4 +1,6 @@
 // ══════════════════════════════════════════════════════════════════════════════
+// מסך פיילוט לשכבת העיצוב (styles/tokens.css + base.css + components.css).
+// אין כאן אובייקט styles מקומי: כל ערך מגיע מטוקן או ממחלקת רכיב.
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserFacingErrorMessage } from "../api/errors";
@@ -29,22 +31,54 @@ export default function Login() {
   }
 
   return (
-    <div dir="rtl" style={styles.page}>
-      <div style={styles.card}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 48 }}>🚘</div>
-          <h1 style={{ margin: "8px 0 4px", fontSize: 24, color: "#1e293b" }}>השכרת רכבים</h1>
-          <p style={{ color: "#64748b", margin: 0 }}>כניסה למערכת</p>
+    <div dir="rtl" style={page}>
+      <div className="card card--raised" style={card}>
+        <div style={header}>
+          <div style={mark} aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 17h14M6 17v2M18 17v2M4 13l1.5-5A2 2 0 0 1 7.4 6.5h9.2A2 2 0 0 1 18.5 8L20 13v4H4z" />
+              <circle cx="7.5" cy="14.5" r="1" />
+              <circle cx="16.5" cy="14.5" r="1" />
+            </svg>
+          </div>
+          <h1 style={title}>השכרת רכבים</h1>
+          <p style={subtitle}>כניסה למערכת</p>
         </div>
-        <form onSubmit={handleSubmit}>
-          <label style={styles.label}>אימייל</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-            style={styles.input} placeholder="admin@rental.co.il" required />
-          <label style={styles.label}>סיסמה</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-            style={styles.input} required />
-          {error && <div style={styles.error}>{error}</div>}
-          <button type="submit" disabled={loading} style={styles.btn}>
+
+        <form onSubmit={handleSubmit} style={form}>
+          <div className="field">
+            <label className="label" htmlFor="login-email">אימייל</label>
+            <input
+              id="login-email"
+              className="input"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="admin@rental.co.il"
+              autoComplete="username"
+              aria-invalid={error ? "true" : undefined}
+              required
+            />
+          </div>
+
+          <div className="field">
+            <label className="label" htmlFor="login-password">סיסמה</label>
+            <input
+              id="login-password"
+              className="input"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoComplete="current-password"
+              aria-invalid={error ? "true" : undefined}
+              required
+            />
+          </div>
+
+          {error && <div className="alert alert--error" role="alert">{error}</div>}
+
+          <button type="submit" className="btn btn--primary btn--block" disabled={loading} style={submit}>
             {loading ? "מתחבר..." : "כניסה"}
           </button>
         </form>
@@ -52,19 +86,54 @@ export default function Login() {
     </div>
   );
 }
-const styles = {
-  page:  { minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center",
-           background:"#f1f5f9" },
-  card:  { background:"#fff", borderRadius:16, padding:40, width:"100%", maxWidth:400,
-           boxShadow:"0 4px 24px rgba(0,0,0,0.1)" },
-  label: { display:"block", fontSize:13, fontWeight:600, color:"#475569", marginBottom:6, marginTop:16 },
-  input: { width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid #e2e8f0",
-           fontSize:14, boxSizing:"border-box", outline:"none" },
-  btn:   { width:"100%", marginTop:24, padding:"12px", background:"#1d4ed8", color:"#fff",
-           border:"none", borderRadius:8, fontSize:16, fontWeight:700, cursor:"pointer" },
-  error: { marginTop:12, padding:"10px 14px", background:"#fee2e2", color:"#dc2626",
-           borderRadius:8, fontSize:13 },
+
+// פריסה בלבד — ערכים מהטוקנים, אפס צבעים או גדלים קשיחים.
+const page = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "var(--c-ground-2)",
+  padding: "var(--space-5)",
 };
+
+const card = {
+  width: "100%",
+  maxWidth: 400,
+  padding: "var(--space-9) var(--space-8)",
+};
+
+const header = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "var(--space-1)",
+  marginBottom: "var(--space-8)",
+};
+
+const mark = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: 52,
+  height: 52,
+  marginBottom: "var(--space-4)",
+  borderRadius: "var(--radius-lg)",
+  background: "var(--c-brand-soft)",
+  color: "var(--c-brand)",
+};
+
+const title = { fontSize: "var(--text-xl)" };
+
+const subtitle = { color: "var(--c-muted)", fontSize: "var(--text-base)" };
+
+const form = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "var(--space-5)",
+};
+
+const submit = { marginTop: "var(--space-2)", fontSize: "var(--text-md)" };
 
 
 // ══════════════════════════════════════════════════════════════════════════════
