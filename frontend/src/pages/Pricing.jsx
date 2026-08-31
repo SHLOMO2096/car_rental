@@ -659,7 +659,7 @@ function RulesTab({ canManage, isMobile }) {
                       <div key={mdl}>
                         {/* Model row */}
                         <div
-                          style={{ display: "flex", alignItems: "center", padding: "6px 14px", paddingRight: 26, gap: 5, userSelect: "none" }}
+                          style={{ display: "flex", alignItems: "center", padding: "6px 14px", paddingInlineStart: 26, gap: 5, userSelect: "none" }}
                           onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
                           onMouseLeave={e => e.currentTarget.style.background = ""}
                         >
@@ -696,7 +696,7 @@ function RulesTab({ canManage, isMobile }) {
                               onClick={() => { openEdit(carRule || { ...EMPTY_RULE, entity_type: "car", entity_value: String(car.id) }); closeSidebar(); }}
                               style={{
                                 display: "flex", alignItems: "center", gap: 7,
-                                padding: "5px 14px", paddingRight: 38,
+                                padding: "5px 14px", paddingInlineStart: 38,
                                 cursor: "pointer", userSelect: "none",
                                 background: isSelected ? "#eef5f2" : "",
                                 borderRight: isSelected ? "2px solid #154038" : "2px solid transparent",
@@ -1186,7 +1186,7 @@ function HolidaysTab({ canManage, isMobile }) {
             </button>
           </>
         )}
-        <div style={{ display: "flex", gap: 6, alignItems: "center", marginRight: "auto" }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", marginInlineStart: "auto" }}>
           <button onClick={() => setYear(y => y - 1)} style={smallBtn("#eff3f1", "#59605d")}>‹</button>
           <span style={{ fontWeight: 700, color: "#272c2a", fontSize: 15, minWidth: 40, textAlign: "center" }}>{year}</span>
           <button onClick={() => setYear(y => y + 1)} style={smallBtn("#eff3f1", "#59605d")}>›</button>
@@ -1217,7 +1217,7 @@ function HolidaysTab({ canManage, isMobile }) {
                   <div style={{ fontWeight: 700, color: "#272c2a", fontSize: 14 }}>{h.name}</div>
                   <div style={{ fontSize: 12, color: "#707774", marginTop: 3 }}>
                     {new Date(h.date).toLocaleDateString("he-IL")}
-                    <span style={{ marginRight: 8, fontSize: 11, color: h.is_auto_generated ? "#1b5348" : "#15803d" }}>
+                    <span style={{ marginInlineStart: 8, fontSize: 11, color: h.is_auto_generated ? "#1b5348" : "#15803d" }}>
                       {h.is_auto_generated ? <><Settings2 size={12} strokeWidth={1.9} aria-hidden="true" /> אוטו</> : <><Hand size={12} strokeWidth={1.9} aria-hidden="true" /> ידני</>}
                     </span>
                   </div>
@@ -1275,7 +1275,7 @@ function FormFooter({ saving, onCancel, onSave, onDelete }) {
     <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8, flexWrap: "wrap" }}>
       {onDelete && (
         <button onClick={onDelete} disabled={saving}
-                style={{ ...smallBtn("#fef2f2", "#dc2626"), marginLeft: "auto" }}>
+                style={{ ...smallBtn("#fef2f2", "#dc2626"), marginInlineEnd: "auto" }}>
           <Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /> מחק כלל
         </button>
       )}

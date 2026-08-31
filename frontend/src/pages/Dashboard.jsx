@@ -437,7 +437,7 @@ export function Dashboard() {
           {!quickSearch && activeFiltersCount === 0 && (
             <span>
               מוצג: <strong>{filteredCars.length}</strong> רכבים · טווח: <strong>{visibleDays}</strong> ימים
-              <span style={{ color: "#8e9592", marginRight: 12 }}>· טיפ: Ctrl+F לחיפוש מהיר</span>
+              <span style={{ color: "#8e9592", marginInlineStart: 12 }}>· טיפ: Ctrl+F לחיפוש מהיר</span>
             </span>
           )}
         </div>
@@ -1460,10 +1460,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                         {dayMeta.isErevChag && <span style={{ ...miniTag, background:"#d97706" }}>ערב חג</span>}
                       </div>
                     )}
-                     {isPastDay && <span style={{ fontSize:9, color:"#707774", marginRight:4,
+                     {isPastDay && <span style={{ fontSize:9, color:"#707774", marginInlineStart:4,
                                                 background:"#e3e7e5", borderRadius:8,
                                                 padding:"1px 4px" }}>עבר</span>}
-                    {isToday && <span style={{ fontSize:9, color:"#f59e0b", marginRight:4,
+                    {isToday && <span style={{ fontSize:9, color:"#f59e0b", marginInlineStart:4,
                                                background:"#fef3c7", borderRadius:8,
                                                padding:"1px 4px" }}>היום</span>}
                   </td>
@@ -1692,7 +1692,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
           <div style={{ maxHeight: 150, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
             {uploadQueue.map(u => (
               <div key={u.id} style={{ fontSize: 11, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: 8 }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginInlineStart: 8 }}>
                   #{u.bookingId} - {u.fileName}
                 </span>
                 <span style={{ 

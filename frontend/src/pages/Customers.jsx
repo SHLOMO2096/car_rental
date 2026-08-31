@@ -518,7 +518,7 @@ export default function Customers() {
                           <button onClick={() => setViewPhotos(b)} style={{ ...s.btnPhoto, padding: "4px 8px" }} title="צפה בתמונות">
                             <Image size={13} strokeWidth={1.9} aria-hidden="true" /> צפה
                             {b.drive_link.split(",").filter(Boolean).length > 1 && (
-                              <small style={{ fontSize: 10, fontWeight: "bold", marginRight: 4 }}>({b.drive_link.split(",").filter(Boolean).length})</small>
+                              <small style={{ fontSize: 10, fontWeight: "bold", marginInlineStart: 4 }}>({b.drive_link.split(",").filter(Boolean).length})</small>
                             )}
                           </button>
                         ) : "—"}
@@ -613,7 +613,7 @@ export default function Customers() {
                     value={opt.value}
                     checked={bulkEmailAudience === opt.value}
                     onChange={() => setBulkEmailAudience(opt.value)}
-                    style={{ marginLeft: 6 }}
+                    style={{ marginInlineEnd: 6 }}
                   />
                   {opt.label}
                 </label>

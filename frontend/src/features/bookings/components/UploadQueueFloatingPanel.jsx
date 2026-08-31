@@ -52,7 +52,7 @@ export default function UploadQueueFloatingPanel({ uploadQueue, onClear }) {
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
                 flex: 1,
-                marginRight: 8,
+                marginInlineStart: 8,
               }}
             >
               #{u.bookingId} - {u.fileName}

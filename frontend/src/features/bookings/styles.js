@@ -126,7 +126,7 @@ export const s = {
     fontSize: 12,
     color: "#59605d",
   },
-  timeHint: { fontSize: 10, color: "#8e9592", fontWeight: 400, marginRight: 4 },
+  timeHint: { fontSize: 10, color: "#8e9592", fontWeight: 400, marginInlineStart: 4 },
   formGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
@@ -195,7 +195,7 @@ export const s = {
   conflictFilterField: { display: "flex", flexDirection: "column", gap: 4 },
   conflictFilterLabel: { fontSize: 12, color: "#59605d", fontWeight: 600 },
   conflictClearBtn: {
-    marginRight: 6,
+    marginInlineStart: 6,
     fontSize: 10,
     padding: "1px 6px",
     borderRadius: 8,
@@ -361,7 +361,7 @@ export const s = {
     fontSize: 11,
     fontWeight: 700,
     border: "1px solid",
-    marginLeft: 6,
+    marginInlineEnd: 6,
   },
   carName: { fontWeight: 700, fontSize: 14, color: "#141816" },
   carMeta: { fontSize: 11, color: "#707774" },
@@ -460,7 +460,7 @@ export const s = {
     fontSize: 13,
     background: "#fff",
   },
-  dateFilterHint: { fontSize: 12, color: "#154038", fontWeight: 600, marginRight: 4 },
+  dateFilterHint: { fontSize: 12, color: "#154038", fontWeight: 600, marginInlineStart: 4 },
   durationBtn: {
     padding: "3px 10px",
     borderRadius: 999,

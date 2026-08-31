@@ -125,7 +125,7 @@ export default function BookingsList({
                   <td style={s.td}>
                     <Badge label={st.label} color={st.color} />
                     {b.email_sent && (
-                      <span title="אימייל נשלח" style={{ marginRight: 4 }}>
+                      <span title="אימייל נשלח" style={{ marginInlineStart: 4 }}>
                         <Mail size={15} strokeWidth={1.9} aria-hidden="true" />
                       </span>
                     )}

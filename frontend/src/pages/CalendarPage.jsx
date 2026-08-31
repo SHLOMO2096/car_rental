@@ -261,7 +261,7 @@ export function CalendarPage() {
           <span><Star size={12} strokeWidth={1.9} aria-hidden="true" /> חודש עברי:</span>
           {hebrewMonths.map(m => <span key={m} style={{ background:"#7c3aed", color:"#fff", borderRadius:10, padding:"2px 8px" }}>{m}</span>)}
           <span style={{ color:"#7c3aed" }}>· שנה: {hebrewYear}</span>
-          <span style={{ marginRight:"auto", fontWeight:400, color:"#6d28d9" }}>
+          <span style={{ marginInlineStart:"auto", fontWeight:400, color:"#6d28d9" }}>
             תאריך בצד ימין של כל תא = יום עברי ·
             <b> א׳ </b> = ראש חודש (מסומן בסגול)
           </span>

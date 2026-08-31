@@ -390,7 +390,7 @@ export default function Suggestions() {
                         <strong>₪{item.replacement_price_per_day.toLocaleString()}</strong>
                         {item.replacement_price_delta != null && item.replacement_price_delta !== 0 && (
                           <span style={{
-                            marginRight: 6,
+                            marginInlineStart: 6,
                             color: item.replacement_price_delta > 0 ? "#b45309" : "#047857",
                             fontSize: 11,
                             fontWeight: 700,

@@ -129,7 +129,7 @@ export default function ConflictResolverModal({
                     onClick={() => onUpdateFilters({ modelFilter: [] })}
                     disabled={resolvingConflict}
                     style={{
-                      marginRight: 6,
+                      marginInlineStart: 6,
                       fontSize: 10,
                       padding: "1px 6px",
                       borderRadius: 8,
