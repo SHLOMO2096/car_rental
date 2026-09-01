@@ -52,6 +52,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Check design principles
+        run: npm run audit:ui:strict
+
       - name: Run frontend tests
         run: npm run test:run
 

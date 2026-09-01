@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "audit:ui": "node scripts/ui-audit.mjs"
+    "audit:ui": "node scripts/ui-audit.mjs",
+    "audit:ui:strict": "node scripts/ui-audit.mjs --strict"
   },
   "dependencies": {
     "@hebcal/core": "^6.3.3",

@@ -55,6 +55,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Check design principles
+        working-directory: frontend
+        run: npm run audit:ui:strict
+
       - name: Run frontend tests
         working-directory: frontend
         run: npm run test:run
