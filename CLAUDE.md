@@ -32,7 +32,7 @@ Docker (repo root): `docker compose up -d` (postgres :5433, redis :6379, backend
 
 Tests need `DATABASE_URL` and `SECRET_KEY` set (CI uses `sqlite:///./test_bootstrap.db` + `ci-secret-key`); `backend/tests/test_api.py` then overrides `get_db` with an in-memory SQLite `StaticPool` session. The Redis integration tests skip themselves unless a reachable `TEST_REDIS_URL` is set (`docker compose up -d redis` first).
 
-CI (`.github/workflows/ci.yml`) runs backend pytest + frontend build only. `deploy-dev.yml` auto-deploys on push to `development`; production deploy/rollback are manual `workflow_dispatch`.
+CI (`.github/workflows/ci.yml`) runs backend pytest, frontend vitest and the frontend build; the two deploy workflows re-run the same three before shipping. `deploy-dev.yml` auto-deploys on push to `development`; production deploy/rollback are manual `workflow_dispatch`.
 
 ## Backend architecture
 

@@ -132,7 +132,10 @@ describe("App auth + mobile smoke", () => {
     expect(await screen.findByRole("heading", { name: "לוח בקרה" })).toBeInTheDocument();
   });
 
-  it("shows past dashboard cells as non-bookable and blocks navigation from them", async () => {
+  // ההתנהגות הזו התהפכה בכוונה: עד fb75725 תא בתאריך עבר היה חסום, והיום
+  // מותר להזמין עליו — סוכן שמתעד השכרה שכבר קרתה זקוק לזה. הטסט מאמת
+  // שהתא עדיין *מסומן* כעבר, אבל שהוא כן פותח יצירת הזמנה.
+  it("marks past dashboard cells as past but still lets you book on them", async () => {
     const user = userEvent.setup();
     setViewport(1366);
     carsAPI.list.mockResolvedValueOnce([{ id: 1, name: "Toyota Test", is_active: true, plate: "11-111-11" }]);
@@ -146,11 +149,15 @@ describe("App auth + mobile smoke", () => {
 
     render(<App />);
 
-    expect(await screen.findByText("עבר · לא ניתן להזמין")).toBeInTheDocument();
-    const pastCells = await screen.findAllByTitle(/לא ניתן להזמין.*לתאריך עבר/);
-    const pastCell = pastCells[0];
-    await user.click(pastCell);
-    expect(window.location.pathname).toBe("/");
+    // התאריך מסומן כעבר בעמודת התאריכים
+    expect((await screen.findAllByText("עבר")).length).toBeGreaterThan(0);
+
+    // ותא באותו יום מזמין ליצירת הזמנה, עם ציון שמדובר בתאריך שעבר
+    const pastCells = await screen.findAllByTitle(/לחץ להזמנת .*\(תאריך עבר\)/);
+    expect(pastCells.length).toBeGreaterThan(0);
+
+    await user.click(pastCells[0]);
+    await waitFor(() => expect(window.location.pathname).toBe("/bookings"));
   });
 
   it("blocks stale auth state without token on /cars", async () => {
