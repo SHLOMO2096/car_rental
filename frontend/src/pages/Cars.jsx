@@ -265,6 +265,7 @@ export default function Cars() {
                                           : { label: "הפעלת רכב", Icon: Play, onSelect: () => toggleActive(car) },
                                         canDeleteCars && {
                                           label: "מחיקה לצמיתות", Icon: Trash2, danger: true,
+                                          hint: "רק לרכב שמעולם לא הושכר. לרכב עם היסטוריה — בחר השבתה.",
                                           onSelect: () => setConfirmPermanentDelete(car),
                                         },
                                       ]}

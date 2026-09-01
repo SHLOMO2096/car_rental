@@ -9,7 +9,8 @@
 //     label="פעולות ללקוח דוד לוי"
 //     items={[
 //       { label: "היסטוריה", Icon: History, onSelect: () => ... },
-//       { label: "מחק", Icon: Trash2, onSelect: () => ..., danger: true },
+//       { label: "מחק", Icon: Trash2, onSelect: () => ..., danger: true,
+//         hint: "רק לרכב שלא הושכר" },
 //     ]}
 //   />
 import { useEffect, useId, useRef, useState } from "react";
@@ -128,7 +129,13 @@ export default function ActionMenu({ label = "פעולות נוספות", items 
               onMouseEnter={() => setActiveIndex(i)}
             >
               {item.Icon && <item.Icon size={15} strokeWidth={1.9} aria-hidden="true" />}
-              <span>{item.label}</span>
+              <span className="action-menu__text">
+                {item.label}
+                {/* הרמז מוצג תמיד ולא רק בריחוף: title נעלם במגע ובניווט
+                    מקלדת, ובדיוק שם ההנחיה נחוצה. הוא חלק מהשם הנגיש
+                    של הפריט, אז קורא מסך מקריא אותו יחד עם התווית. */}
+                {item.hint && <span className="action-menu__hint">{item.hint}</span>}
+              </span>
             </button>
           ))}
         </div>

@@ -20,6 +20,7 @@ from app.models.car import Car, CarType
 from app.models.booking import Booking, BookingStatus
 from app.models.customer import Customer
 from app.models.audit_log import AuditLog
+from app.models.pricing import PriceEntityType, PriceRule
 from app.core.config import settings
 from app.core.rate_limit import clear_rate_limits
 from app.core import security as security_module
@@ -537,6 +538,43 @@ class TestRBAC:
         assert r.status_code == 200
         data = r.json()
         assert "total" in data and "active" in data
+
+
+
+class TestPermanentCarDelete:
+    """מחיקת רכב לצמיתות — מותרת רק לרכב שמעולם לא הושכר."""
+
+    def test_blocked_when_the_car_has_booking_history(self, client, db, auth_headers, sample_car, admin_user):
+        today = date.today()
+        db.add(Booking(car_id=sample_car.id, customer_name="Past Renter",
+                       start_date=today - timedelta(days=3), end_date=today - timedelta(days=1),
+                       status=BookingStatus.completed, created_by=admin_user.id))
+        db.commit()
+
+        r = client.delete(f"/api/cars/{sample_car.id}/permanent", headers=auth_headers)
+        assert r.status_code == 400
+        assert db.query(Car).filter(Car.id == sample_car.id).first() is not None
+
+    def test_car_level_price_rules_go_with_the_car(self, client, db, auth_headers):
+        """כלל מחיר ברמת רכב מקושר במחרוזת ולא במפתח זר — בלי הניקוי הזה
+        הוא היה נשאר יתום ומצביע למזהה שכבר לא קיים."""
+        car = Car(name="Never Rented", type=CarType.sedan, year=2024,
+                  plate="ORPHAN-1", color="שחור", price_per_day=90.0)
+        db.add(car); db.commit(); db.refresh(car)
+        car_id = car.id                      # נשמר לפני המחיקה — אחרי ה-DELETE
+                                             # ה-instance מנותק ואי אפשר לקרוא ממנו
+
+        rule = PriceRule(name="מחיר לרכב", entity_type=PriceEntityType.car.value,
+                         entity_value=str(car_id), price_day=120.0)
+        db.add(rule); db.commit()
+        rule_id = rule.id
+
+        r = client.delete(f"/api/cars/{car_id}/permanent", headers=auth_headers)
+        assert r.status_code == 204
+
+        db.expire_all()
+        assert db.query(Car).filter(Car.id == car_id).first() is None
+        assert db.query(PriceRule).filter(PriceRule.id == rule_id).first() is None
 
 
 class TestDashboardKpis:

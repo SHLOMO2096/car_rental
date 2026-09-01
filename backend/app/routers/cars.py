@@ -10,6 +10,7 @@ from app.core.permissions import Permissions
 from app.core.security import require_permission
 from app.crud.audit_log import log_audit_event
 from app.models.audit_log import AuditSeverity
+from app.models.pricing import PriceEntityType, PriceRule
 
 router = APIRouter()
 
@@ -158,6 +159,17 @@ def permanently_delete_car(
     if booking_count:
         raise HTTPException(400, "לא ניתן למחוק רכב לצמיתות כאשר קיימת היסטוריית הזמנות")
 
+    # כללי מחיר ברמת רכב מקושרים דרך entity_value (מחרוזת), לא דרך מפתח זר,
+    # ולכן מחיקת הרכב הייתה משאירה אותם יתומים ומצביעים למזהה שלא קיים.
+    # מכיוון שאין היסטוריית הזמנות, הכללים האלה מעולם לא תמחרו דבר — הם
+    # נמחקים יחד עם הרכב ונרשמים ב-audit כדי שהמחיקה לא תהיה שקטה.
+    car_rules = (
+        db.query(PriceRule)
+        .filter(PriceRule.entity_type == PriceEntityType.car.value)
+        .filter(PriceRule.entity_value == str(car_id))
+        .all()
+    )
+
     before_state = {
         "id": car.id,
         "name": car.name,
@@ -165,7 +177,13 @@ def permanently_delete_car(
         "year": car.year,
         "plate": car.plate,
         "is_active": car.is_active,
+        "deleted_price_rules": [
+            {"id": r.id, "name": r.name, "price_day": r.price_day} for r in car_rules
+        ],
     }
+
+    for rule in car_rules:
+        db.delete(rule)
     db.delete(car)
     db.commit()
     log_audit_event(
