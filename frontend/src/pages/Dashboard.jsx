@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════════
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
@@ -934,7 +934,9 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
 
 
 // ── Availability Grid ──────────────────────────────────────────────────────────
-function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFiltered, fullHeight, currentUser, permissionModel }) {
+// עטוף ב-memo: הדשבורד מרנדר מחדש בכל הקלדה בחיפוש המהיר, אבל רשימת
+// הרכבים מסוננת רק אחרי debounce — בלי זה כל תו מרנדר ~1,200 תאים.
+const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFiltered, fullHeight, currentUser, permissionModel }) {
   const [bookings, setBookings]     = useState([]);
   const [loadingGrid, setLoadingGrid] = useState(false);
 
@@ -949,7 +951,10 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
 
   // Header hover tooltip
   const [hoveredCar, setHoveredCar] = useState(null);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  // המיקום מוחזק ב-ref ולא ב-state: תזוזת עכבר לא אמורה לרנדר מחדש
+  // את כל הרשת (41 עמודות × 30 שורות) רק כדי להזיז ריבוע קטן.
+  const tooltipRef = useRef(null);
+  const tooltipStart = useRef({ x: 0, y: 0 });
 
   // ── Drag state ──────────────────────────────────────────────────────────────
   const [dragBooking, setDragBooking]   = useState(null);   // booking being dragged
@@ -969,7 +974,6 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
 
   const todayBase = new Date(); todayBase.setHours(0,0,0,0);
   const todayStr  = toISO(todayBase);
-  const startBase = fromISO(startDate);
   const daysCount = Math.max(diffDays(startDate, endDate) + 1, 1);
 
   // Column widths: slightly wider for readability, and widen further when filtering columns.
@@ -1020,21 +1024,45 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
       .finally(() => setLoadingGrid(false));
   }, [startDate, endDate]);
 
-  const activeCars = cars.filter(c => c.is_active);
-  const dates      = Array.from({ length: daysCount }, (_, i) => addDays(startBase, i));
+  const activeCars = useMemo(() => cars.filter(c => c.is_active), [cars]);
 
-  // Build occupancy map: "YYYY-MM-DD:carId" → booking
-  const occ = {};
-  bookings.forEach(b => {
-    if (b.status === "cancelled") return;
-    dates.forEach(d => {
-      const ds = toISO(d);
-      if (ds >= b.start_date && ds <= b.end_date) {
-        if (!occ[`${ds}:${b.car_id}`]) occ[`${ds}:${b.car_id}`] = [];
-        occ[`${ds}:${b.car_id}`].push(b);
+  const dates = useMemo(
+    () => Array.from({ length: daysCount }, (_, i) => addDays(fromISO(startDate), i)),
+    [startDate, daysCount]
+  );
+
+  // מחרוזות התאריכים מחושבות פעם אחת ולא בכל השוואה בתוך הלולאה.
+  const dateStrings = useMemo(() => dates.map(toISO), [dates]);
+
+  // מפת תפוסה: "YYYY-MM-DD:carId" → הזמנות.
+  //
+  // היה כאן חישוב שרץ בכל רינדור — כלומר גם בכל תזוזת עכבר מעל הרשת, כי
+  // הטולטיפ מעדכן state. עם 30 יום ומאות הזמנות זה עשרות אלפי המרות תאריך
+  // לשנייה. עכשיו הוא ממומו, ובנוסף כל הזמנה סורקת רק את החפיפה שלה עם
+  // הטווח המוצג במקום את כל הימים.
+  const occ = useMemo(() => {
+    const map = {};
+    if (dateStrings.length === 0) return map;
+
+    const first = dateStrings[0];
+    const last  = dateStrings[dateStrings.length - 1];
+
+    bookings.forEach(b => {
+      if (b.status === "cancelled") return;
+      const from = b.start_date > first ? b.start_date : first;
+      const to   = b.end_date   < last  ? b.end_date   : last;
+      if (from > to) return;   // ההזמנה כולה מחוץ לטווח המוצג
+
+      for (let i = 0; i < dateStrings.length; i++) {
+        const ds = dateStrings[i];
+        if (ds < from) continue;
+        if (ds > to) break;
+        const key = `${ds}:${b.car_id}`;
+        (map[key] ||= []).push(b);
       }
     });
-  });
+    return map;
+  }, [bookings, dateStrings]);
 
   // ── Drag helpers ────────────────────────────────────────────────────────────
   function canOpenBookingActions(booking) {
@@ -1410,14 +1438,15 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
                                             borderBottom:`3px solid ${isDragTarget ? "#154038" : tc.border}`,
                                             transition:"background 0.15s" }}
                       onMouseEnter={(e) => {
-                        const p = clampTooltipPos(e.clientX + 14, e.clientY + 14);
+                        tooltipStart.current = clampTooltipPos(e.clientX + 14, e.clientY + 14);
                         setHoveredCar(car);
-                        setTooltipPos(p);
                       }}
                       onMouseMove={(e) => {
-                        if (!hoveredCar || hoveredCar?.id !== car.id) return;
+                        const el = tooltipRef.current;
+                        if (!el) return;
                         const p = clampTooltipPos(e.clientX + 14, e.clientY + 14);
-                        setTooltipPos(p);
+                        el.style.left = `${p.x}px`;
+                        el.style.top = `${p.y}px`;
                       }}
                       onMouseLeave={() => setHoveredCar(null)}
                     >
@@ -1640,10 +1669,11 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
        {hoveredCar && (
          <div
            dir="rtl"
+           ref={tooltipRef}
            style={{
              position: "fixed",
-             left: tooltipPos.x,
-             top: tooltipPos.y,
+             left: tooltipStart.current.x,
+             top: tooltipStart.current.y,
              zIndex: 10000,
              background: "#fff",
              border: "1px solid #e3e7e5",
@@ -1717,7 +1747,7 @@ function AvailabilityGrid({ cars, startDate, endDate, navigate, isMobile, isFilt
       )}
     </>
   );
-}
+});
 
 
 
