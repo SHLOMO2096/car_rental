@@ -342,3 +342,35 @@
   line-height: 1.4;
 }
 .action-menu__item--danger .action-menu__hint { color: var(--c-text-2); }
+
+/* ═══ צ׳יפ סינון ════════════════════════════════════════════════════════════
+   כפתור בורר קטן בצורת גלולה. חוזר בלוח הבקרה ובסרגל התאריכים של ההזמנות,
+   ולכן הוא רכיב ולא סגנון מקומי. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px var(--space-4);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease),
+              border-color var(--duration-fast) var(--ease),
+              color var(--duration-fast) var(--ease);
+}
+.chip:hover:not(:disabled) { background: var(--c-ground-2); border-color: var(--c-muted); }
+.chip:disabled { opacity: .5; cursor: not-allowed; }
+
+.chip--active {
+  background: var(--c-brand);
+  border-color: var(--c-brand);
+  color: var(--c-on-brand);
+}
+.chip--active:hover:not(:disabled) { background: var(--c-brand-strong); border-color: var(--c-brand-strong); }
+
+.chip--sm { padding: 4px var(--space-4); font-size: var(--text-xs); }

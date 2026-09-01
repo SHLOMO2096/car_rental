@@ -335,13 +335,10 @@ export function Dashboard() {
             autoComplete="off"
             autoCorrect="off"
             spellCheck="false"
-            style={{
-              ...inputStyle,
-              paddingInlineEnd: quickSearch ? 45 : 12,
+            className="input" style={{ paddingInlineEnd: quickSearch ? 45 : 12,
               width: "100%",
               maxWidth: isMobile ? "100%" : 600,
-              fontSize: 14,
-            }}
+              fontSize: 14, }}
           />
           {quickSearch && (
             <button
@@ -369,9 +366,7 @@ export function Dashboard() {
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <button
             onClick={() => setShowFilterSheet(true)}
-            style={{
-              ...chipStyle,
-              flex: isMobile ? 1 : "0 0 auto",
+            className="chip" style={{ flex: isMobile ? 1 : "0 0 auto",
               background: activeFiltersCount > 0 ? "#154038" : "#fff",
               color: activeFiltersCount > 0 ? "#fff" : "#404643",
               borderColor: activeFiltersCount > 0 ? "#154038" : "#ccd2cf",
@@ -380,8 +375,7 @@ export function Dashboard() {
               justifyContent: "center",
               gap: 8,
               fontWeight: 700,
-              minWidth: isMobile ? "auto" : 180,
-            }}
+              minWidth: isMobile ? "auto" : 180, }}
           >
             <SlidersHorizontal size={15} strokeWidth={1.9} aria-hidden="true" /> סינונים מתקדמים
             {activeFiltersCount > 0 && (
@@ -400,13 +394,10 @@ export function Dashboard() {
           {(quickSearch || activeFiltersCount > 0) && (
             <button
               onClick={clearAllFilters}
-              style={{
-                ...chipStyle,
-                background: "#fee2e2",
+              className="chip" style={{ background: "#fee2e2",
                 color: "#dc2626",
                 borderColor: "#fecaca",
-                fontWeight: 600,
-              }}
+                fontWeight: 600, }}
             >
               <X size={14} strokeWidth={2.2} aria-hidden="true" /> נקה הכל
             </button>
@@ -448,7 +439,7 @@ export function Dashboard() {
         <h2 style={{ ...cardTitle, marginBottom:0 }}>זמינות רכבים ({filteredCars.length})</h2>
         <button 
           onClick={() => setFocusMode(true)}
-          style={{ ...chipStyle, display:"flex", alignItems:"center", gap:6, padding:"4px 10px", background:"#eff3f1" }}
+          className="chip" style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 10px", background:"#eff3f1" }}
         >
           <Maximize2 size={14} strokeWidth={1.9} aria-hidden="true" /> מסך מלא
         </button>
@@ -648,7 +639,7 @@ export function Dashboard() {
 
               {/* Categories */}
               <div style={{ marginBottom: 24 }}>
-                <span style={{ ...fieldLabel, display: "block", marginBottom: 8 }}>סינון קטגוריות</span>
+                <span className="label" style={{ display: "block", marginBottom: 8 }}>סינון קטגוריות</span>
                 <div style={multiSelectBox}>
                   <label style={multiSelectItem(selectedCategories.length === 0)}>
                     <input type="checkbox" checked={selectedCategories.length === 0} onChange={() => setSelectedCategories([])} />
@@ -667,7 +658,7 @@ export function Dashboard() {
 
               {/* Models */}
               <div style={{ marginBottom: 24 }}>
-                <span style={{ ...fieldLabel, display: "block", marginBottom: 8 }}>סינון דגמים</span>
+                <span className="label" style={{ display: "block", marginBottom: 8 }}>סינון דגמים</span>
                 <div style={multiSelectBox}>
                   <label style={multiSelectItem(selectedModels.length === 0)}>
                     <input type="checkbox" checked={selectedModels.length === 0} onChange={() => setSelectedModels([])} />
@@ -685,7 +676,7 @@ export function Dashboard() {
 
               {/* Hybrid */}
               <div style={{ marginBottom: 24 }}>
-                <span style={{ ...fieldLabel, display: "block", marginBottom: 8 }}>סוג הנעה</span>
+                <span className="label" style={{ display: "block", marginBottom: 8 }}>סוג הנעה</span>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {[
                     { value: "all", label: "הכל" },
@@ -694,16 +685,13 @@ export function Dashboard() {
                   ].map(opt => (
                     <label
                       key={opt.value}
-                      style={{
-                        ...chipStyle,
-                        background: hybridFilter === opt.value ? "#154038" : "#fff",
+                      className="chip" style={{ background: hybridFilter === opt.value ? "#154038" : "#fff",
                         color: hybridFilter === opt.value ? "#fff" : "#404643",
                         borderColor: hybridFilter === opt.value ? "#154038" : "#ccd2cf",
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
-                        gap: 6,
-                      }}
+                        gap: 6, }}
                     >
                       <input
                         type="radio"
@@ -721,21 +709,21 @@ export function Dashboard() {
 
               {/* Date Range */}
               <div style={{ marginBottom: 24 }}>
-                <span style={{ ...fieldLabel, display: "block", marginBottom: 8 }}>טווח תאריכים</span>
+                <span className="label" style={{ display: "block", marginBottom: 8 }}>טווח תאריכים</span>
                 <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
                   <label style={{ flex: 1 }}>
                     <span style={{ fontSize: 11, color: "#707774", display: "block", marginBottom: 4 }}>מתאריך</span>
-                    <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} style={{ ...inputStyle, width: "100%" }} />
+                    <input type="date" value={rangeStart} onChange={(e) => setStartAndKeepRange(e.target.value)} className="input" style={{ width: "100%" }} />
                   </label>
                   <label style={{ flex: 1 }}>
                     <span style={{ fontSize: 11, color: "#707774", display: "block", marginBottom: 4 }}>עד תאריך</span>
-                    <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setEndWithGuard(e.target.value)} style={{ ...inputStyle, width: "100%" }} />
+                    <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setEndWithGuard(e.target.value)} className="input" style={{ width: "100%" }} />
                   </label>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <span style={{ ...fieldLabel, width: "100%", marginBottom: 4 }}>טווח מהיר:</span>
+                  <span className="label" style={{ width: "100%", marginBottom: 4 }}>טווח מהיר:</span>
                   {[7, 14, 30].map(days => (
-                    <button key={days} onClick={() => applyPreset(days)} style={days === visibleDays ? activeChip : chipStyle}>
+                    <button key={days} onClick={() => applyPreset(days)} className={`chip${days === visibleDays ? " chip--active" : ""}`}>
                       {days} ימים
                     </button>
                   ))}
@@ -771,26 +759,20 @@ export function Dashboard() {
             }}>
               <button
                 onClick={clearAllFilters}
-                style={{
-                  ...chipStyle,
-                  flex: 1,
+                className="chip" style={{ flex: 1,
                   background: "#fff",
                   color: "#707774",
-                  border: "1px solid #ccd2cf",
-                }}
+                  border: "1px solid #ccd2cf", }}
               >
                 אפס הכל
               </button>
               <button
                 onClick={() => setShowFilterSheet(false)}
-                style={{
-                  ...chipStyle,
-                  flex: 2,
+                className="chip" style={{ flex: 2,
                   background: "#154038",
                   color: "#fff",
                   border: "none",
-                  fontWeight: 700,
-                }}
+                  fontWeight: 700, }}
               >
                 <Check size={16} strokeWidth={2.2} aria-hidden="true" /> החל והצג ({filteredCars.length})
               </button>
@@ -1319,7 +1301,7 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
 
   if (activeCars.length === 0) {
     return (
-      <div style={{ ...cardStyle, padding:20, marginBottom:20, color:"#707774" }}>
+      <div className="card" style={{ padding:20, marginBottom:20, color:"#707774" }}>
         אין רכבים להצגה עבור הסינון שנבחר.
       </div>
     );
@@ -1389,7 +1371,7 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
         requiresOperatorNote={permissionModel.requiresOperatorNote(confirmDeleteBooking)}
       />
 
-    <div style={{ ...cardStyle, padding:0, overflow:"hidden" }}>
+    <div className="card" style={{ padding:0, overflow:"hidden" }}>
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
                     padding:"14px 18px", borderBottom:"1px solid #e3e7e5", gap:12, flexWrap:"wrap" }}>
@@ -1403,7 +1385,7 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
       {moveModeBooking && (
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, padding:"8px 18px", background:"#ecfeff", borderBottom:"1px solid #bae6fd", fontSize:12, color:"#154038" }}>
           <span>מצב העברה פעיל עבור <strong>{moveModeBooking.customer_name}</strong> — בחר רכב יעד מהגריד</span>
-          <button onClick={cancelMoveMode} style={{ ...chipStyle, padding:"4px 10px" }}>בטל מצב העברה</button>
+          <button onClick={cancelMoveMode} className="chip" style={{ padding:"4px 10px" }}>בטל מצב העברה</button>
         </div>
       )}
 
@@ -1752,22 +1734,10 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
 
 
 const fieldWrap = { display:"flex", flexDirection:"column", gap:6, minWidth:160 };
-const fieldLabel = { fontSize:12, color:"#707774", fontWeight:600 };
-const inputStyle = {
-  border:"1px solid #ccd2cf", borderRadius:12, padding:"0 12px", fontSize:13,
-  background:"#fff", color:"#141816", height:38, boxSizing:"border-box",
-  display:"block",
-};
-const chipStyle = {
-  padding:"8px 10px", borderRadius:999, border:"1px solid #ccd2cf", background:"#fff",
-  color:"#404643", fontSize:12, fontWeight:600, cursor:"pointer",
-};
-const activeChip = { ...chipStyle, background:"#154038", color:"#fff", borderColor:"#154038" };
 const gth = { padding:"6px 6px", fontWeight:700, borderBottom:"2px solid #e3e7e5",
               textAlign:"center", fontSize:11, color:"#59605d", whiteSpace:"nowrap" };
 const gtd = { padding:"5px 6px", borderBottom:"1px solid #eff3f1", fontSize:12 };
 const miniTag = { fontSize:8, fontWeight:700, color:"#fff", borderRadius:999, padding:"1px 5px" };
-const cardStyle = { background:"#fff", borderRadius:16, boxShadow:"0 1px 2px rgba(20,24,22,0.04), 0 3px 10px rgba(20,24,22,0.05)" };
 const cardTitle = { margin:"0 0 16px", fontSize:15, fontWeight:700, color:"#272c2a" };
 const multiSelectBox = {
   border:"1px solid #ccd2cf", borderRadius:12, background:"#fff",
