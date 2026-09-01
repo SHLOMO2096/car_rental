@@ -17,12 +17,12 @@ export default function BookingsHeader({
           placeholder="לקוח, טלפון, רכב..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          style={{ ...s.searchInput, minWidth: isMobile ? "100%" : 220 }}
+          className="input" style={{ minWidth: isMobile ? "100%" : 220 }}
         />
         <select
           value={statusFilter}
           onChange={(e) => onStatusChange(e.target.value)}
-          style={{ ...s.select, width: isMobile ? "100%" : "auto" }}
+          className="input" style={{ width: isMobile ? "100%" : "auto" }}
         >
           <option value="all">כל הסטטוסים</option>
           {STATUS_OPTIONS.map((o) => (
@@ -31,7 +31,7 @@ export default function BookingsHeader({
             </option>
           ))}
         </select>
-        <button onClick={onOpenCreate} style={{ ...s.btnPrimary, width: isMobile ? "100%" : "auto" }}>
+        <button onClick={onOpenCreate} className="btn btn--primary" style={{ width: isMobile ? "100%" : "auto" }}>
           + הזמנה חדשה
         </button>
       </div>

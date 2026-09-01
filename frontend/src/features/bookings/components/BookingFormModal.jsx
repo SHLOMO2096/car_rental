@@ -82,11 +82,11 @@ export default function BookingFormModal({
     <Modal open={open} onClose={onClose} title={isCreate ? "הזמנה חדשה" : "עריכת הזמנה"} wide>
       <div style={{ ...s.formGrid, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
         <div style={{ gridColumn: "1/-1" }}>
-          <label style={s.label}>רכב *</label>
+          <label className="label">רכב *</label>
           <select
             value={form.car_id}
             onChange={(e) => setForm((f) => ({ ...f, car_id: e.target.value }))}
-            style={s.input}
+            className="input"
             disabled={isEdit}
           >
             <option value="">— בחר רכב —</option>
@@ -113,12 +113,12 @@ export default function BookingFormModal({
         </div>
 
         <div>
-          <label style={s.label}>שם לקוח *</label>
+          <label className="label">שם לקוח *</label>
           <div style={{ position: "relative" }}>
             <input
               value={form.customer_name}
               onChange={(e) => setForm((f) => ({ ...f, customer_id: "", customer_name: e.target.value, customer_id_num: "" }))}
-              style={s.input}
+              className="input"
               placeholder="הקלד לפחות 2 תווים לחיפוש לקוח"
             />
             {isCreate && !form.customer_id && form.customer_name.trim().length >= 2 && (
@@ -142,12 +142,12 @@ export default function BookingFormModal({
         </div>
 
         <div>
-          <label style={s.label}>אימייל (לאישור)</label>
+          <label className="label">אימייל (לאישור)</label>
           <input
             type="email"
             value={form.customer_email}
             onChange={(e) => setForm((f) => ({ ...f, customer_email: e.target.value, customer_has_no_email: false }))}
-            style={s.input}
+            className="input"
             disabled={form.customer_has_no_email}
             placeholder={form.customer_has_no_email ? "סומן שאין מייל ללקוח" : "name@example.com"}
           />
@@ -170,17 +170,17 @@ export default function BookingFormModal({
         </div>
 
         <div>
-          <label style={s.label}>טלפון</label>
-          <input value={form.customer_phone} onChange={(e) => setForm((f) => ({ ...f, customer_phone: e.target.value }))} style={s.input} />
+          <label className="label">טלפון</label>
+          <input value={form.customer_phone} onChange={(e) => setForm((f) => ({ ...f, customer_phone: e.target.value }))} className="input" />
         </div>
 
         <div>
-          <label style={s.label}>מספר זהות</label>
-          <input value={form.customer_id_num} onChange={(e) => setForm((f) => ({ ...f, customer_id_num: e.target.value }))} style={s.input} />
+          <label className="label">מספר זהות</label>
+          <input value={form.customer_id_num} onChange={(e) => setForm((f) => ({ ...f, customer_id_num: e.target.value }))} className="input" />
         </div>
 
         <div>
-          <label style={s.label}>
+          <label className="label">
             מתאריך * <span style={s.timeHint}>שעת איסוף</span>
           </label>
           <div style={{ display: "flex", gap: 6 }}>
@@ -199,7 +199,7 @@ export default function BookingFormModal({
                   };
                 })
               }
-              style={{ ...s.input, flex: 2 }}
+              className="input" style={{ flex: 2 }}
             />
             <input
               type="text"
@@ -209,13 +209,13 @@ export default function BookingFormModal({
               value={form.start_time}
               onChange={(e) => setForm((f) => ({ ...f, start_time: sanitizeTimeTyping(e.target.value) }))}
               onBlur={(e) => setForm((f) => ({ ...f, start_time: clampTimeValue(e.target.value) }))}
-              style={{ ...s.input, flex: 1, textAlign: "center" }}
+              className="input" style={{ flex: 1, textAlign: "center" }}
             />
           </div>
         </div>
 
         <div>
-          <label style={s.label}>
+          <label className="label">
             עד תאריך * <span style={s.timeHint}>שעת החזרה</span>
           </label>
           <div style={{ display: "flex", gap: 6 }}>
@@ -224,7 +224,7 @@ export default function BookingFormModal({
               value={form.end_date}
               min={form.start_date}
               onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
-              style={{ ...s.input, flex: 2 }}
+              className="input" style={{ flex: 2 }}
             />
             <input
               type="text"
@@ -234,7 +234,7 @@ export default function BookingFormModal({
               value={form.end_time}
               onChange={(e) => setForm((f) => ({ ...f, end_time: sanitizeTimeTyping(e.target.value) }))}
               onBlur={(e) => setForm((f) => ({ ...f, end_time: clampTimeValue(e.target.value) }))}
-              style={{ ...s.input, flex: 1, textAlign: "center" }}
+              className="input" style={{ flex: 1, textAlign: "center" }}
             />
           </div>
 
@@ -261,23 +261,23 @@ export default function BookingFormModal({
         </div>
 
         <div style={{ gridColumn: "1/-1" }}>
-          <label style={s.label}>הערות</label>
+          <label className="label">הערות</label>
           <textarea
             value={form.notes}
             rows={2}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-            style={{ ...s.input, resize: "vertical" }}
+            className="input" style={{ resize: "vertical" }}
           />
         </div>
 
         {isCrossAgentEdit && (
           <div style={{ gridColumn: "1/-1" }}>
-            <label style={s.label}>הערת מפעיל *</label>
+            <label className="label">הערת מפעיל *</label>
             <textarea
               value={form.operator_note}
               rows={2}
               onChange={(e) => setForm((f) => ({ ...f, operator_note: e.target.value }))}
-              style={{ ...s.input, resize: "vertical", borderColor: "#fdba74", background: "#fff7ed" }}
+              className="input" style={{ resize: "vertical", borderColor: "#fdba74", background: "#fff7ed" }}
               placeholder="הסבר קצר למה נדרשת עריכה של הזמנה שנוצרה על ידי סוכן אחר"
             />
           </div>
@@ -286,7 +286,7 @@ export default function BookingFormModal({
 
       {/* Price preview */}
       {preview?.show && (
-        <div style={s.pricePreview}>
+        <div className="alert">
           {preview.loading ? (
             <span>⏳ מחשב מחיר...</span>
           ) : preview.result ? (
@@ -325,7 +325,7 @@ export default function BookingFormModal({
                 price_override: f.price_override || (preview?.result?.total != null ? String(preview.result.total) : ""),
               }))
             }
-            style={{ ...s.btnSecondary, fontSize: 13, padding: "6px 12px" }}
+            className="btn btn--secondary" style={{ fontSize: 13, padding: "6px 12px" }}
           >
             <Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> שינוי מחיר ידני
           </button>
@@ -350,22 +350,22 @@ export default function BookingFormModal({
                 בטל שינוי מחיר
               </button>
             </div>
-            <label style={s.label}>מחיר חדש (₪) *</label>
+            <label className="label">מחיר חדש (₪) *</label>
             <input
               type="number"
               min="0"
               step="1"
               value={form.price_override}
               onChange={(e) => setForm((f) => ({ ...f, price_override: e.target.value }))}
-              style={s.input}
+              className="input"
               placeholder="לדוגמה: 450"
             />
-            <label style={{ ...s.label, marginTop: 8 }}>סיבת השינוי *</label>
+            <label className="label" style={{ marginTop: 8 }}>סיבת השינוי *</label>
             <textarea
               value={form.price_override_reason}
               rows={2}
               onChange={(e) => setForm((f) => ({ ...f, price_override_reason: e.target.value }))}
-              style={{ ...s.input, resize: "vertical" }}
+              className="input" style={{ resize: "vertical" }}
               placeholder="למשל: לקוח קבוע, תיקון טעות תמחור וכו'"
             />
             <div style={{ fontSize: 12, color: "#9a3412", marginTop: 6 }}>
@@ -376,10 +376,10 @@ export default function BookingFormModal({
       </div>
 
       {startInPast && (
-        <div style={s.warningBox}><AlertTriangle size={13} strokeWidth={1.9} aria-hidden="true" /> שים לב: תאריך/שעת האיסוף שנבחרו כבר עברו</div>
+        <div className="alert alert--warning"><AlertTriangle size={13} strokeWidth={1.9} aria-hidden="true" /> שים לב: תאריך/שעת האיסוף שנבחרו כבר עברו</div>
       )}
 
-      {formError && <div style={s.errorBox}>{formError}</div>}
+      {formError && <div className="alert alert--error">{formError}</div>}
 
       {/* Audit info strip — shown in edit mode */}
       {isEdit && editBooking && (
@@ -462,11 +462,11 @@ export default function BookingFormModal({
         </div>
       )}
 
-      <div style={s.modalFooter}>
-        <button onClick={onClose} style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}>
+      <div className="modal-footer">
+        <button onClick={onClose} className="btn btn--secondary" style={{ width: isMobile ? "100%" : "auto" }}>
           ביטול
         </button>
-        <button onClick={onSave} disabled={saving} style={{ ...s.btnPrimary, width: isMobile ? "100%" : "auto" }}>
+        <button onClick={onSave} disabled={saving} className="btn btn--primary" style={{ width: isMobile ? "100%" : "auto" }}>
           {saving ? "שומר..." : isCreate ? "אשר הזמנה" : "שמור שינויים"}
         </button>
       </div>

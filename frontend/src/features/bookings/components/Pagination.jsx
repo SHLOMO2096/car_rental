@@ -9,11 +9,8 @@ export default function Pagination({ page, totalPages, onChange }) {
         <button
           key={p}
           onClick={() => onChange(p)}
-          style={{
-            ...s.pageBtn,
-            background: p === page ? "#154038" : "#eff3f1",
-            color: p === page ? "#fff" : "#59605d",
-          }}
+          className="btn btn--secondary" style={{ background: p === page ? "#154038" : "#eff3f1",
+            color: p === page ? "#fff" : "#59605d", }}
         >
           {p}
         </button>

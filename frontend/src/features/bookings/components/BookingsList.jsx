@@ -39,12 +39,12 @@ export default function BookingsList({
 
   if (!isMobile) {
     return (
-      <div {...dragScroll.bind} style={{ ...s.tableWrap, ...dragScroll.style }}>
-        <table style={s.table}>
+      <div {...dragScroll.bind} className="table-wrap" style={{ ...dragScroll.style }}>
+        <table className="table">
           <thead>
             <tr style={{ background: "#f7faf8" }}>
               {["#", "לקוח", "רכב", "מתאריך", "עד תאריך", "סכום", "סטטוס", "פעולות"].map((h) => (
-                <th key={h} style={s.th}>
+                <th key={h}>
                   {h}
                 </th>
               ))}
@@ -56,11 +56,11 @@ export default function BookingsList({
               const st = statusMap[b.status] || statusMap.cancelled;
               const overdue = isBookingOverdue(b);
               return (
-                <tr key={b.id} style={s.tr}>
-                  <td style={s.td}>
-                    <span style={s.idBadge}>#{b.id}</span>
+                <tr key={b.id}>
+                  <td>
+                    <span className="badge">#{b.id}</span>
                   </td>
-                  <td style={s.td}>
+                  <td>
                     {b.status === "active" && b.customer_id ? (
                       <button
                         type="button"
@@ -78,15 +78,15 @@ export default function BookingsList({
                     {b.customer_email && <div style={s.sub}>{b.customer_email}</div>}
                     <BookingAuditMeta b={b} />
                   </td>
-                  <td style={s.td}>
+                  <td>
                     <div style={{ fontWeight: 600 }}>{car?.name || "—"}</div>
                     {car && <div style={s.sub}>{car.plate}</div>}
                   </td>
-                  <td style={s.td}>
+                  <td>
                     <div>{formatDate(b.start_date)}</div>
                     {b.status === "active" && <div style={s.sub}>איסוף: {b.pickup_time || "08:00"}</div>}
                   </td>
-                  <td style={s.td}>
+                  <td>
                     <div style={{ color: overdue ? "#dc2626" : "inherit", fontWeight: overdue ? "bold" : "normal" }}>
                       {formatDate(b.end_date)}
                     </div>
@@ -97,12 +97,12 @@ export default function BookingsList({
                       <div style={{ fontSize: 10, color: "#dc2626", fontWeight: "bold", marginTop: 4 }}><AlertTriangle size={11} strokeWidth={1.9} aria-hidden="true" /> חלף זמן החזרה</div>
                     )}
                   </td>
-                  <td style={s.td}>
+                  <td>
                     <span style={{ fontWeight: 700, color: "#154038" }}>
                       {b.total_price ? `₪${b.total_price.toLocaleString()}` : "—"}
                     </span>
                   </td>
-                  <td style={s.td}>
+                  <td>
                     <Badge label={st.label} color={st.color} />
                     {b.email_sent && (
                       <span title="אימייל נשלח" style={{ marginInlineStart: 4 }}>
@@ -110,7 +110,7 @@ export default function BookingsList({
                       </span>
                     )}
                   </td>
-                  <td style={s.td}>
+                  <td>
                     <div style={actionsToolbar}>
                       {/* פעולות מהירות מופיעות רק כשהן רלוונטיות — הזמנה
                           שחלף מועדה. השאר יושבות בתפריט. */}
@@ -183,9 +183,9 @@ export default function BookingsList({
         const overdue = isBookingOverdue(b);
 
         return (
-          <div key={b.id} style={s.mobileCard}>
+          <div key={b.id} className="card">
             <div style={s.mobileCardHead}>
-              <span style={s.idBadge}>#{b.id}</span>
+              <span className="badge">#{b.id}</span>
               <Badge label={st.label} color={st.color} />
             </div>
 

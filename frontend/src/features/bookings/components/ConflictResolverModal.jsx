@@ -84,7 +84,7 @@ export default function ConflictResolverModal({
 
           <div style={s.conflictFilters}>
             <label style={s.conflictFilterField}>
-              <span style={s.conflictFilterLabel}>
+              <span className="label">
                 קטגוריה
                 {conflictModal.categoryFilter.length > 0 && (
                   <button
@@ -122,7 +122,7 @@ export default function ConflictResolverModal({
             </label>
 
             <label style={s.conflictFilterField}>
-              <span style={s.conflictFilterLabel}>
+              <span className="label">
                 דגם
                 {conflictModal.modelFilter.length > 0 && (
                   <button
@@ -194,24 +194,24 @@ export default function ConflictResolverModal({
             </label>
 
             <label style={s.conflictFilterField}>
-              <span style={s.conflictFilterLabel}>מתאריך</span>
+              <span className="label">מתאריך</span>
               <input
                 type="date"
                 value={conflictModal.viewStart}
                 onChange={(e) => onUpdateFilters({ viewStart: e.target.value })}
-                style={s.conflictFilterInput}
+                className="input"
                 disabled={resolvingConflict}
               />
             </label>
 
             <label style={s.conflictFilterField}>
-              <span style={s.conflictFilterLabel}>עד תאריך (מינימום שבוע)</span>
+              <span className="label">עד תאריך (מינימום שבוע)</span>
               <input
                 type="date"
                 value={conflictModal.viewEnd}
                 min={addDays(conflictModal.viewStart, 6)}
                 onChange={(e) => onUpdateFilters({ viewEnd: e.target.value })}
-                style={s.conflictFilterInput}
+                className="input"
                 disabled={resolvingConflict}
               />
             </label>
@@ -383,7 +383,7 @@ export default function ConflictResolverModal({
             <button
               onClick={onClose}
               disabled={resolvingConflict}
-              style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}
+              className="btn btn--secondary" style={{ width: isMobile ? "100%" : "auto" }}
             >
               סגור
             </button>
