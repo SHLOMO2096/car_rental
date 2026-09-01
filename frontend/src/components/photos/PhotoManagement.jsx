@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Modal from "../ui/Modal";
+import ActionMenu from "../ui/ActionMenu";
 import { X, ChevronRight, ChevronLeft, Camera, Images, FolderOpen } from "lucide-react";
 
 /**
@@ -201,65 +202,32 @@ export function CameraCaptureModal({ bookingId, onClose, onCapture }) {
 /**
  * PhotoMenu - Unified menu for photo actions.
  */
-export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpen, onToggle, variant = "default" }) {
+export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, variant = "default" }) {
   const photoCount = booking.drive_link ? booking.drive_link.split(",").filter(Boolean).length : 0;
   const fileInputRef = useRef(null);
 
   function handleFileChange(e) {
     if (e.target.files?.length > 0) {
       onUpload(e.target.files);
-      onToggle();
       e.target.value = "";
     }
   }
 
-  function handlePickFiles(e) {
-    e.stopPropagation();
-    // Close the dropdown first, then open file picker via ref
-    onToggle();
-    // Small delay so the overlay unmounts before the file dialog opens,
-    // preventing the overlay's click handler from firing when the dialog closes.
-    setTimeout(() => fileInputRef.current?.click(), 50);
-  }
-
-  const btnStyle =
-    variant === "compact"
-      ? {
-          background: photoCount > 0 ? "#eef5f2" : "#f7faf8",
-          color: photoCount > 0 ? "#154038" : "#59605d",
-          border: "1px solid",
-          borderColor: photoCount > 0 ? "#b9d4cb" : "#e3e7e5",
-          width: 34,
-          height: 34,
-          padding: 0,
-          borderRadius: 14,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontWeight: 800,
-          cursor: "pointer",
-          fontSize: 15,
-          position: "relative",
-        }
-      : {
-          background: photoCount > 0 ? "#eef5f2" : "#f7faf8",
-          color: photoCount > 0 ? "#154038" : "#59605d",
-          border: "1px solid",
-          borderColor: photoCount > 0 ? "#b9d4cb" : "#e3e7e5",
-          padding: "8px 16px",
-          borderRadius: 12,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          fontWeight: 700,
-          cursor: "pointer",
-          fontSize: 13,
-          position: "relative",
-        };
+  // התפריט נסגר לפני שהפעולה רצה (ראו choose ב-ActionMenu), אז דיאלוג
+  // הקבצים נפתח על מסך נקי ולא מתחת לשכבה שנסגרת.
+  const items = [
+    photoCount > 0 && {
+      label: `גלריית תמונות (${photoCount})`, Icon: Images, onSelect: onView,
+    },
+    { label: "צילום רציף", Icon: Camera, onSelect: onContinuousCamera },
+    {
+      label: "בחר מהגלריה", Icon: FolderOpen,
+      onSelect: () => setTimeout(() => fileInputRef.current?.click(), 0),
+    },
+  ];
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
-      {/* Hidden file input - rendered outside the dropdown overlay to avoid event conflicts */}
+    <>
       <input
         ref={fileInputRef}
         type="file"
@@ -268,83 +236,13 @@ export function PhotoMenu({ booking, onView, onUpload, onContinuousCamera, isOpe
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
-
-      <button onClick={(e) => { e.stopPropagation(); onToggle(); }} style={btnStyle} title="ניהול תמונות">
-        {variant === "compact" ? <Camera size={15} strokeWidth={1.9} aria-hidden="true" /> : <><Camera size={15} strokeWidth={1.9} aria-hidden="true" /> תמונות</>}
-        {photoCount > 0 && (
-          <span
-            style={{
-              fontSize: 11,
-              background: "#154038",
-              color: "#fff",
-              borderRadius: 99,
-              minWidth: 18,
-              height: 18,
-              padding: "0 5px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: variant === "compact" ? "absolute" : "static",
-              top: variant === "compact" ? -6 : undefined,
-              left: variant === "compact" ? -6 : undefined,
-              boxShadow: variant === "compact" ? "0 6px 18px rgba(29,78,216,0.25)" : undefined,
-            }}
-          >
-            {photoCount}
-          </span>
-        )}
-      </button>
-
-      {isOpen && (
-        <>
-          <div 
-            style={{ position: "fixed", inset: 0, zIndex: 10001 }} 
-            onClick={(e) => { e.stopPropagation(); onToggle(); }} 
-          />
-          <div style={{
-            position: "absolute", bottom: "100%", left: 0, marginBottom: 8,
-            zIndex: 10002, background: "#fff", borderRadius: 16, 
-            boxShadow: "0 10px 40px rgba(0,0,0,0.2)", border: "1px solid #e3e7e5",
-            minWidth: 190, overflow: "hidden"
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: "10px 14px", borderBottom: "1px solid #eff3f1", fontWeight: 700, fontSize: 12, color: "#707774", background: "#f7faf8" }}>
-              פעולות תמונה #{booking.id}
-            </div>
-            
-            {photoCount > 0 && (
-              <button 
-                onClick={() => { onView(); onToggle(); }}
-                style={{ 
-                  width: "100%", textAlign: "right", padding: "12px 16px", border: "none", 
-                  background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center"
-                }}
-              >
-                <Images size={15} strokeWidth={1.9} aria-hidden="true" /> גלריית תמונות ({photoCount})
-              </button>
-            )}
-
-            <button 
-              onClick={() => { onContinuousCamera(); onToggle(); }}
-              style={{ 
-                width: "100%", textAlign: "right", padding: "12px 16px", border: "none", 
-                background: "#f0f9ff", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", color: "#1b5348", fontWeight: 700
-              }}
-            >
-              <Camera size={15} strokeWidth={1.9} aria-hidden="true" /> צילום רציף
-            </button>
-
-            <button
-              onClick={handlePickFiles}
-              style={{
-                width: "100%", textAlign: "right", padding: "12px 16px", border: "none",
-                background: "transparent", cursor: "pointer", fontSize: 13, display: "flex", gap: 10, alignItems: "center", borderTop: "1px solid #eff3f1"
-              }}
-            >
-              <FolderOpen size={15} strokeWidth={1.9} aria-hidden="true" /> בחר מהגלריה
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+      <ActionMenu
+        Icon={Camera}
+        badge={photoCount}
+        align={variant === "compact" ? "end" : "start"}
+        label={`תמונות להזמנה ${booking.id}`}
+        items={items}
+      />
+    </>
   );
 }

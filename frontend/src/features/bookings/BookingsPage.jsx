@@ -73,7 +73,6 @@ export default function BookingsPage() {
   const [dateFilter, setDateFilter] = useState("all"); // 'all' | 'today' | 'tomorrow' | 'custom'
   const [customDate, setCustomDate] = useState("");
 
-  const [activePhotoMenu, setActivePhotoMenu] = useState(null);
 
   const { uploadQueue, uploadPhotos, clearUploadQueue } = usePhotoUploadQueue({
     uploadPhoto: bookingsAPI.uploadPhoto,
@@ -401,8 +400,6 @@ export default function BookingsPage() {
         carsMap={carsMap}
         isMobile={isMobile}
         canDeleteBookings={canDeleteBookings}
-        activePhotoMenu={activePhotoMenu}
-        onTogglePhotoMenu={setActivePhotoMenu}
         onOpenEdit={openEdit}
         onOpenCustomerFromBooking={openCustomerFromBooking}
         onRequestDelete={(b) => {

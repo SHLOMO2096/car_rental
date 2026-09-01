@@ -16,7 +16,13 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 
-export default function ActionMenu({ label = "פעולות נוספות", items = [], align = "start" }) {
+export default function ActionMenu({
+  label = "פעולות נוספות",
+  items = [],
+  align = "start",
+  Icon = MoreHorizontal,   // אפשר טריגר אחר (למשל מצלמה) בלי לשכפל את התפריט
+  badge = null,            // מונה קטן על הטריגר
+}) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const wrapRef = useRef(null);
@@ -102,10 +108,12 @@ export default function ActionMenu({ label = "פעולות נוספות", items 
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
+        style={badge > 0 ? { position: "relative", overflow: "visible" } : undefined}
         onClick={() => (open ? setOpen(false) : openWith(-1))}
         onKeyDown={onTriggerKeyDown}
       >
-        <MoreHorizontal size={17} strokeWidth={2} aria-hidden="true" />
+        <Icon size={17} strokeWidth={2} aria-hidden="true" />
+        {badge > 0 && <span className="action-menu__badge">{badge}</span>}
       </button>
 
       {open && (

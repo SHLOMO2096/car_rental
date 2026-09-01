@@ -14,8 +14,6 @@ export default function BookingsList({
   carsMap,
   isMobile,
   canDeleteBookings,
-  activePhotoMenu,
-  onTogglePhotoMenu,
   onOpenEdit,
   onOpenCustomerFromBooking,
   onRequestDelete,
@@ -139,8 +137,6 @@ export default function BookingsList({
                           onView={() => onViewPhotos(b)}
                           onUpload={(files) => onUploadPhotos(b.id, files)}
                           onContinuousCamera={() => onContinuousCamera(b.id)}
-                          isOpen={activePhotoMenu === b.id}
-                          onToggle={() => onTogglePhotoMenu(activePhotoMenu === b.id ? null : b.id)}
                           variant="compact"
                         />
                       )}
@@ -247,8 +243,6 @@ export default function BookingsList({
                     onView={() => onViewPhotos(b)}
                     onUpload={(files) => onUploadPhotos(b.id, files)}
                     onContinuousCamera={() => onContinuousCamera(b.id)}
-                    isOpen={activePhotoMenu === b.id}
-                    onToggle={() => onTogglePhotoMenu(activePhotoMenu === b.id ? null : b.id)}
                     variant="compact"
                   />
                 )}

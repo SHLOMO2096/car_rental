@@ -949,7 +949,6 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteOperatorNote, setDeleteOperatorNote] = useState("");
   const [viewPhotos, setViewPhotos] = useState(null);
-  const [activePhotoMenu, setActivePhotoMenu] = useState(null);
   const [uploadQueue, setUploadQueue] = useState([]);
   const [cameraCapture, setCameraCapture] = useState(null); // bookingId
   const [reassignOperatorNote, setReassignOperatorNote] = useState("");
@@ -1057,7 +1056,6 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
       return;
     }
     setBookingAction(null);
-    setActivePhotoMenu(null);
     setMoveModeBooking(booking);
     setDragBooking(null);
     setDragOverCarId(null);
@@ -1318,7 +1316,7 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
         <BookingActionModal
           booking={bookingAction.booking}
           carName={bookingAction.carName}
-          onClose={() => { setBookingAction(null); setActivePhotoMenu(null); }}
+          onClose={() => setBookingAction(null)}
           onDelete={permissionModel.canDeleteBooking(bookingAction.booking) ? (() => {
             setConfirmDeleteBooking(bookingAction.booking);
             setBookingAction(null);
@@ -1337,8 +1335,6 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
                onView={() => setViewPhotos(bookingAction.booking)}
                onUpload={(files) => handlePhotoUpload(bookingAction.booking.id, files)}
                onContinuousCamera={() => setCameraCapture(bookingAction.booking.id)}
-               isOpen={activePhotoMenu === bookingAction.booking.id}
-               onToggle={() => setActivePhotoMenu(activePhotoMenu === bookingAction.booking.id ? null : bookingAction.booking.id)}
             />
           ) : null}
           canReassign={permissionModel.canReassignBooking(bookingAction.booking)}
