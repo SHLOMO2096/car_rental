@@ -365,7 +365,7 @@ export default function Customers() {
               </button>
               {canSendBulkEmail && (
                 <button onClick={openBulkEmail}
-                  style={{ ...s.btnEmailPrimary, flex: 1, minWidth: 0 }}><Megaphone size={14} strokeWidth={1.9} aria-hidden="true" /> הודעה המונית</button>
+                  className="btn btn--primary" style={{ flex: 1, minWidth: 0 }}><Megaphone size={14} strokeWidth={1.9} aria-hidden="true" /> הודעה המונית</button>
               )}
             </div>
           </div>
@@ -375,13 +375,13 @@ export default function Customers() {
               placeholder="חיפוש לפי שם / טלפון / מייל / תעודת זהות"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ ...s.searchInput, minWidth: 320 }}
+              className="input" style={{ minWidth: 320 }}
             />
             <button onClick={() => fileInputRef.current?.click()} disabled={importing} style={s.btnImport}>
               {importing ? "מייבא..." : <><Upload size={14} strokeWidth={1.9} aria-hidden="true" /> ייבוא לקוחות</>}
             </button>
             {canSendBulkEmail && (
-              <button onClick={openBulkEmail} style={s.btnEmailPrimary}><Megaphone size={14} strokeWidth={1.9} aria-hidden="true" /> הודעה לכל הלקוחות</button>
+              <button onClick={openBulkEmail} className="btn btn--primary"><Megaphone size={14} strokeWidth={1.9} aria-hidden="true" /> הודעה לכל הלקוחות</button>
             )}
           </div>
         )}
@@ -390,25 +390,25 @@ export default function Customers() {
       <div style={s.card}>
         <h3 style={s.cardTitle}>הוספת לקוח</h3>
         <div style={s.formGrid}>
-          <input value={form.name} placeholder="שם לקוח *" onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} style={s.input} />
-          <input value={form.id_number} placeholder="תעודת זהות / ח.פ" onChange={(e) => setForm((f) => ({ ...f, id_number: e.target.value }))} style={s.input} />
-          <input value={form.phone} placeholder="טלפון" onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} style={s.input} />
-          <input value={form.email} placeholder="אימייל" onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} style={s.input} />
-          <input value={form.address} placeholder="כתובת" onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} style={{ ...s.input, gridColumn: "1/-1" }} />
+          <input value={form.name} placeholder="שם לקוח *" onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="input" />
+          <input value={form.id_number} placeholder="תעודת זהות / ח.פ" onChange={(e) => setForm((f) => ({ ...f, id_number: e.target.value }))} className="input" />
+          <input value={form.phone} placeholder="טלפון" onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} className="input" />
+          <input value={form.email} placeholder="אימייל" onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="input" />
+          <input value={form.address} placeholder="כתובת" onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="input" style={{ gridColumn: "1/-1" }} />
         </div>
         <div style={{ marginTop: 10 }}>
-          <button onClick={handleCreate} disabled={saving} style={{ ...s.btnPrimary, width: isMobile ? "100%" : "auto" }}>{saving ? "שומר..." : "שמור לקוח"}</button>
+          <button onClick={handleCreate} disabled={saving} className="btn btn--primary" style={{ width: isMobile ? "100%" : "auto" }}>{saving ? "שומר..." : "שמור לקוח"}</button>
         </div>
       </div>
 
       <div style={s.counter}>{customers.length} לקוחות מוצגים</div>
 
       {!isMobile ? (
-            <div {...modalTableDrag.bind} style={{ ...s.historyTableWrap, ...modalTableDrag.style }}>
-          <table style={s.table}>
+            <div {...modalTableDrag.bind} className="table-wrap" style={{ ...modalTableDrag.style }}>
+          <table className="table">
             <thead>
               <tr style={{ background: "#f7faf8" }}>
-                {["#", "שם", "ת.ז / ח.פ", "כתובת", "טלפון", "מייל", "פעולות"].map((h) => <th key={h} style={s.th}>{h}</th>)}
+                {["#", "שם", "ת.ז / ח.פ", "כתובת", "טלפון", "מייל", "פעולות"].map((h) => <th key={h}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -422,13 +422,13 @@ export default function Customers() {
                   ...(highlightId === c.id ? { background:"#fef9c3", outline:"2px solid #f59e0b" } : {}),
                   transition:"background 0.5s",
                 }}>
-                  <td style={s.td}>#{c.id}</td>
-                  <td style={s.td}><strong>{c.name}</strong></td>
-                  <td style={s.td}>{c.id_number || "—"}</td>
-                  <td style={s.td}>{c.address || "—"}</td>
-                  <td style={s.td}>{c.phone || "—"}</td>
-                  <td style={s.td}>{c.email || "—"}</td>
-                  <td style={s.td}>
+                  <td>#{c.id}</td>
+                  <td><strong>{c.name}</strong></td>
+                  <td>{c.id_number || "—"}</td>
+                  <td>{c.address || "—"}</td>
+                  <td>{c.phone || "—"}</td>
+                  <td>{c.email || "—"}</td>
+                  <td>
                     <div style={s.actionsWrap}>
                       {/* פעולה ראשית אחת גלויה; השאר בתפריט, כדי שהתא לא
                           יתפרק לשלוש שורות של גלולות צבעוניות. */}
@@ -499,10 +499,10 @@ export default function Customers() {
         {!historyLoading && historyData && (
           <div>
             <div style={s.summaryGrid}>
-              <div style={s.summaryCard}><span style={s.summaryLabel}>סה״כ הזמנות</span><strong>{historyData.summary.total_bookings}</strong></div>
-              <div style={s.summaryCard}><span style={s.summaryLabel}>הזמנות פעילות</span><strong>{historyData.summary.active_bookings}</strong></div>
-              <div style={s.summaryCard}><span style={s.summaryLabel}>הכנסה כוללת</span><strong>₪{Math.round(historyData.summary.total_revenue || 0).toLocaleString()}</strong></div>
-              <div style={s.summaryCard}><span style={s.summaryLabel}>הזמנה אחרונה</span><strong>{formatDate(historyData.summary.last_booking_date)}</strong></div>
+              <div className="card"><span style={s.summaryLabel}>סה״כ הזמנות</span><strong>{historyData.summary.total_bookings}</strong></div>
+              <div className="card"><span style={s.summaryLabel}>הזמנות פעילות</span><strong>{historyData.summary.active_bookings}</strong></div>
+              <div className="card"><span style={s.summaryLabel}>הכנסה כוללת</span><strong>₪{Math.round(historyData.summary.total_revenue || 0).toLocaleString()}</strong></div>
+              <div className="card"><span style={s.summaryLabel}>הזמנה אחרונה</span><strong>{formatDate(historyData.summary.last_booking_date)}</strong></div>
             </div>
 
             <div style={s.historyMeta}>
@@ -512,28 +512,28 @@ export default function Customers() {
               {historyData.customer.address && <span><MapPin size={12} strokeWidth={1.9} aria-hidden="true" /> {historyData.customer.address}</span>}
             </div>
 
-            <div style={s.historyTableWrap}>
-              <table style={s.table}>
+            <div className="table-wrap">
+              <table className="table">
                 <thead>
                   <tr style={{ background: "#f7faf8" }}>
-                    {["#", "רכב", "מתאריך", "עד תאריך", "סטטוס", "סכום", "צילום"].map((h) => <th key={h} style={s.th}>{h}</th>)}
+                    {["#", "רכב", "מתאריך", "עד תאריך", "סטטוס", "סכום", "צילום"].map((h) => <th key={h}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {historyData.bookings.length === 0 ? (
                     <tr><td colSpan={6} style={s.empty}>אין היסטוריית הזמנות ללקוח זה</td></tr>
                   ) : historyData.bookings.map((b) => (
-                    <tr key={b.id} style={s.tr}>
-                      <td style={s.td}>#{b.id}</td>
-                      <td style={s.td}>
+                    <tr key={b.id}>
+                      <td>#{b.id}</td>
+                      <td>
                         {b.car?.name || `רכב #${b.car_id}`}
                         {b.car?.plate && <div style={{ fontSize: 11, color: "#707774", marginTop: 2 }}><IdCard size={11} strokeWidth={1.9} aria-hidden="true" /> {b.car.plate}</div>}
                       </td>
-                      <td style={s.td}>{formatDate(b.start_date)}</td>
-                      <td style={s.td}>{formatDate(b.end_date)}</td>
-                      <td style={s.td}>{STATUS_LABELS[b.status] || b.status}</td>
-                      <td style={s.td}>{b.total_price ? `₪${Math.round(b.total_price).toLocaleString()}` : "—"}</td>
-                      <td style={s.td}>
+                      <td>{formatDate(b.start_date)}</td>
+                      <td>{formatDate(b.end_date)}</td>
+                      <td>{STATUS_LABELS[b.status] || b.status}</td>
+                      <td>{b.total_price ? `₪${Math.round(b.total_price).toLocaleString()}` : "—"}</td>
+                      <td>
                         {b.drive_link ? (
                           <button onClick={() => setViewPhotos(b)} style={{ ...s.btnPhoto, padding: "4px 8px" }} title="צפה בתמונות">
                             <Image size={13} strokeWidth={1.9} aria-hidden="true" /> צפה
@@ -549,7 +549,7 @@ export default function Customers() {
               </table>
             </div>
 
-            <div style={s.modalFooter}>
+            <div className="modal-footer">
               <button onClick={() => historyCustomer && bookForCustomer(historyCustomer)} className="btn btn--primary btn--sm"><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן רכב ללקוח</button>
             </div>
           </div>
@@ -560,27 +560,27 @@ export default function Customers() {
         {importReport && (
           <div>
             <div style={s.summaryGrid}>
-              <div style={s.summaryCard}><span style={s.summaryLabel}>מעובדים</span><strong>{importReport.processed}</strong></div>
-              <div style={s.summaryCard}><span style={s.summaryLabel}>חדשים</span><strong>{importReport.inserted}</strong></div>
-              <div style={s.summaryCard}><span style={s.summaryLabel}>עודכנו</span><strong>{importReport.updated}</strong></div>
-              <div style={s.summaryCard}><span style={s.summaryLabel}>דולגו</span><strong>{importReport.skipped || 0}</strong></div>
+              <div className="card"><span style={s.summaryLabel}>מעובדים</span><strong>{importReport.processed}</strong></div>
+              <div className="card"><span style={s.summaryLabel}>חדשים</span><strong>{importReport.inserted}</strong></div>
+              <div className="card"><span style={s.summaryLabel}>עודכנו</span><strong>{importReport.updated}</strong></div>
+              <div className="card"><span style={s.summaryLabel}>דולגו</span><strong>{importReport.skipped || 0}</strong></div>
             </div>
-            <div style={s.historyTableWrap}>
-              <table style={s.table}>
+            <div className="table-wrap">
+              <table className="table">
                 <thead>
                   <tr style={{ background: "#f7faf8" }}>
-                    {["שורה", "רמה", "שדה", "פירוט"].map((h) => <th key={h} style={s.th}>{h}</th>)}
+                    {["שורה", "רמה", "שדה", "פירוט"].map((h) => <th key={h}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {!importReport.issues || importReport.issues.length === 0 ? (
                     <tr><td colSpan={4} style={s.empty}>אין שגיאות ייבוא</td></tr>
                   ) : importReport.issues.map((issue, idx) => (
-                    <tr key={`${issue.row}-${idx}`} style={s.tr}>
-                      <td style={s.td}>{issue.row || "—"}</td>
-                      <td style={s.td}>{issue.level === "error" ? "שגיאה" : "אזהרה"}</td>
-                      <td style={s.td}>{issue.field || "—"}</td>
-                      <td style={s.td}>{issue.message || "—"}</td>
+                    <tr key={`${issue.row}-${idx}`}>
+                      <td>{issue.row || "—"}</td>
+                      <td>{issue.level === "error" ? "שגיאה" : "אזהרה"}</td>
+                      <td>{issue.field || "—"}</td>
+                      <td>{issue.message || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -592,26 +592,26 @@ export default function Customers() {
 
       <Modal open={!!editCustomer} onClose={() => { setEditCustomer(null); setForm(EMPTY_FORM); }} title={editCustomer ? `עריכת לקוח — ${editCustomer.name}` : "עריכת לקוח"}>
         <div style={{ ...s.formGrid, gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit,minmax(180px,1fr))" }}>
-          <input value={form.name} placeholder="שם לקוח *" onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} style={s.input} />
-          <input value={form.id_number} placeholder="תעודת זהות / ח.פ" onChange={(e) => setForm((f) => ({ ...f, id_number: e.target.value }))} style={s.input} />
-          <input value={form.phone} placeholder="טלפון" onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} style={s.input} />
-          <input value={form.email} placeholder="אימייל" onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} style={s.input} />
-          <input value={form.address} placeholder="כתובת" onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} style={{ ...s.input, gridColumn: "1/-1" }} />
+          <input value={form.name} placeholder="שם לקוח *" onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="input" />
+          <input value={form.id_number} placeholder="תעודת זהות / ח.פ" onChange={(e) => setForm((f) => ({ ...f, id_number: e.target.value }))} className="input" />
+          <input value={form.phone} placeholder="טלפון" onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} className="input" />
+          <input value={form.email} placeholder="אימייל" onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="input" />
+          <input value={form.address} placeholder="כתובת" onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="input" style={{ gridColumn: "1/-1" }} />
         </div>
-        <div style={s.modalFooterActions}>
-          <button onClick={() => { setEditCustomer(null); setForm(EMPTY_FORM); }} style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}>ביטול</button>
-          <button onClick={handleUpdate} disabled={saving} style={{ ...s.btnPrimary, width: isMobile ? "100%" : "auto" }}>{saving ? "שומר..." : "שמור שינויים"}</button>
+        <div className="modal-footer">
+          <button onClick={() => { setEditCustomer(null); setForm(EMPTY_FORM); }} className="btn btn--secondary" style={{ width: isMobile ? "100%" : "auto" }}>ביטול</button>
+          <button onClick={handleUpdate} disabled={saving} className="btn btn--primary" style={{ width: isMobile ? "100%" : "auto" }}>{saving ? "שומר..." : "שמור שינויים"}</button>
         </div>
       </Modal>
 
       <Modal open={!!emailCustomer} onClose={() => { setEmailCustomer(null); setEmailForm(EMPTY_EMAIL_FORM); }} title={emailCustomer ? `שליחת מייל ל-${emailCustomer.name}` : "שליחת מייל"}>
         <div style={s.formGridSingle}>
-          <input value={emailForm.subject} placeholder="נושא" onChange={(e) => setEmailForm((f) => ({ ...f, subject: e.target.value }))} style={s.input} />
-          <textarea value={emailForm.body} rows={7} placeholder="תוכן ההודעה" onChange={(e) => setEmailForm((f) => ({ ...f, body: e.target.value }))} style={{ ...s.input, resize: "vertical" }} />
+          <input value={emailForm.subject} placeholder="נושא" onChange={(e) => setEmailForm((f) => ({ ...f, subject: e.target.value }))} className="input" />
+          <textarea value={emailForm.body} rows={7} placeholder="תוכן ההודעה" onChange={(e) => setEmailForm((f) => ({ ...f, body: e.target.value }))} className="input" style={{ resize: "vertical" }} />
         </div>
-        <div style={s.modalFooterActions}>
-          <button onClick={() => { setEmailCustomer(null); setEmailForm(EMPTY_EMAIL_FORM); }} style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}>ביטול</button>
-          <button onClick={handleSendEmail} disabled={sendingEmail} style={{ ...s.btnEmailPrimary, width: isMobile ? "100%" : "auto" }}>{sendingEmail ? "שולח..." : "שלח מייל"}</button>
+        <div className="modal-footer">
+          <button onClick={() => { setEmailCustomer(null); setEmailForm(EMPTY_EMAIL_FORM); }} className="btn btn--secondary" style={{ width: isMobile ? "100%" : "auto" }}>ביטול</button>
+          <button onClick={handleSendEmail} disabled={sendingEmail} className="btn btn--primary" style={{ width: isMobile ? "100%" : "auto" }}>{sendingEmail ? "שולח..." : "שלח מייל"}</button>
         </div>
       </Modal>
 
@@ -620,7 +620,7 @@ export default function Customers() {
 
           {/* Audience */}
           <div>
-            <label style={s.fieldLabel}><UsersIcon size={13} strokeWidth={1.9} aria-hidden="true" /> קהל יעד</label>
+            <label className="label"><UsersIcon size={13} strokeWidth={1.9} aria-hidden="true" /> קהל יעד</label>
             <div style={s.audienceRow}>
               {AUDIENCE_OPTIONS.map((opt) => (
                 <label key={opt.value} style={{
@@ -643,11 +643,11 @@ export default function Customers() {
 
           {/* Template selector */}
           <div>
-            <label style={s.fieldLabel}><ClipboardList size={13} strokeWidth={1.9} aria-hidden="true" /> תבנית מוכנה</label>
+            <label className="label"><ClipboardList size={13} strokeWidth={1.9} aria-hidden="true" /> תבנית מוכנה</label>
             <select
               defaultValue=""
               onChange={(e) => applyBulkTemplate(e.target.value)}
-              style={s.input}
+              className="input"
             >
               {BULK_TEMPLATES.map((t) => (
                 <option key={t.id} value={t.id}>{t.label}</option>
@@ -657,18 +657,18 @@ export default function Customers() {
 
           {/* Subject */}
           <div>
-            <label style={s.fieldLabel}>נושא המייל</label>
+            <label className="label">נושא המייל</label>
             <input
               value={emailForm.subject}
               placeholder="נושא"
               onChange={(e) => setEmailForm((f) => ({ ...f, subject: e.target.value }))}
-              style={s.input}
+              className="input"
             />
           </div>
 
           {/* Rich text editor */}
           <div>
-            <label style={s.fieldLabel}>תוכן ההודעה</label>
+            <label className="label">תוכן ההודעה</label>
             <RichTextEditor
               key={bulkEditorKey}
               value={emailForm.body}
@@ -676,14 +676,14 @@ export default function Customers() {
             />
           </div>
 
-          <div style={s.infoBox}>
+          <div className="alert">
             ההודעה תישלח לכל הלקוחות עם כתובת מייל בקהל היעד שנבחר.
             אפשר להשתמש בתבניות מוכנות או לכתוב הודעה חופשית.
           </div>
         </div>
-        <div style={s.modalFooterActions}>
-          <button onClick={() => { setBulkEmailOpen(false); setEmailForm(EMPTY_EMAIL_FORM); }} style={{ ...s.btnSecondary, width: isMobile ? "100%" : "auto" }}>ביטול</button>
-          <button onClick={handleSendBulkEmail} disabled={sendingEmail} style={{ ...s.btnEmailPrimary, width: isMobile ? "100%" : "auto" }}>{sendingEmail ? "שולח..." : "שלח לכל הלקוחות"}</button>
+        <div className="modal-footer">
+          <button onClick={() => { setBulkEmailOpen(false); setEmailForm(EMPTY_EMAIL_FORM); }} className="btn btn--secondary" style={{ width: isMobile ? "100%" : "auto" }}>ביטול</button>
+          <button onClick={handleSendBulkEmail} disabled={sendingEmail} className="btn btn--primary" style={{ width: isMobile ? "100%" : "auto" }}>{sendingEmail ? "שולח..." : "שלח לכל הלקוחות"}</button>
         </div>
       </Modal>
 
@@ -705,34 +705,19 @@ const s = {
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" },
   topActions: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
   h1: { fontSize: 24, fontWeight: 800, margin: 0 },
-  searchInput: { minWidth: 320, padding: "8px 14px", borderRadius: 12, border: "1px solid #e3e7e5", fontSize: 14 },
   card: { background: "#fff", border: "1px solid #e3e7e5", borderRadius: 16, padding: 14, marginBottom: 14 },
   cardTitle: { margin: "0 0 10px", fontSize: 14 },
   formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8 },
   formGridSingle: { display: "grid", gap: 12 },
-  fieldLabel: { display: "block", fontSize: 12, fontWeight: 700, color: "#59605d", marginBottom: 6 },
-  input: { width: "100%", padding: "9px 12px", borderRadius: 12, border: "1px solid #e3e7e5", fontSize: 14, boxSizing: "border-box" },
-  btnPrimary: { background: "#154038", color: "#fff", border: "none", borderRadius: 12, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
-  btnSecondary: { background: "#eff3f1", color: "#59605d", border: "1px solid #e3e7e5", borderRadius: 12, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
   btnImport: { background: "#7c3aed", color: "#fff", border: "none", borderRadius: 12, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
-  btnEmailPrimary: { background: "#154038", color: "#fff", border: "none", borderRadius: 12, padding: "8px 14px", fontWeight: 700, cursor: "pointer" },
-  infoBox: { background: "#f0fdfa", color: "#115e59", border: "1px solid #99f6e4", borderRadius: 14, padding: 12, fontSize: 12, lineHeight: 1.7 },
   counter: { fontSize: 13, color: "#707774", marginBottom: 10 },
-  tableWrap: { background: "#fff", borderRadius: 16, overflow: "auto", border: "1px solid #e3e7e5" },
-  table: { width: "100%", borderCollapse: "collapse" },
-  th: { padding: "11px 12px", textAlign: "right", fontSize: 12, color: "#59605d", borderBottom: "1px solid #e3e7e5" },
   tr: { borderBottom: "1px solid #eff3f1" },
-  td: { padding: "10px 12px", fontSize: 13, verticalAlign: "top" },
   empty: { textAlign: "center", padding: 28, color: "#8e9592" },
   actionsWrap: { display: "flex", gap: 6, flexWrap: "wrap" },
   btnPhoto: { background: "#fdf4ff", color: "#a21caf", border: "1px solid #f0abfc", borderRadius: 10, padding: "4px 8px", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "inline-block" },
   summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginBottom: 12 },
-  summaryCard: { background: "#f7faf8", border: "1px solid #e3e7e5", borderRadius: 14, padding: 10, display: "flex", flexDirection: "column", gap: 6 },
   summaryLabel: { color: "#707774", fontSize: 12 },
   historyMeta: { display: "flex", gap: 12, flexWrap: "wrap", color: "#59605d", fontSize: 12, marginBottom: 12 },
-  historyTableWrap: { background: "#fff", borderRadius: 16, overflow: "auto", border: "1px solid #e3e7e5" },
-  modalFooter: { display: "flex", justifyContent: "flex-end", marginTop: 14 },
-  modalFooterActions: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16, flexWrap: "wrap" },
   audienceRow: { display: "flex", gap: 8, flexWrap: "wrap" },
   audienceOption: {
     display: "flex", alignItems: "center", gap: 4,
