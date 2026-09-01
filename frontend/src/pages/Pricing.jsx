@@ -8,9 +8,10 @@ import Modal from "../components/ui/Modal";
 import { useIsMobile } from "../hooks/useIsMobile";
 import {
   CalendarRange, Coins, TrendingUp, Star, ArrowUp, ArrowDown, Pencil, Trash2,
-  Plus, Menu, X, Globe, Check, RefreshCw, Settings2, Hand,
+  Plus, Menu, X, Globe, Check, RefreshCw, Settings2, Hand, ChevronRight, ChevronLeft,
 } from "lucide-react";
 import { useConfirm } from "../hooks/useConfirm";
+import ActionMenu from "../components/ui/ActionMenu";
 
 // ── קבועים ────────────────────────────────────────────────────────────────────
 const ENTITY_HE = {
@@ -252,8 +253,14 @@ function SeasonsTab({ canManage, isMobile }) {
 
               {canManage && (
                 <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                  <button onClick={() => openEdit(s)} style={smallBtn("#e4f2ee", "#1b5348")}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
-                  <button onClick={() => remove(s)}   style={smallBtn("#fef2f2", "#dc2626")}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /> מחק</button>
+                  <ActionMenu
+                    align="end"
+                    label={`פעולות עבור ${s.name}`}
+                    items={[
+                      { label: "עריכת עונה", Icon: Pencil, onSelect: () => openEdit(s) },
+                      { label: "מחיקת עונה", Icon: Trash2, danger: true, onSelect: () => remove(s) },
+                    ]}
+                  />
                 </div>
               )}
             </div>
@@ -1020,8 +1027,14 @@ function SeasonRulesTab({ canManage, isMobile }) {
                   <td style={tdStyle}>
                     {canManage && (
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => openEdit(sr)} style={smallBtn("#e4f2ee", "#1b5348")}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /></button>
-                        <button onClick={() => remove(sr.id)} style={smallBtn("#fef2f2", "#dc2626")}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /></button>
+                        <ActionMenu
+                          align="end"
+                          label="פעולות לכלל העונה"
+                          items={[
+                            { label: "עריכת כלל", Icon: Pencil, onSelect: () => openEdit(sr) },
+                            { label: "מחיקת כלל", Icon: Trash2, danger: true, onSelect: () => remove(sr.id) },
+                          ]}
+                        />
                       </div>
                     )}
                   </td>
@@ -1187,9 +1200,13 @@ function HolidaysTab({ canManage, isMobile }) {
           </>
         )}
         <div style={{ display: "flex", gap: 6, alignItems: "center", marginInlineStart: "auto" }}>
-          <button onClick={() => setYear(y => y - 1)} style={smallBtn("#eff3f1", "#59605d")}>‹</button>
+          <button onClick={() => setYear(y => y - 1)} className="btn btn--icon" aria-label="שנה קודמת">
+            <ChevronRight size={17} strokeWidth={2} aria-hidden="true" />
+          </button>
           <span style={{ fontWeight: 700, color: "#272c2a", fontSize: 15, minWidth: 40, textAlign: "center" }}>{year}</span>
-          <button onClick={() => setYear(y => y + 1)} style={smallBtn("#eff3f1", "#59605d")}>›</button>
+          <button onClick={() => setYear(y => y + 1)} className="btn btn--icon" aria-label="שנה הבאה">
+            <ChevronLeft size={17} strokeWidth={2} aria-hidden="true" />
+          </button>
         </div>
       </div>
 
@@ -1224,8 +1241,14 @@ function HolidaysTab({ canManage, isMobile }) {
                 </div>
                 {canManage && (
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => setForm({ ...h })} style={smallBtn("#e4f2ee", "#1b5348")}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /></button>
-                    <button onClick={() => remove(h)}         style={smallBtn("#fef2f2", "#dc2626")}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /></button>
+                    <ActionMenu
+                      align="end"
+                      label={`פעולות עבור ${h.name}`}
+                      items={[
+                        { label: "עריכת חג", Icon: Pencil, onSelect: () => setForm({ ...h }) },
+                        { label: "מחיקת חג", Icon: Trash2, danger: true, onSelect: () => remove(h) },
+                      ]}
+                    />
                   </div>
                 )}
               </div>
@@ -1275,12 +1298,12 @@ function FormFooter({ saving, onCancel, onSave, onDelete }) {
     <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8, flexWrap: "wrap" }}>
       {onDelete && (
         <button onClick={onDelete} disabled={saving}
-                style={{ ...smallBtn("#fef2f2", "#dc2626"), marginInlineEnd: "auto" }}>
+                className="btn btn--secondary btn--sm" style={{ marginInlineEnd: "auto", color: "var(--c-danger)" }}>
           <Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /> מחק כלל
         </button>
       )}
-      <button onClick={onCancel} disabled={saving} style={smallBtn("#eff3f1", "#59605d")}>ביטול</button>
-      <button onClick={onSave}   disabled={saving} style={btn("#154038")}>
+      <button onClick={onCancel} disabled={saving} className="btn btn--secondary">ביטול</button>
+      <button onClick={onSave}   disabled={saving} className="btn btn--primary">
         {saving ? "שומר..." : "שמור"}
       </button>
     </div>
@@ -1340,11 +1363,6 @@ const btn = (bg) => ({
   whiteSpace: "nowrap",
 });
 
-const smallBtn = (bg, color) => ({
-  background: bg, color, border: `1px solid ${color}30`,
-  borderRadius: 10, padding: "5px 10px", fontSize: 12, cursor: "pointer",
-  fontWeight: 600, whiteSpace: "nowrap",
-});
 
 const rowActionBtn = {
   background: "none", border: "none", cursor: "pointer",

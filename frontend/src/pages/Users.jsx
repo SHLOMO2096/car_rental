@@ -4,7 +4,8 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { useDragScroll } from "../hooks/useDragScroll";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
-import { Pencil } from "lucide-react";
+import { Pencil, Pause, Play } from "lucide-react";
+import ActionMenu from "../components/ui/ActionMenu";
 
 const EMPTY_FORM = { email:"", full_name:"", password:"", role:"agent" };
 
@@ -88,10 +89,16 @@ export default function Users() {
                   <td style={s.td}>{new Date(u.created_at).toLocaleDateString("he-IL")}</td>
                   <td style={s.td}>
                     <div style={{ display:"flex", gap:6 }}>
-                      <button onClick={() => openEdit(u)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
-                      <button onClick={() => toggleActive(u)} style={u.is_active ? s.btnWarn : s.btnSuccess}>
-                        {u.is_active ? "השבת" : "הפעל"}
-                      </button>
+                      <ActionMenu
+                        align="end"
+                        label={`פעולות עבור ${u.full_name}`}
+                        items={[
+                          { label: "עריכת משתמש", Icon: Pencil, onSelect: () => openEdit(u) },
+                          u.is_active
+                            ? { label: "השבתת משתמש", Icon: Pause, onSelect: () => toggleActive(u) }
+                            : { label: "הפעלת משתמש", Icon: Play, onSelect: () => toggleActive(u) },
+                        ]}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -114,10 +121,16 @@ export default function Users() {
                 <span style={{ fontSize:11, color:"#8e9592" }}>נוצר: {new Date(u.created_at).toLocaleDateString("he-IL")}</span>
               </div>
               <div style={{ display:"flex", gap:8 }}>
-                <button onClick={() => openEdit(u)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
-                <button onClick={() => toggleActive(u)} style={u.is_active ? s.btnWarn : s.btnSuccess}>
-                  {u.is_active ? "השבת" : "הפעל"}
-                </button>
+                <ActionMenu
+                  align="end"
+                  label={`פעולות עבור ${u.full_name}`}
+                  items={[
+                    { label: "עריכת משתמש", Icon: Pencil, onSelect: () => openEdit(u) },
+                    u.is_active
+                      ? { label: "השבתת משתמש", Icon: Pause, onSelect: () => toggleActive(u) }
+                      : { label: "הפעלת משתמש", Icon: Play, onSelect: () => toggleActive(u) },
+                  ]}
+                />
               </div>
             </div>
           ))}
@@ -183,12 +196,6 @@ const s = {
                 padding:"8px 18px", fontWeight:700, cursor:"pointer" },
   btnSecondary:{ background:"#eff3f1", color:"#59605d", border:"1px solid #e3e7e5",
                  borderRadius:12, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
-  btnEdit:    { background:"#eef5f2", color:"#2c6b5e", border:"1px solid #b9d4cb",
-                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:12 },
-  btnWarn:    { background:"#fff7ed", color:"#c2410c", border:"1px solid #fed7aa",
-                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:12 },
-  btnSuccess: { background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0",
-                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:12 },
   errorBox:   { background:"#fef2f2", color:"#dc2626", borderRadius:12,
                 padding:"10px 14px", fontSize:13 },
   modalFooter:{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:8 },

@@ -9,7 +9,8 @@ import { settingsAPI } from "../api/settings";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
-import { FolderOpen, Folder, Car as CarIcon, CalendarCheck, CalendarPlus, Pencil } from "lucide-react";
+import { FolderOpen, Folder, Car as CarIcon, CalendarCheck, CalendarPlus, Pencil, Pause, Play, Trash2 } from "lucide-react";
+import ActionMenu from "../components/ui/ActionMenu";
 
 // Removed old CAR_TYPES constant
 
@@ -241,23 +242,33 @@ export default function Cars() {
                                 
                                  {/* מחיר ליום הוסר */}
 
-                                <div style={{ display:"flex", gap:6, marginTop:12, flexWrap:"wrap" }}>
-                                  {car.is_active && (
+                                <div style={{ display:"flex", gap:6, marginTop:12,
+                                              alignItems:"center", justifyContent:"space-between" }}>
+                                  {car.is_active ? (
                                     <button
                                       onClick={() => navigate("/bookings", {
                                         state: { bookingPrefill: { car_id: car.id } }
                                       })}
-                                      style={s.btnBook}><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן
+                                      className="btn btn--secondary btn--sm">
+                                      <CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן
                                     </button>
-                                  )}
+                                  ) : <span />}
+
                                   {canManageCars && (
-                                    <>
-                                      <button onClick={() => openEdit(car)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
-                                      <button onClick={() => toggleActive(car)}
-                                        style={car.is_active ? s.btnWarn : s.btnSuccess}>
-                                        {car.is_active ? "⏸ השבת" : "▶ הפעל"}
-                                      </button>
-                                    </>
+                                    <ActionMenu
+                                      align="end"
+                                      label={`פעולות עבור ${car.name}`}
+                                      items={[
+                                        { label: "עריכת רכב", Icon: Pencil, onSelect: () => openEdit(car) },
+                                        car.is_active
+                                          ? { label: "השבתת רכב", Icon: Pause, onSelect: () => toggleActive(car) }
+                                          : { label: "הפעלת רכב", Icon: Play, onSelect: () => toggleActive(car) },
+                                        canDeleteCars && {
+                                          label: "מחיקה לצמיתות", Icon: Trash2, danger: true,
+                                          onSelect: () => setConfirmPermanentDelete(car),
+                                        },
+                                      ]}
+                                    />
                                   )}
                                 </div>
                               </div>
@@ -399,16 +410,6 @@ const s = {
                 padding:"8px 18px", fontWeight:700, cursor:"pointer", fontSize:14 },
   btnSecondary:{ background:"#eff3f1", color:"#59605d", border:"1px solid #e3e7e5",
                  borderRadius:12, padding:"8px 18px", fontWeight:600, cursor:"pointer" },
-  btnEdit:    { background:"#eef5f2", color:"#2c6b5e", border:"1px solid #b9d4cb",
-                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:13 },
-  btnBook:    { background:"#f0fdf4", color:"#15803d", border:"1px solid #86efac",
-                borderRadius:10, padding:"5px 12px", cursor:"pointer", fontSize:13, fontWeight:700 },
-  btnWarn:    { background:"#fff7ed", color:"#c2410c", border:"1px solid #fed7aa",
-                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:13 },
-  btnSuccess: { background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0",
-                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:13 },
-  btnDanger:  { background:"#fef2f2", color:"#dc2626", border:"1px solid #fecaca",
-                borderRadius:10, padding:"5px 10px", cursor:"pointer", fontSize:13 },
   input:      { width:"100%", padding:"9px 12px", borderRadius:12, border:"1px solid #e3e7e5",
                 fontSize:14, boxSizing:"border-box" },
   label:      { display:"block", fontSize:12, fontWeight:600, color:"#59605d", marginBottom:5 },
