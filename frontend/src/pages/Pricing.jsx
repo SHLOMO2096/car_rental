@@ -193,7 +193,7 @@ function SeasonsTab({ canManage, isMobile }) {
   return (
     <div>
       {canManage && (
-        <button onClick={openNew} style={btn("#154038")}>+ עונה חדשה</button>
+        <button onClick={openNew} className="btn btn--primary">+ עונה חדשה</button>
       )}
 
       {loading ? <Spinner /> : (
@@ -286,7 +286,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <Field label="שם העונה *">
         <input value={form.name || ""} onChange={e => f("name", e.target.value)}
-               style={inp} placeholder="קיץ, חגי תשרי..." />
+               className="input" placeholder="קיץ, חגי תשרי..." />
       </Field>
 
       <Field label="סוג עונה">
@@ -311,7 +311,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
         <Field label="מתאריך *">
           <input type="date" value={form.valid_from || ""}
-                 onChange={e => f("valid_from", e.target.value)} style={inp} />
+                 onChange={e => f("valid_from", e.target.value)} className="input" />
           {form.is_recurring && form.valid_from && (
             <div style={{ fontSize: 11, color: "#707774", marginTop: 3 }}>
               יוצג: {fmtMonthDay(form.valid_from)}
@@ -320,7 +320,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
         </Field>
         <Field label="עד תאריך *">
           <input type="date" value={form.valid_until || ""}
-                 onChange={e => f("valid_until", e.target.value)} style={inp} />
+                 onChange={e => f("valid_until", e.target.value)} className="input" />
           {form.is_recurring && form.valid_until && (
             <div style={{ fontSize: 11, color: "#707774", marginTop: 3 }}>
               יוצג: {fmtMonthDay(form.valid_until)}
@@ -366,7 +366,7 @@ function SeasonForm({ form, setForm, saving, onSave, onCancel, isMobile }) {
             <Field label={`ערך (${form.adjustment_type === "percent" ? "%" : "₪"})`}>
               <input type="number" min={0} step={form.adjustment_type === "percent" ? 1 : 0.01}
                      value={form.adjustment_value} onChange={e => f("adjustment_value", e.target.value)}
-                     style={inp} placeholder="0" />
+                     className="input" placeholder="0" />
             </Field>
           </div>
         )}
@@ -585,7 +585,7 @@ function RulesTab({ canManage, isMobile }) {
           {canManage && (
             <button
               onClick={() => { openNew(); closeSidebar(); }}
-              style={{ ...btn("#154038"), padding: "5px 10px", fontSize: 12 }}
+              className="btn btn--primary btn--sm"
             >
               + כלל חדש
             </button>
@@ -643,11 +643,11 @@ function RulesTab({ canManage, isMobile }) {
                       <>
                         <button
                           onClick={() => { openEdit(catRule || { ...EMPTY_RULE, entity_type: "category", entity_value: cat }); closeSidebar(); }}
-                          style={rowActionBtn} title="ערוך כלל קטגוריה"
+                          className="btn btn--icon" title="ערוך כלל קטגוריה"
                         ><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /></button>
                         <button
                           onClick={() => { openNew({ entity_type: "category", entity_value: cat }); closeSidebar(); }}
-                          style={rowActionBtn} title="כלל חדש לקטגוריה"
+                          className="btn btn--icon" title="כלל חדש לקטגוריה"
                         >＋</button>
                       </>
                     )}
@@ -680,11 +680,11 @@ function RulesTab({ canManage, isMobile }) {
                             <>
                               <button
                                 onClick={() => { openEdit(grpRule || { ...EMPTY_RULE, entity_type: "model", entity_value: mdl }); closeSidebar(); }}
-                                style={rowActionBtn} title="ערוך כלל דגם"
+                                className="btn btn--icon" title="ערוך כלל דגם"
                               ><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /></button>
                               <button
                                 onClick={() => { openNew({ entity_type: "model", entity_value: mdl }); closeSidebar(); }}
-                                style={rowActionBtn} title="כלל חדש לדגם"
+                                className="btn btn--icon" title="כלל חדש לדגם"
                               >＋</button>
                             </>
                           )}
@@ -770,7 +770,7 @@ function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCanc
       {/* בחירת ישות */}
       {form.entity_type === "category" && (
         <Field label="קטגוריה *">
-          <select value={form.entity_value || ""} onChange={e => f("entity_value", e.target.value)} style={inp}>
+          <select value={form.entity_value || ""} onChange={e => f("entity_value", e.target.value)} className="input">
             <option value="">בחר קטגוריה</option>
             {Object.keys(carTree).map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
@@ -778,7 +778,7 @@ function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCanc
       )}
       {form.entity_type === "model" && (
         <Field label="דגם *">
-          <select value={form.entity_value || ""} onChange={e => f("entity_value", e.target.value)} style={inp}>
+          <select value={form.entity_value || ""} onChange={e => f("entity_value", e.target.value)} className="input">
             <option value="">בחר דגם</option>
             {[...new Set(allCars.map(c => c.name).filter(Boolean))].sort().map(m => (
               <option key={m} value={m}>{m}</option>
@@ -788,7 +788,7 @@ function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCanc
       )}
       {form.entity_type === "car" && (
         <Field label="רכב *">
-          <select value={form.entity_value || ""} onChange={e => f("entity_value", e.target.value)} style={inp}>
+          <select value={form.entity_value || ""} onChange={e => f("entity_value", e.target.value)} className="input">
             <option value="">בחר רכב</option>
             {allCars.map(car => (
               <option key={car.id} value={String(car.id)}>
@@ -815,11 +815,8 @@ function PriceRuleForm({ form, setForm, carTree, allCars, saving, onSave, onCanc
                   value={form[key] ?? ""}
                   onChange={e => f(key, e.target.value)}
                   placeholder="יורש"
-                  style={{
-                    ...inp,
-                    border: `1px solid ${hasValue ? "#f59e0b" : "#ccd2cf"}`,
-                    background: hasValue ? "#fffbeb" : "#fff",
-                  }}
+                  className="input" style={{ border: `1px solid ${hasValue ? "#f59e0b" : "#ccd2cf"}`,
+                    background: hasValue ? "#fffbeb" : "#fff", }}
                 />
               </div>
             );
@@ -998,7 +995,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
   return (
     <div>
       {canManage && (
-        <button onClick={openNew} style={btn("#154038")}>+ כלל עונה חדש</button>
+        <button onClick={openNew} className="btn btn--primary">+ כלל עונה חדש</button>
       )}
 
       {loading ? <Spinner /> : (
@@ -1019,12 +1016,12 @@ function SeasonRulesTab({ canManage, isMobile }) {
               )}
               {srules.map(sr => (
                 <tr key={sr.id} style={{ borderBottom: "1px solid #eff3f1" }}>
-                  <td style={tdStyle}><span style={badgeStyle("#fef3c7", "#92400e")}>{seasonName(sr.season_id)}</span></td>
-                  <td style={tdStyle}>{sr.price_rule_id ? ruleName(sr.price_rule_id) : <em style={{ color: "#8e9592" }}>כל הכללים</em>}</td>
+                  <td><span style={badgeStyle("#fef3c7", "#92400e")}>{seasonName(sr.season_id)}</span></td>
+                  <td>{sr.price_rule_id ? ruleName(sr.price_rule_id) : <em style={{ color: "#8e9592" }}>כל הכללים</em>}</td>
                   {APPLIES_FIELDS.map(({ key }) => (
-                    <td key={key} style={{ ...tdStyle, textAlign: "center" }}>{sr[key] ? <Check size={15} strokeWidth={2.2} aria-hidden="true" /> : "—"}</td>
+                    <td key={key} style={{ textAlign: "center" }}>{sr[key] ? <Check size={15} strokeWidth={2.2} aria-hidden="true" /> : "—"}</td>
                   ))}
-                  <td style={tdStyle}>
+                  <td>
                     {canManage && (
                       <div style={{ display: "flex", gap: 6 }}>
                         <ActionMenu
@@ -1053,7 +1050,7 @@ function SeasonRulesTab({ canManage, isMobile }) {
             <Field label="עונה *">
               <select value={form.season_id}
                       onChange={e => setForm(p => ({ ...p, season_id: e.target.value }))}
-                      style={inp}>
+                      className="input">
                 <option value="">בחר עונה</option>
                 {seasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -1193,8 +1190,8 @@ function HolidaysTab({ canManage, isMobile }) {
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
         {canManage && (
           <>
-            <button onClick={() => setForm({ name: "", date: "" })} style={btn("#154038")}>+ חג ידני</button>
-            <button onClick={generate} disabled={generating} style={btn("#0d9488")}>
+            <button onClick={() => setForm({ name: "", date: "" })} className="btn btn--primary">+ חג ידני</button>
+            <button onClick={generate} disabled={generating} className="btn btn--primary" style={{ background: "#0d9488" }}>
               {generating ? "מייבא..." : <><RefreshCw size={14} strokeWidth={1.9} aria-hidden="true" /> {`ייבוא אוטומטי ${year}`}</>}
             </button>
           </>
@@ -1262,10 +1259,10 @@ function HolidaysTab({ canManage, isMobile }) {
         {form && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <Field label="שם החג">
-              <input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} style={inp} />
+              <input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="input" />
             </Field>
             <Field label="תאריך">
-              <input type="date" value={form.date || ""} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} style={inp} />
+              <input type="date" value={form.date || ""} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} className="input" />
             </Field>
             <FormFooter saving={saving} onCancel={() => setForm(null)} onSave={save} />
           </div>
@@ -1343,13 +1340,7 @@ function fmtMonthDay(dateStr) {
 }
 
 // ── styles ────────────────────────────────────────────────────────────────────
-const inp = {
-  width: "100%", padding: "8px 10px", borderRadius: 10,
-  border: "1px solid #ccd2cf", fontSize: 13, direction: "rtl",
-  fontFamily: "inherit", boxSizing: "border-box",
-};
 
-const tdStyle = { padding: "10px 12px", color: "#404643" };
 
 const badgeStyle = (bg, color) => ({
   background: bg, color,
@@ -1357,15 +1348,5 @@ const badgeStyle = (bg, color) => ({
   fontSize: 11, fontWeight: 700, display: "inline-block", whiteSpace: "nowrap",
 });
 
-const btn = (bg) => ({
-  background: bg, color: "#fff", border: "none", borderRadius: 12,
-  padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer",
-  whiteSpace: "nowrap",
-});
 
 
-const rowActionBtn = {
-  background: "none", border: "none", cursor: "pointer",
-  color: "#8e9592", padding: "2px 4px", borderRadius: 8,
-  fontSize: 12, lineHeight: 1, flexShrink: 0,
-};
