@@ -7,6 +7,7 @@ import { formatDate } from "../utils/dates";
 import BookingAuditMeta from "./BookingAuditMeta";
 import { useDragScroll } from "../../../hooks/useDragScroll";
 import { User, AlertTriangle, Mail, CircleCheck, CalendarPlus, Pencil, Trash2 } from "lucide-react";
+import ActionMenu from "../../../components/ui/ActionMenu";
 
 export default function BookingsList({
   bookings,
@@ -26,36 +27,15 @@ export default function BookingsList({
   onQuickExtend,
 }) {
   const dragScroll = useDragScroll({ enabled: !isMobile });
+  // היה כאן סרגל מעוגל עם רקע ומסגרת שהכיל צ'יפים מעוגלים — גלולה בתוך
+  // גלולה. עכשיו זו פריסה בלבד, והרכיבים עצמם נושאים את הסגנון.
   const actionsToolbar = {
     display: "flex",
     alignItems: "center",
     gap: 6,
-    flexWrap: "wrap",
-    padding: "4px 6px",
-    borderRadius: 999,
-    border: "1px solid #e3e7e5",
-    background: "#f7faf8",
+    flexWrap: "nowrap",
   };
 
-  const actionChip = (variant) => {
-    const base = {
-      border: "1px solid",
-      borderRadius: 999,
-      padding: "6px 10px",
-      fontSize: 12,
-      fontWeight: 800,
-      cursor: "pointer",
-      lineHeight: 1,
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 6,
-      background: "#fff",
-      whiteSpace: "nowrap",
-    };
-    if (variant === "success") return { ...base, color: "#166534", background: "#dcfce7", borderColor: "#bbf7d0" };
-    if (variant === "info") return { ...base, color: "#154038", background: "#d7e8e1", borderColor: "#b9d4cb" };
-    return { ...base, color: "#59605d", background: "#fff", borderColor: "#e3e7e5" };
-  };
 
   if (!isMobile) {
     return (
@@ -132,42 +112,27 @@ export default function BookingsList({
                   </td>
                   <td style={s.td}>
                     <div style={actionsToolbar}>
+                      {/* פעולות מהירות מופיעות רק כשהן רלוונטיות — הזמנה
+                          שחלף מועדה. השאר יושבות בתפריט. */}
                       {overdue && (
                         <>
                           <button
                             onClick={() => onQuickComplete(b)}
-                            style={actionChip("success")}
+                            className="btn btn--secondary btn--sm"
                             title="סמן כהושלמה"
                           >
                             <CircleCheck size={14} strokeWidth={1.9} aria-hidden="true" /> סיום
                           </button>
                           <button
                             onClick={() => onQuickExtend(b)}
-                            style={actionChip("info")}
+                            className="btn btn--secondary btn--sm"
                             title="הארך ביום אחד"
                           >
                             <CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> +יום
                           </button>
                         </>
                       )}
-                      <button
-                        onClick={() => onOpenEdit(b)}
-                        style={{
-                          ...s.btnIcon,
-                          width: 34,
-                          height: 34,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "#fff",
-                          border: "1px solid #e3e7e5",
-                          borderRadius: 14,
-                        }}
-                        title="ערוך"
-                        aria-label={`ערוך הזמנה #${b.id}`}
-                      >
-                        <Pencil size={15} strokeWidth={1.9} aria-hidden="true" />
-                      </button>
+
                       {b.status === "active" && (
                         <PhotoMenu
                           booking={b}
@@ -179,27 +144,18 @@ export default function BookingsList({
                           variant="compact"
                         />
                       )}
-                      {canDeleteBookings && (
-                        <button
-                          onClick={() => onRequestDelete(b)}
-                          style={{
-                            ...s.btnIcon,
-                            width: 34,
-                            height: 34,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "#fff",
-                            border: "1px solid #fecaca",
-                            borderRadius: 14,
-                            color: "#dc2626",
-                          }}
-                          title="מחק"
-                          aria-label={`מחק הזמנה #${b.id}`}
-                        >
-                          <Trash2 size={15} strokeWidth={1.9} aria-hidden="true" />
-                        </button>
-                      )}
+
+                      <ActionMenu
+                        align="end"
+                        label={`פעולות להזמנה ${b.id}`}
+                        items={[
+                          { label: "עריכת הזמנה", Icon: Pencil, onSelect: () => onOpenEdit(b) },
+                          canDeleteBookings && {
+                            label: "מחיקת הזמנה", Icon: Trash2, danger: true,
+                            onSelect: () => onRequestDelete(b),
+                          },
+                        ]}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -276,41 +232,14 @@ export default function BookingsList({
               <div style={actionsToolbar}>
                 {overdue && (
                   <>
-                    <button
-                      onClick={() => onQuickComplete(b)}
-                      style={actionChip("success")}
-                      title="סמן כהושלמה"
-                    >
+                    <button onClick={() => onQuickComplete(b)} className="btn btn--secondary btn--sm" title="סמן כהושלמה">
                       <CircleCheck size={14} strokeWidth={1.9} aria-hidden="true" /> סיום
                     </button>
-                    <button
-                      onClick={() => onQuickExtend(b)}
-                      style={actionChip("info")}
-                      title="הארך ביום אחד"
-                    >
+                    <button onClick={() => onQuickExtend(b)} className="btn btn--secondary btn--sm" title="הארך ביום אחד">
                       <CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> +יום
                     </button>
                   </>
                 )}
-
-                <button
-                  onClick={() => onOpenEdit(b)}
-                  style={{
-                    ...s.btnIcon,
-                    width: 34,
-                    height: 34,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#fff",
-                    border: "1px solid #e3e7e5",
-                    borderRadius: 14,
-                  }}
-                  title="ערוך"
-                  aria-label={`ערוך הזמנה #${b.id}`}
-                >
-                  <Pencil size={15} strokeWidth={1.9} aria-hidden="true" />
-                </button>
 
                 {b.status === "active" && (
                   <PhotoMenu
@@ -324,27 +253,17 @@ export default function BookingsList({
                   />
                 )}
 
-                {canDeleteBookings && (
-                  <button
-                    onClick={() => onRequestDelete(b)}
-                    style={{
-                      ...s.btnIcon,
-                      width: 34,
-                      height: 34,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "#fff",
-                      border: "1px solid #fecaca",
-                      borderRadius: 14,
-                      color: "#dc2626",
-                    }}
-                    title="מחק"
-                    aria-label={`מחק הזמנה #${b.id}`}
-                  >
-                    <Trash2 size={15} strokeWidth={1.9} aria-hidden="true" />
-                  </button>
-                )}
+                <ActionMenu
+                  align="end"
+                  label={`פעולות להזמנה ${b.id}`}
+                  items={[
+                    { label: "עריכת הזמנה", Icon: Pencil, onSelect: () => onOpenEdit(b) },
+                    canDeleteBookings && {
+                      label: "מחיקת הזמנה", Icon: Trash2, danger: true,
+                      onSelect: () => onRequestDelete(b),
+                    },
+                  ]}
+                />
               </div>
             </div>
             <BookingAuditMeta b={b} style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #eff3f1" }} />

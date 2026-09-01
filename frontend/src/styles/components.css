@@ -265,3 +265,69 @@
 @keyframes modal-in   { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
 @keyframes sheet-in   { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes toast-in   { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* ═══ תפריט פעולות בשורה ════════════════════════════════════════════════════
+   מחליף את "כל הפעולות כגלולות צבעוניות בתא". הפריטים ניטרליים, והצבע
+   שמור לפעולה ההרסנית בלבד — וגם שם רק כשהיא במיקוד או תחת הסמן. */
+.action-menu { position: relative; display: inline-flex; }
+
+.action-menu__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: var(--z-dropdown);
+  min-width: 184px;
+  padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-lg);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-lg);
+  animation: menu-in var(--duration-fast) var(--ease);
+}
+.action-menu__list--start { inset-inline-start: 0; }
+.action-menu__list--end   { inset-inline-end: 0; }
+
+.action-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: 9px var(--space-4);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--c-text);
+  font-size: var(--text-base);
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease),
+              color var(--duration-fast) var(--ease);
+}
+.action-menu__item:hover:not(:disabled),
+.action-menu__item:focus-visible {
+  background: var(--c-ground-2);
+  color: var(--c-ink);
+}
+.action-menu__item:disabled { opacity: .45; cursor: not-allowed; }
+
+/* הפעולה ההרסנית מופרדת בקו ונצבעת רק כשמכוונים אליה */
+.action-menu__item--danger {
+  margin-top: var(--space-2);
+  padding-top: 11px;
+  border-top: 1px solid var(--c-line-soft);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  color: var(--c-danger);
+}
+.action-menu__item--danger:hover:not(:disabled),
+.action-menu__item--danger:focus-visible {
+  background: var(--c-danger-bg);
+  color: var(--c-danger);
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}

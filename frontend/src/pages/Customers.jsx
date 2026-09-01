@@ -16,6 +16,7 @@ import {
   MessageCircle, IdCard, Phone, MapPin, Image, Users as UsersIcon, ClipboardList,
   RemoveFormatting,
 } from "lucide-react";
+import ActionMenu from "../components/ui/ActionMenu";
 
 const EMPTY_FORM = { name: "", address: "", phone: "", email: "", id_number: "" };
 const EMPTY_EMAIL_FORM = { subject: "", body: "" };
@@ -429,14 +430,24 @@ export default function Customers() {
                   <td style={s.td}>{c.email || "—"}</td>
                   <td style={s.td}>
                     <div style={s.actionsWrap}>
-                      <button onClick={() => bookForCustomer(c)} style={s.btnBook}><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן רכב</button>
-                      <button onClick={() => openHistory(c)} style={s.btnHistory}><History size={14} strokeWidth={1.9} aria-hidden="true" /> היסטוריה</button>
-                      <button onClick={() => openEdit(c)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
-                      <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /> מחק</button>
-                      {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}><Mail size={14} strokeWidth={1.9} aria-hidden="true" /> שלח מייל</button>}
-                      {toWhatsAppUrl(c.phone) && (
-                        <button onClick={() => window.location.href = toWhatsAppUrl(c.phone)} style={s.btnWhatsApp}><MessageCircle size={14} strokeWidth={1.9} aria-hidden="true" /> WhatsApp</button>
-                      )}
+                      {/* פעולה ראשית אחת גלויה; השאר בתפריט, כדי שהתא לא
+                          יתפרק לשלוש שורות של גלולות צבעוניות. */}
+                      <button onClick={() => bookForCustomer(c)} className="btn btn--secondary btn--sm">
+                        <CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן רכב
+                      </button>
+                      <ActionMenu
+                        label={`פעולות עבור ${c.name}`}
+                        items={[
+                          { label: "היסטוריית הזמנות", Icon: History, onSelect: () => openHistory(c) },
+                          { label: "עריכת פרטים", Icon: Pencil, onSelect: () => openEdit(c) },
+                          c.email && { label: "שליחת מייל", Icon: Mail, onSelect: () => openEmail(c) },
+                          toWhatsAppUrl(c.phone) && {
+                            label: "WhatsApp", Icon: MessageCircle,
+                            onSelect: () => { window.location.href = toWhatsAppUrl(c.phone); },
+                          },
+                          { label: "מחיקת לקוח", Icon: Trash2, danger: true, onSelect: () => setConfirmDelete(c) },
+                        ]}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -459,15 +470,24 @@ export default function Customers() {
               <div style={s.mobileMeta}><Phone size={12} strokeWidth={1.9} aria-hidden="true" /> {c.phone || "—"}</div>
               <div style={s.mobileMeta}><Mail size={12} strokeWidth={1.9} aria-hidden="true" /> {c.email || "—"}</div>
               <div style={s.mobileMeta}><MapPin size={12} strokeWidth={1.9} aria-hidden="true" /> {c.address || "—"}</div>
-              <div style={s.actionsWrap}>
-                <button onClick={() => bookForCustomer(c)} style={s.btnBook}><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן</button>
-                <button onClick={() => openHistory(c)} style={s.btnHistory}><History size={14} strokeWidth={1.9} aria-hidden="true" /> היסטוריה</button>
-                <button onClick={() => openEdit(c)} style={s.btnEdit}><Pencil size={14} strokeWidth={1.9} aria-hidden="true" /> ערוך</button>
-                <button onClick={() => setConfirmDelete(c)} style={s.btnDelete}><Trash2 size={14} strokeWidth={1.9} aria-hidden="true" /> מחק</button>
-                {!!c.email && <button onClick={() => openEmail(c)} style={s.btnEmail}><Mail size={14} strokeWidth={1.9} aria-hidden="true" /> מייל</button>}
-                {toWhatsAppUrl(c.phone) && (
-                  <button onClick={() => window.location.href = toWhatsAppUrl(c.phone)} style={s.btnWhatsApp}><MessageCircle size={14} strokeWidth={1.9} aria-hidden="true" /> WhatsApp</button>
-                )}
+              <div style={{ ...s.actionsWrap, justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+                <button onClick={() => bookForCustomer(c)} className="btn btn--secondary btn--sm">
+                  <CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן רכב
+                </button>
+                <ActionMenu
+                  align="end"
+                  label={`פעולות עבור ${c.name}`}
+                  items={[
+                    { label: "היסטוריית הזמנות", Icon: History, onSelect: () => openHistory(c) },
+                    { label: "עריכת פרטים", Icon: Pencil, onSelect: () => openEdit(c) },
+                    c.email && { label: "שליחת מייל", Icon: Mail, onSelect: () => openEmail(c) },
+                    toWhatsAppUrl(c.phone) && {
+                      label: "WhatsApp", Icon: MessageCircle,
+                      onSelect: () => { window.location.href = toWhatsAppUrl(c.phone); },
+                    },
+                    { label: "מחיקת לקוח", Icon: Trash2, danger: true, onSelect: () => setConfirmDelete(c) },
+                  ]}
+                />
               </div>
             </div>
           ))}
@@ -530,7 +550,7 @@ export default function Customers() {
             </div>
 
             <div style={s.modalFooter}>
-              <button onClick={() => historyCustomer && bookForCustomer(historyCustomer)} style={s.btnBook}><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן רכב ללקוח</button>
+              <button onClick={() => historyCustomer && bookForCustomer(historyCustomer)} className="btn btn--primary btn--sm"><CalendarPlus size={14} strokeWidth={1.9} aria-hidden="true" /> הזמן רכב ללקוח</button>
             </div>
           </div>
         )}
@@ -705,13 +725,7 @@ const s = {
   td: { padding: "10px 12px", fontSize: 13, verticalAlign: "top" },
   empty: { textAlign: "center", padding: 28, color: "#8e9592" },
   actionsWrap: { display: "flex", gap: 6, flexWrap: "wrap" },
-  btnBook: { background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
   btnPhoto: { background: "#fdf4ff", color: "#a21caf", border: "1px solid #f0abfc", borderRadius: 10, padding: "4px 8px", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "inline-block" },
-  btnHistory: { background: "#eef5f2", color: "#154038", border: "1px solid #b9d4cb", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnEdit: { background: "#fff7ed", color: "#c2410c", border: "1px solid #fdba74", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnDelete: { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnEmail: { background: "#ecfeff", color: "#154038", border: "1px solid #99f6e4", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer" },
-  btnWhatsApp: { background: "#ecfdf5", color: "#047857", border: "1px solid #6ee7b7", borderRadius: 10, padding: "6px 10px", fontWeight: 700, cursor: "pointer", textDecoration: "none" },
   summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginBottom: 12 },
   summaryCard: { background: "#f7faf8", border: "1px solid #e3e7e5", borderRadius: 14, padding: 10, display: "flex", flexDirection: "column", gap: 6 },
   summaryLabel: { color: "#707774", fontSize: 12 },
