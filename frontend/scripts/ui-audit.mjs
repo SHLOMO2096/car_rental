@@ -90,6 +90,50 @@ const checks = [
   },
 ];
 
+// ── הפניות סגנון יתומות ──────────────────────────────────────────────────────
+// style={s.foo} שמצביע למפתח שנמחק הופך ל-undefined, ו-React מתעלם ממנו
+// בשקט: הבנייה עוברת, הטסטים עוברים, והעיצוב נעלם. קרה בפועל במיגרציה
+// של מסך ההזמנות, ולכן זו בדיקה קבועה ולא הערה.
+
+// שמות שמגיעים מ-useAuthStore(s => s.x) ולא מאובייקט סגנונות
+const NOT_A_STYLE = /^(can|user|token|isAuthenticated|items|remove|login|logout|isAdmin|initializeAuth)$/;
+
+const declaredIn = (code) =>
+  new Set([...code.matchAll(/^ {2}([a-zA-Z][a-zA-Z0-9]*):/gm)].map((m) => m[1]));
+const usedIn = (code) =>
+  new Set([...code.matchAll(/(?<![\w$])s\.([a-zA-Z][a-zA-Z0-9]*)/g)].map((m) => m[1]));
+
+// הסימן החד-משמעי לשימוש בסגנון הוא הופעה בתוך style= — או style={s.x}
+// או פריסה בתוך אובייקט סגנון. בכל שאר המקומות s הוא פרמטר של map/selector.
+const usedAsStyle = (code) => {
+  const names = new Set();
+  for (const m of code.matchAll(/style=\{\{?\s*(?:\.\.\.)?s\.([a-zA-Z][a-zA-Z0-9]*)/g)) names.add(m[1]);
+  for (const m of code.matchAll(/\.\.\.s\.([a-zA-Z][a-zA-Z0-9]*)/g)) names.add(m[1]);
+  return names;
+};
+
+const orphans = [];
+for (const f of js.filter((x) => x.path.endsWith(".jsx"))) {
+  const used = usedAsStyle(f.code);
+  if (used.size === 0) continue;
+
+  const declared = new Set(declaredIn(f.code));
+  for (const mod of js.filter((m) => m.path.endsWith("styles.js"))) {
+    const modDir = mod.path.slice(0, mod.path.lastIndexOf("/") + 1);
+    if (f.path.startsWith(modDir)) for (const n of declaredIn(mod.code)) declared.add(n);
+  }
+
+  for (const name of used) if (!declared.has(name)) orphans.push(`${f.path}: s.${name}`);
+}
+
+checks.push({
+  name: "אין הפניות סגנון יתומות",
+  principle: "style={s.x} למפתח שנמחק מתאפס בשקט — הבנייה עוברת והעיצוב נעלם",
+  total: orphans.length,
+  where: [...new Set(orphans)],
+  budget: 0,
+});
+
 // ── דוח ──────────────────────────────────────────────────────────────────────
 const pad = (s, n) => String(s).padEnd(n, " ");
 console.log("\n  בדיקת עקרונות עיצוב — frontend/src\n");

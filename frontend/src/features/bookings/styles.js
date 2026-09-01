@@ -2,6 +2,28 @@
 // Splitting it out of the page dramatically reduces the page file size.
 
 export const s = {
+  sub: { fontSize: 11, color: "#8e9592", marginTop: 1 },
+  auditMeta: {
+    fontSize: 10,
+    color: "#8e9592",
+    marginTop: 3,
+    lineHeight: 1.4,
+    display: "flex",
+    alignItems: "center",
+    gap: 3,
+    flexWrap: "wrap",
+  },
+  conflictClearBtn: {
+    marginInlineStart: 6,
+    fontSize: 10,
+    padding: "1px 6px",
+    borderRadius: 8,
+    border: "1px solid #ccd2cf",
+    background: "#eff3f1",
+    cursor: "pointer",
+    color: "#707774",
+  },
+
   header: {
     display: "flex",
     justifyContent: "space-between",

@@ -436,6 +436,56 @@ export default function Suggestions() {
 }
 
 const s = {
+  // ── פרטי ההזמנה המושפעת (הצעה מסוג C) ──────────────────────────────────
+  // המפתחות האלה היו בשימוש מאז v2.0.0 בלי הגדרה, כלומר הבלוק הזה
+  // רונדר ללא עיצוב. הוגדרו לפי הטוקנים ולא בגוונים קבועים.
+  affectedBox: {
+    marginTop: "var(--space-4)",
+    padding: "var(--space-5)",
+    borderRadius: "var(--radius-lg)",
+    background: "var(--c-ground)",
+    border: "1px solid var(--c-line)",
+  },
+  affectedTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-2)",
+    fontSize: "var(--text-sm)",
+    fontWeight: 700,
+    color: "var(--c-text-2)",
+    marginBottom: "var(--space-4)",
+  },
+  replacementTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-2)",
+    fontSize: "var(--text-sm)",
+    fontWeight: 700,
+    color: "var(--c-brand)",
+    marginTop: "var(--space-5)",
+    marginBottom: "var(--space-4)",
+    paddingTop: "var(--space-4)",
+    borderTop: "1px solid var(--c-line)",
+  },
+  affectedGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+    gap: "var(--space-3) var(--space-5)",
+  },
+  affectedRow: {
+    display: "flex",
+    alignItems: "baseline",
+    gap: "var(--space-2)",
+    fontSize: "var(--text-base)",
+    color: "var(--c-ink-2)",
+    minWidth: 0,
+  },
+  affectedLabel: {
+    color: "var(--c-muted)",
+    fontSize: "var(--text-sm)",
+    flexShrink: 0,
+  },
+
   header: { marginBottom: 14 },
   h1: { margin: 0, fontSize: 24, fontWeight: 800 },
   subtitle: { color: "#707774", marginTop: 6, fontSize: 13 },
