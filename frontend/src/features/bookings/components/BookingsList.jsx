@@ -181,8 +181,16 @@ export default function BookingsList({
         return (
           <div key={b.id} className="card">
             <div style={s.mobileCardHead}>
-              <span className="badge">#{b.id}</span>
-              <Badge label={st.label} color={st.color} />
+              <div style={s.mobileCardHeadMain}>
+                <span className="badge">#{b.id}</span>
+                <Badge label={st.label} color={st.color} />
+              </div>
+              {/* אינדיקטור שליחת המייל היה קיים בטבלת הדסקטופ בלבד */}
+              {b.email_sent && (
+                <span title="אימייל נשלח" style={{ color: "#8e9592", display: "inline-flex" }}>
+                  <Mail size={15} strokeWidth={1.9} aria-hidden="true" />
+                </span>
+              )}
             </div>
 
             {b.status === "active" && b.customer_id ? (

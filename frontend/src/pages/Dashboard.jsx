@@ -868,7 +868,29 @@ function ReassignModal({ booking, fromCar, toCar, loading, onConfirm, onCancel, 
   );
 }
 
-function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, onClose, photoMenu, canReassign, onReassign }) {
+// שורת הפעולות של מודאל ההזמנה — כפתורים גמישים שממלאים את השורה.
+const actionRow = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  alignItems: "center",
+};
+const actionBtn = {
+  flex: "1 1 auto",
+  minWidth: 92,
+  padding: "10px 16px",
+  borderRadius: 12,
+  border: "none",
+  fontWeight: 700,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
+};
+const actionBtnPrimary = { background: "#154038", color: "#fff" };
+
+export function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, onClose, photoMenu, canReassign, onReassign }) {
   return (
     <div
       style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}
@@ -888,25 +910,24 @@ function BookingActionModal({ booking, carName, onEdit, onDelete, onCustomer, on
             במובייל העברת הזמנה מתבצעת דרך בחירת יעד, לא בגרירה.
           </div>
         )}
-        <div style={{ display:"flex", gap:10, justifyContent:"space-between", alignItems:"center", flexWrap:"wrap" }}>
-          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-             <button onClick={onClose} style={{ padding:"9px 16px", borderRadius:12, border:"1px solid #ccd2cf", background:"#fff", color:"#404643", cursor:"pointer" }}>סגור</button>
-             {photoMenu}
-          </div>
-          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-            {canReassign && onReassign && (
-              <button onClick={onReassign} style={{ padding:"9px 16px", borderRadius:12, border:"none", background:"#154038", color:"#fff", fontWeight:700, cursor:"pointer" }}>העבר</button>
-            )}
-            {onDelete && (
-              <button onClick={onDelete} style={{ padding:"9px 16px", borderRadius:12, border:"none", background:"#fee2e2", color:"#dc2626", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6 }}><Trash2 size={15} strokeWidth={1.9} aria-hidden="true" /> מחק</button>
-            )}
-            {booking.customer_id && onCustomer && (
-              <button onClick={onCustomer} style={{ padding:"9px 16px", borderRadius:12, border:"none", background:"#154038", color:"#fff", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6 }}><User size={15} strokeWidth={1.9} aria-hidden="true" /> לקוח</button>
-            )}
-            {onEdit && (
-              <button onClick={onEdit} style={{ padding:"9px 16px", borderRadius:12, border:"none", background:"#154038", color:"#fff", fontWeight:700, cursor:"pointer" }}>עריכה</button>
-            )}
-          </div>
+        {/* היו כאן שתי קבוצות flex בלי flexWrap, ועל מסך 360px הכפתור האחרון
+            גלש 32px אל מחוץ לכרטיסייה. עכשיו זו שורה אחת שעוטפת, וכל כפתור
+            מתמתח למלא את שארית השורה שלו — כך אין כפתור בודד וקצר בשורה. */}
+        <div style={actionRow}>
+          <button onClick={onClose} style={{ ...actionBtn, border:"1px solid #ccd2cf", background:"#fff", color:"#404643" }}>סגור</button>
+          {photoMenu}
+          {canReassign && onReassign && (
+            <button onClick={onReassign} style={{ ...actionBtn, ...actionBtnPrimary }}>העבר</button>
+          )}
+          {onDelete && (
+            <button onClick={onDelete} style={{ ...actionBtn, background:"#fee2e2", color:"#dc2626" }}><Trash2 size={15} strokeWidth={1.9} aria-hidden="true" /> מחק</button>
+          )}
+          {booking.customer_id && onCustomer && (
+            <button onClick={onCustomer} style={{ ...actionBtn, ...actionBtnPrimary }}><User size={15} strokeWidth={1.9} aria-hidden="true" /> לקוח</button>
+          )}
+          {onEdit && (
+            <button onClick={onEdit} style={{ ...actionBtn, ...actionBtnPrimary }}>עריכה</button>
+          )}
         </div>
       </div>
     </div>

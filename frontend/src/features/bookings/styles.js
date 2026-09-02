@@ -9,10 +9,12 @@ export const s = {
     marginTop: 3,
     lineHeight: 1.4,
     display: "flex",
-    alignItems: "center",
+    // היה alignItems:"center" + flexWrap:"wrap": כשהטקסט לא נכנס בשורה אחת
+    // הוא ירד כולו לשורה הבאה והשאיר את אייקון השעון לבד למעלה.
+    alignItems: "flex-start",
     gap: 3,
-    flexWrap: "wrap",
   },
+  auditMetaText: { minWidth: 0 },
   conflictClearBtn: {
     marginInlineStart: 6,
     fontSize: 10,
@@ -285,8 +287,12 @@ export const s = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    gap: 8,
+    marginBottom: 8,
   },
+  // המספר והסטטוס נקראים יחד. קודם הם ישבו בשני קצוות מנוגדים של הכרטיס,
+  // והסטטוס — הנתון הכי נסרק — נחת הכי רחוק מהמקום שבו העין מתחילה.
+  mobileCardHeadMain: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 },
   mobileTitle: { fontSize: 15, fontWeight: 700, color: "#141816" },
   mobileCustomerLinkBtn: {
     background: "transparent",

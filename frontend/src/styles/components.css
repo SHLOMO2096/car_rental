@@ -93,6 +93,10 @@
   border: 1px solid var(--c-line-soft);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  /* לכרטיס לא היה ריפוד, ולכן כל מסך שאימץ את המחלקה בלי להוסיף ריפוד
+     משלו הדביק את התוכן לגבול — כרטיסי ההזמנות במובייל וכרטיסי הסיכום
+     בלקוחות. מי שצריך אחרת (טבלה מלאת רוחב) דורס ב-style. */
+  padding: var(--space-5);
 }
 .card--raised { border-color: transparent; box-shadow: var(--shadow-lg); }
 

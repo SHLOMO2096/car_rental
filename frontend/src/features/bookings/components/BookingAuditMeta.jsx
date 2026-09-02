@@ -15,7 +15,8 @@ export default function BookingAuditMeta({ b, style = {} }) {
 
   return (
     <div style={{ ...s.auditMeta, ...style }}>
-      <Clock size={11} strokeWidth={1.9} aria-hidden="true" /> {parts.join(" · ")}
+      <Clock size={11} strokeWidth={1.9} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} />
+      <span style={s.auditMetaText}>{parts.join(" · ")}</span>
     </div>
   );
 }
