@@ -104,10 +104,7 @@ function Layout({ children }) {
   return (
     <div dir="rtl" style={{ display:"flex", minHeight:"100vh" }}>
       {isMobile && menuOpen && (
-        <div
-          onClick={() => setMenuOpen(false)}
-          style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.45)", zIndex:999 }}
-        />
+        <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />
       )}
       <aside
         className="sidebar"

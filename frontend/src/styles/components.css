@@ -575,16 +575,40 @@
   background-clip: padding-box;
 }
 
-/* ── מובייל: מגירה נשלפת ────────────────────────────────────────────────── */
+/* ── הרקע המעומעם שמאחורי המגירה ─────────────────────────────────────────
+   ה-z-index שלו נגזר מזה של המגירה ולא נכתב כמספר קסום. כשהוא היה 999
+   מול --z-drawer=900 הוא כיסה את המגירה עצמה, וכל הקשה על קישור ניווט
+   פגעה ברקע במקום בקישור: התפריט נסגר ושום מסך לא נטען. */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-drawer) - 1);
+  background: rgb(15 23 42 / .45);
+}
+
+/* ── מובייל: מגירה נשלפת ──────────────────────────────────────────────────
+   המגירה נשלפת מ-inset-inline-start, כלומר בעברית מצד ימין — אותו צד שבו
+   הסרגל יושב בדסקטופ. עם inset-inline-end היא הייתה נכנסת משמאל. */
 @media (max-width: 900px) {
   .sidebar {
     position: fixed;
     inset-block-start: 0;
-    inset-inline-end: calc(-1 * var(--sidebar-width) - 20px);
+    inset-inline-start: calc(-1 * var(--sidebar-width) - 20px);
     width: var(--sidebar-width);
-    transition: inset-inline-end var(--duration) var(--ease);
+    /* כשהמגירה סגורה היא מחוץ למסך אך עדיין בעץ — בלי visibility אפשר
+       להגיע לקישוריה ב-Tab ולמקד משהו שלא רואים. */
+    visibility: hidden;
+    transition:
+      inset-inline-start var(--duration) var(--ease),
+      visibility 0s linear var(--duration);
   }
-  .sidebar[data-open="true"] { inset-inline-end: 0; }
+  .sidebar[data-open="true"] {
+    inset-inline-start: 0;
+    visibility: visible;
+    transition:
+      inset-inline-start var(--duration) var(--ease),
+      visibility 0s;
+  }
   .sidebar[data-collapsed="true"] { width: var(--sidebar-width); }
   .sidebar[data-collapsed="true"] .sidebar__brand,
   .sidebar[data-collapsed="true"] .sidebar__link span,
