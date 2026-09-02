@@ -32,7 +32,20 @@ docker network create car_rental_default >/dev/null 2>&1 || true
 docker network create traefik-public >/dev/null 2>&1 || true
 
 echo "Fetching repository state..."
-git fetch --all --tags --prune
+# ‎--all‎ מושך כל רמוט שמוגדר על השרת, כולל כאלה שדורשים אימות ושאיש לא
+# זוכר שהוסיף — ופריסה נכשלה בדיוק כך: git ביקש שם משתמש, אין tty, exit 128.
+# מצב הרמוטים הוא הגדרה ידנית על קופסה שהפריסה עצמה דורסת, ולכן אסור לה
+# להיות תלות. כאן origin נקבע מ-REPO_URL ונמשך הוא בלבד.
+if [[ -n "$REPO_URL" ]]; then
+  if git remote get-url origin >/dev/null 2>&1; then
+    git remote set-url origin "$REPO_URL"
+  else
+    git remote add origin "$REPO_URL"
+  fi
+fi
+# קלון עם --single-branch משאיר refspec מצומצם, ואז ה-SHA המבוקש לא יורד.
+git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+git fetch --prune --tags origin
 git checkout --force "$TARGET_SHA"
 git reset --hard "$TARGET_SHA"
 
