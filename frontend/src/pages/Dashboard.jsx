@@ -428,7 +428,10 @@ export function Dashboard() {
           {!quickSearch && activeFiltersCount === 0 && (
             <span>
               מוצג: <strong>{filteredCars.length}</strong> רכבים · טווח: <strong>{visibleDays}</strong> ימים
-              <span style={{ color: "#8e9592", marginInlineStart: 12 }}>· טיפ: Ctrl+F לחיפוש מהיר</span>
+              {/* קיצור מקלדת — חסר משמעות בטלפון, ולכן מוצג רק בדסקטופ */}
+              {!isMobile && (
+                <span style={{ color: "#8e9592", marginInlineStart: 12 }}>· טיפ: Ctrl+F לחיפוש מהיר</span>
+              )}
             </span>
           )}
         </div>
