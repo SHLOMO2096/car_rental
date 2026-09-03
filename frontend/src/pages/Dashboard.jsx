@@ -1,10 +1,13 @@
 // ══════════════════════════════════════════════════════════════════════════════
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { carsAPI } from "../api/cars";
 import { bookingsAPI } from "../api/bookings";
 import { settingsAPI } from "../api/settings";
+import { carBlocksAPI, BLOCK_REASONS, BLOCK_REASON_LABEL, BLOCK_REASON_SHORT } from "../api/carBlocks";
+import BookingCreateDialog from "../features/bookings/BookingCreateDialog";
 import Confirm from "../components/ui/Confirm";
+import Modal from "../components/ui/Modal";
 import BookingDeleteModal from "../features/bookings/components/BookingDeleteModal";
 import { toast } from "../store/toast";
 import { getUserFacingErrorMessage } from "../api/errors";
@@ -17,7 +20,7 @@ import { createDashboardPermissionModel } from "./dashboardPermissions";
 import {
   SlidersHorizontal, X, AlertCircle, Trash2, User, Maximize2, Minimize2, Check,
   ArrowLeftRight, CalendarDays, Car, Hash,
-  Upload,
+  Upload, Wrench, CalendarX,
 } from "lucide-react";
 
 const kpiCell = (isMobile) => ({
@@ -939,6 +942,175 @@ export function BookingActionModal({ booking, carName, onEdit, onDelete, onCusto
 
 
 
+// ── השבתה זמנית ───────────────────────────────────────────────────────────────
+// שני מודאלים: קביעת השבתה חדשה, וניהול השבתה קיימת מתוך הגריד.
+// שניהם משתמשים ב-Modal המשותף, ולכן מקבלים מלכודת מיקוד ו-Escape בחינם.
+
+const blockField = { display: "block", fontSize: 12, fontWeight: 700, color: "#404643", marginBottom: 4 };
+const blockRow   = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 };
+
+function CarBlockFormModal({ form, setForm, onClose, onSaved }) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function save() {
+    if (form.end_date < form.start_date) return setError("תאריך הסיום מוקדם מתאריך ההתחלה");
+    setSaving(true);
+    setError("");
+    try {
+      await carBlocksAPI.create({
+        car_id: form.car_id,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        reason: form.reason,
+        note: form.note || null,
+      });
+      toast.success("הרכב הושבת בטווח שנבחר");
+      onSaved();
+    } catch (e) {
+      // 409 מגיע כשכבר יש הזמנה פעילה בטווח — ההודעה מהשרת מונה אותן
+      setError(getUserFacingErrorMessage(e, "קביעת ההשבתה נכשלה"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`השבתה זמנית — ${form.car_name}`} maxWidth={460}>
+      <div style={{ fontSize: 13, color: "#59605d", marginBottom: 16, lineHeight: 1.6 }}>
+        הרכב יסומן בגריד ולא ניתן יהיה להזמין אותו בטווח הזה. הוא נשאר בצי —
+        להוצאה קבועה יש להשתמש בהשבתת רכב במסך הרכבים.
+      </div>
+
+      <div style={blockRow}>
+        <div>
+          <label style={blockField} htmlFor="blk-start">מתאריך</label>
+          <input id="blk-start" type="date" className="input" value={form.start_date}
+                 onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value,
+                   end_date: f.end_date < e.target.value ? e.target.value : f.end_date }))} />
+        </div>
+        <div>
+          <label style={blockField} htmlFor="blk-end">עד תאריך</label>
+          <input id="blk-end" type="date" className="input" value={form.end_date} min={form.start_date}
+                 onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <label style={blockField} htmlFor="blk-reason">סיבה</label>
+        <select id="blk-reason" className="input" value={form.reason}
+                onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}>
+          {BLOCK_REASONS.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 18 }}>
+        <label style={blockField} htmlFor="blk-note">הערה (אופציונלי)</label>
+        <textarea id="blk-note" className="input" rows={2} value={form.note}
+                  placeholder="למשל: מוסך מרכזי, תיקון מזגן"
+                  onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
+      </div>
+
+      {error && <div className="alert alert--danger" style={{ marginBottom: 14 }}>{error}</div>}
+
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
+        <button className="btn btn--secondary" onClick={onClose} disabled={saving}>ביטול</button>
+        <button className="btn btn--primary" onClick={save} disabled={saving}>
+          {saving ? "שומר..." : "קבע השבתה"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function CarBlockManageModal({ block, canManage, onClose, onChanged }) {
+  const [start, setStart] = useState(block.start_date);
+  const [end, setEnd] = useState(block.end_date);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const changed = start !== block.start_date || end !== block.end_date;
+
+  async function run(fn, okMessage) {
+    setBusy(true);
+    setError("");
+    try {
+      await fn();
+      toast.success(okMessage);
+      onChanged();
+    } catch (e) {
+      setError(getUserFacingErrorMessage(e, "הפעולה נכשלה"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`השבתה — ${block.car_name || "רכב"}`} maxWidth={460}>
+      <div style={{ fontSize: 13, color: "#59605d", marginBottom: 4 }}>
+        <strong>סיבה:</strong> {BLOCK_REASON_LABEL[block.reason] || block.reason}
+      </div>
+      {block.car_plate && (
+        <div style={{ fontSize: 12, color: "#8e9592", marginBottom: 4, direction: "ltr", textAlign: "right" }}>
+          {block.car_plate}
+        </div>
+      )}
+      {block.note && (
+        <div style={{ fontSize: 13, color: "#404643", marginBottom: 12 }}>{block.note}</div>
+      )}
+      {block.created_by_name && (
+        <div style={{ fontSize: 11, color: "#8e9592", marginBottom: 16 }}>נקבע ע״י {block.created_by_name}</div>
+      )}
+
+      {canManage ? (
+        <>
+          <div style={blockRow}>
+            <div>
+              <label style={blockField} htmlFor="mng-start">מתאריך</label>
+              <input id="mng-start" type="date" className="input" value={start}
+                     onChange={(e) => setStart(e.target.value)} />
+            </div>
+            <div>
+              <label style={blockField} htmlFor="mng-end">עד תאריך</label>
+              <input id="mng-end" type="date" className="input" value={end} min={start}
+                     onChange={(e) => setEnd(e.target.value)} />
+            </div>
+          </div>
+
+          {error && <div className="alert alert--danger" style={{ marginBottom: 14 }}>{error}</div>}
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              className="btn btn--secondary"
+              disabled={busy}
+              onClick={() => run(() => carBlocksAPI.update(block.id, { end_date: toISO(addDays(fromISO(end), 1)) }), "ההשבתה הוארכה ביום")}
+            >
+              <CalendarDays size={14} strokeWidth={1.9} aria-hidden="true" /> הארך יום
+            </button>
+            <button
+              className="btn btn--danger"
+              disabled={busy}
+              style={{ marginInlineStart: "auto" }}
+              onClick={() => run(() => carBlocksAPI.cancel(block.id), "ההשבתה בוטלה")}
+            >
+              <CalendarX size={14} strokeWidth={1.9} aria-hidden="true" /> בטל השבתה
+            </button>
+            <button
+              className="btn btn--primary"
+              disabled={busy || !changed}
+              onClick={() => run(() => carBlocksAPI.update(block.id, { start_date: start, end_date: end }), "ההשבתה עודכנה")}
+            >
+              {busy ? "שומר..." : "שמור טווח"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <div style={{ fontSize: 13, color: "#8e9592" }}>אין לך הרשאה לשנות את ההשבתה.</div>
+      )}
+    </Modal>
+  );
+}
+
 // ── Availability Grid ──────────────────────────────────────────────────────────
 // עטוף ב-memo: הדשבורד מרנדר מחדש בכל הקלדה בחיפוש המהיר, אבל רשימת
 // הרכבים מסוננת רק אחרי debounce — בלי זה כל תו מרנדר ~1,200 תאים.
@@ -1022,12 +1194,37 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
     };
   }
 
-  useEffect(() => {
+    // ── השבתה זמנית ──────────────────────────────────────────────────────────
+  const [blocks, setBlocks] = useState([]);
+  // יצירת הזמנה נעשית כאן ולא בניווט ללשונית ההזמנות, כדי לא לאבד את
+  // הסינונים ואת טווח התאריכים שהמשתמש בחר בגריד.
+  const [createBooking, setCreateBooking] = useState(null);
+  const [blockForm, setBlockForm] = useState(null);    // יצירת השבתה
+  const [blockManage, setBlockManage] = useState(null); // ניהול השבתה קיימת
+
+useEffect(() => {
     setLoadingGrid(true);
     bookingsAPI.calendar(startDate, endDate)
       .then(setBookings)
       .finally(() => setLoadingGrid(false));
   }, [startDate, endDate]);
+
+  // השבתות זמניות — נטענות לאותו חלון תאריכים כמו ההזמנות.
+  const reloadBlocks = useCallback(() => {
+    carBlocksAPI.list(startDate, endDate).then(setBlocks).catch(() => setBlocks([]));
+  }, [startDate, endDate]);
+  useEffect(() => { reloadBlocks(); }, [reloadBlocks]);
+
+  // מפת חיפוש לפי יום ורכב — נבנית פעם אחת ולא נסרקת מחדש בכל תא.
+  const blockMap = useMemo(() => {
+    const map = {};
+    for (const b of blocks) {
+      for (let d = fromISO(b.start_date); toISO(d) <= b.end_date; d = addDays(d, 1)) {
+        map[`${toISO(d)}:${b.car_id}`] = b;
+      }
+    }
+    return map;
+  }, [blocks]);
 
   const activeCars = useMemo(() => cars.filter(c => c.is_active), [cars]);
 
@@ -1103,9 +1300,18 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
       toast.error("אין לך הרשאה ליצור הזמנה חדשה מתוך הדשבורד");
       return;
     }
-    navigate("/bookings", {
-      state: { bookingPrefill: { car_id: car.id, start_date: ds } },
-    });
+    // בעבר זה ניווט ל-/bookings, והמשתמש איבד את הסינונים ואת טווח
+    // התאריכים שבחר. הטופס נפתח כאן, מעל הגריד.
+    setCreateBooking({ car_id: car.id, start_date: ds });
+  }
+
+  function openBlockForm(car, ds) {
+    if (!permissionModel.canManageCars) {
+      toast.error("אין לך הרשאה להשבית רכב");
+      return;
+    }
+    // ברירת המחדל היא יום אחד — הרוב המכריע של הכניסות למוסך.
+    setBlockForm({ car_id: car.id, car_name: car.name, start_date: ds, end_date: ds, reason: "garage", note: "" });
   }
 
   function openBookingActions(booking, carName) {
@@ -1336,6 +1542,34 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
         .availability-grid-scroll { scrollbar-width: none; -ms-overflow-style: none; }
         .availability-grid-scroll::-webkit-scrollbar { display: none; height: 0; }
       `}</style>
+      {/* יצירת הזמנה במקום — הדשבורד נשאר על המסך עם הסינונים והטווח */}
+      <BookingCreateDialog
+        open={!!createBooking}
+        prefill={createBooking}
+        onClose={() => setCreateBooking(null)}
+        onCreated={() => {
+          bookingsAPI.calendar(startDate, endDate).then(setBookings);
+        }}
+      />
+
+      {blockForm && (
+        <CarBlockFormModal
+          form={blockForm}
+          setForm={setBlockForm}
+          onClose={() => setBlockForm(null)}
+          onSaved={() => { setBlockForm(null); reloadBlocks(); }}
+        />
+      )}
+
+      {blockManage && (
+        <CarBlockManageModal
+          block={blockManage}
+          canManage={permissionModel.canManageCars}
+          onClose={() => setBlockManage(null)}
+          onChanged={() => { setBlockManage(null); reloadBlocks(); }}
+        />
+      )}
+
       {bookingAction && (
         <BookingActionModal
           booking={bookingAction.booking}
@@ -1463,6 +1697,21 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
                         קב׳ {car.group}
                       </div>
                     )}
+                    {/* נקודת הכניסה להשבתה זמנית. בכותרת ולא בתא, כי ההשבתה
+                        שייכת לרכב ולא ליום מסוים — ועובדת גם בטלפון, בניגוד
+                        לקיצור לחיצה־ימנית שקיים על תא פנוי בדסקטופ. */}
+                    {permissionModel.canManageCars && (
+                      <button
+                        type="button"
+                        onClick={() => openBlockForm(car, todayStr >= startDate && todayStr <= endDate ? todayStr : startDate)}
+                        title={`השבתה זמנית — ${car.name}`}
+                        aria-label={`השבתה זמנית לרכב ${car.name}`}
+                        style={{ marginTop:3, background:"none", border:"none", padding:2, cursor:"pointer",
+                                 color: tc.border, display:"inline-flex", borderRadius:6 }}
+                      >
+                        <Wrench size={11} strokeWidth={2} aria-hidden="true" />
+                      </button>
+                    )}
                   </th>
                 );
               })}
@@ -1502,11 +1751,36 @@ const AvailabilityGrid = memo(function AvailabilityGrid({ cars, startDate, endDa
                     const cellBookings = occ[`${ds}:${car.id}`] || [];
                     const isDropColumn = dragBooking && dragOverCarId === car.id && car.id !== dragBooking?.car_id;
 
+                    const cellBlock = blockMap[`${ds}:${car.id}`];
+
+                    // תא מושבת — מופיע לפני בדיקת ההזמנות, כי השבתה מונעת
+                    // הזמנה מלכתחילה ולכן לא יכולות להיות שתיהן באותו תא.
+                    if (cellBlock) {
+                      const label = BLOCK_REASON_SHORT[cellBlock.reason] || "מושבת";
+                      return (
+                        <td key={car.id}
+                            title={`${car.name} מושבת: ${BLOCK_REASON_LABEL[cellBlock.reason] || label}
+${cellBlock.start_date} – ${cellBlock.end_date}${cellBlock.note ? `
+${cellBlock.note}` : ""}
+הקש לניהול ההשבתה`}
+                            onClick={() => setBlockManage(cellBlock)}
+                            style={{ ...gtd, textAlign:"center", cursor:"pointer",
+                                     // פסים אלכסוניים — קריאים גם למי שאינו מבחין בגוון,
+                                     // ולא מתחרים בירוק/צהוב/צבעי הדגמים שכבר בשימוש.
+                                     background:"repeating-linear-gradient(45deg, #b9c2cc 0 5px, #d7dde2 5px 10px)",
+                                     color:"#3f4b57", fontWeight:800, fontSize:10 }}>
+                          {label}
+                        </td>
+                      );
+                    }
+
                     if (cellBookings.length === 0) {
                       return (
                         <td key={car.id}
-                            title={isPastDay ? `לחץ להזמנת ${car.name} ב-${ds} (תאריך עבר)` : (dragBooking ? `שחרר להעברה ל-${car.name}` : `לחץ להזמנת ${car.name} ב-${ds}`)}
+                            title={isPastDay ? `לחץ להזמנת ${car.name} ב-${ds} (תאריך עבר)` : (dragBooking ? `שחרר להעברה ל-${car.name}` : `לחץ להזמנת ${car.name} ב-${ds}
+לחיצה ימנית — השבתה זמנית`)}
                             onClick={() => !dragBooking && openCreateBooking(car, ds)}
+                            onContextMenu={(e) => { e.preventDefault(); openBlockForm(car, ds); }}
                             onDragOver={e => handleDragOverCell(e, car.id)}
                             onDrop={e => handleDrop(e, car)}
                             onDragLeave={() => setDragOverCarId(null)}

@@ -66,6 +66,7 @@ const ROUTES = [
   [/^\/reports\/top-cars/,        () => fx.topCars],
   [/^\/settings\/(.+)/,           (m) => fx.settingsByKey[m[1]] || { key: m[1], value: fx.settingsBlob }],
   [/^\/settings/,                 () => fx.settingsBlob],
+  [/^\/car-blocks/,               () => fx.carBlocks],
   [/^\/suggestions/,              () => []],
 ];
 

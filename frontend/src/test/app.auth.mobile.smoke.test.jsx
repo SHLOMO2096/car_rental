@@ -135,7 +135,7 @@ describe("App auth + mobile smoke", () => {
   // ההתנהגות הזו התהפכה בכוונה: עד fb75725 תא בתאריך עבר היה חסום, והיום
   // מותר להזמין עליו — סוכן שמתעד השכרה שכבר קרתה זקוק לזה. הטסט מאמת
   // שהתא עדיין *מסומן* כעבר, אבל שהוא כן פותח יצירת הזמנה.
-  it("marks past dashboard cells as past but still lets you book on them", async () => {
+  it("opens the booking form on the dashboard itself, without navigating away", async () => {
     const user = userEvent.setup();
     setViewport(1366);
     carsAPI.list.mockResolvedValueOnce([{ id: 1, name: "Toyota Test", is_active: true, plate: "11-111-11" }]);
@@ -156,8 +156,11 @@ describe("App auth + mobile smoke", () => {
     const pastCells = await screen.findAllByTitle(/לחץ להזמנת .*\(תאריך עבר\)/);
     expect(pastCells.length).toBeGreaterThan(0);
 
+    // הלחיצה פותחת את טופס ההזמנה *מעל הדשבורד*. קודם היא ניווטה
+    // ל-/bookings, וכל הסינונים וטווח התאריכים שהמשתמש בחר בגריד אבדו.
     await user.click(pastCells[0]);
-    await waitFor(() => expect(window.location.pathname).toBe("/bookings"));
+    expect(await screen.findByText("הזמנה חדשה")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/");
   });
 
   it("blocks stale auth state without token on /cars", async () => {

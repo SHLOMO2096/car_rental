@@ -139,3 +139,17 @@ export const customerHistory = {
   summary: { total_bookings: 9, active_bookings: 1, total_revenue: 18400, last_booking_date: "2026-09-01" },
   bookings: bookings,
 };
+
+// השבתות זמניות — אחת פעילה על ה-Picanto בטווח שהגריד מציג כברירת מחדל.
+const _today = new Date();
+const _iso = (off) => new Date(_today.getFullYear(), _today.getMonth(), _today.getDate() + off)
+  .toISOString().slice(0, 10);
+
+export const carBlocks = [
+  { id: 1, car_id: 1, start_date: _iso(1), end_date: _iso(3), reason: "garage",
+    note: "טיפול 60,000 ק״מ + בלמים", created_by_name: "שרה כהן",
+    car_name: "Kia Picanto", car_plate: "12-345-67" },
+  { id: 2, car_id: 2, start_date: _iso(6), end_date: _iso(6), reason: "accident",
+    note: "המתנה לשמאי", created_by_name: "דוד לוי",
+    car_name: "Toyota Corolla Hybrid", car_plate: "987-65-432" },
+];

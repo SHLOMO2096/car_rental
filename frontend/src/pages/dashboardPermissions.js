@@ -6,6 +6,8 @@ export function createDashboardPermissionModel({ can, currentUser, isMobile }) {
   const canEditBookings = safeCan(Permissions.BOOKINGS_UPDATE);
   const canDeleteBookings = safeCan(Permissions.BOOKINGS_DELETE);
   const canViewCustomers = safeCan(Permissions.CUSTOMERS_VIEW);
+  // השבתה זמנית היא פעולת צי, ולכן נשענת על אותה הרשאה כמו ניהול רכבים
+  const canManageCars = safeCan(Permissions.CARS_MANAGE);
 
   const hasBooking = (booking) => Boolean(booking);
   const canModifyBooking = (booking) => canEditBookings && hasBooking(booking);
@@ -55,6 +57,7 @@ export function createDashboardPermissionModel({ can, currentUser, isMobile }) {
 
   return {
     canCreateBookings,
+    canManageCars,
     canEditBookings,
     canDeleteBookings,
     canViewCustomers,
