@@ -9,6 +9,7 @@ import { settingsAPI } from "../api/settings";
 import Modal from "../components/ui/Modal";
 import Badge from "../components/ui/Badge";
 import Confirm from "../components/ui/Confirm";
+import { useConfirm } from "../hooks/useConfirm";
 import { FolderOpen, Folder, Car as CarIcon, CalendarCheck, CalendarPlus, Pencil, Pause, Play, Trash2 } from "lucide-react";
 import ActionMenu from "../components/ui/ActionMenu";
 
@@ -41,6 +42,7 @@ export default function Cars() {
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState("");
   const [confirmPermanentDelete, setConfirmPermanentDelete] = useState(null);
+  const [confirm, confirmDialog] = useConfirm();
   const [editCar, setEditCar]   = useState(null);
   const [categories, setCategories] = useState([]);
   const [openFolders, setOpenFolders] = useState({}); // { categoryName: boolean }
@@ -133,10 +135,24 @@ export default function Cars() {
   }
 
   async function toggleActive(car) {
+    // השבתה מוציאה רכב מכל מסך ההזמנות, והפעלה מחזירה אותו לשם. שתיהן
+    // נראות כפריט תפריט קטן ומשנות את מה שהצי מציע — ולכן הן עוברות אישור.
+    const deactivating = car.is_active;
+    const ok = await confirm(
+      deactivating
+        ? `להשבית את "${car.name}" (${car.plate})?
+הרכב ייעלם מרשת הזמינות ולא יופיע בבחירת רכב להזמנה חדשה.
+הזמנות קיימות אינן מושפעות, וניתן להפעיל אותו בחזרה בכל עת.`
+        : `להפעיל מחדש את "${car.name}" (${car.plate})?
+הרכב יחזור לרשת הזמינות ויהיה זמין להזמנות חדשות.`,
+      { confirmLabel: deactivating ? "השבת רכב" : "הפעל רכב" },
+    );
+    if (!ok) return;
+
     try {
       await carsAPI.update(car.id, { is_active: !car.is_active });
       await load();
-      toast.success(car.is_active ? "הרכב הושבת" : "הרכב הופעל מחדש");
+      toast.success(deactivating ? "הרכב הושבת" : "הרכב הופעל מחדש");
     } catch (e) {
       toast.error(getUserFacingErrorMessage(e));
     }
@@ -195,13 +211,18 @@ export default function Cars() {
           if (catCars.length === 0 && cat.internalKey !== "unassigned") return null;
           if (catCars.length === 0 && cat.internalKey === "unassigned" && filtered.length > 0) return null;
 
-          const isOpen = openFolders[cat.name || "unassigned"];
+          // המפתח חייב להיות זהה לזה שנכתב ב-load: שם הקטגוריה, או
+          // "unassigned" לתיקייה חסרת השם. קודם נכתב "unassigned" ונקרא
+          // cat.name ("ללא קטגוריה"), ולכן התיקייה נשארה סגורה תמיד ורכב
+          // בלי קטגוריה לא הופיע כלל.
+          const folderKey = cat.internalKey || cat.name;
+          const isOpen = openFolders[folderKey];
 
           return (
             <div key={cat.name || "unassigned"} style={s.folderSection}>
               <div 
                 style={s.folderHeader} 
-                onClick={() => setOpenFolders(prev => ({ ...prev, [cat.name || "unassigned"]: !isOpen }))}
+                onClick={() => setOpenFolders(prev => ({ ...prev, [folderKey]: !isOpen }))}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 20 }}>{isOpen ? <FolderOpen size={18} strokeWidth={1.8} aria-hidden="true" /> : <Folder size={18} strokeWidth={1.8} aria-hidden="true" />}</span>
@@ -234,12 +255,19 @@ export default function Cars() {
                              // }
 
                             return (
-                              <div key={car.id} style={{ ...s.card, opacity: car.is_active ? 1 : 0.55 }}>
+                              // ה-opacity ישב על הכרטיס כולו, ולכן תפריט הפעולות —
+                              // שהוא ילד שלו — נצבע גם הוא ב-55% ונראה מכוסה בטשטוש.
+                              // גרוע מכך, opacity<1 יוצר הקשר ערימה, והתפריט נכלא
+                              // בתוך הכרטיס ולא יכול לעלות מעל הכרטיס שאחריו.
+                              // עכשיו העמעום חל על תוכן הכרטיס בלבד; שורת הפעולות
+                              // נשארת חדה ולחיצה.
+                              <div key={car.id} style={{ ...s.card, ...(car.is_active ? null : s.cardInactive) }}>
                                 {/* האייקון ישב בשורה משלו מול התגית, והשם התחיל רק
                                     מתחתיהם — שורה שלמה שאינה נושאת מידע, ומתחתיה
                                     חצי כרטיס ריק. עכשיו האייקון, השם והתגית באותה
                                     שורה, והשם הוא העוגן. */}
-                                <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                                <div style={{ display:"flex", gap:10, alignItems:"flex-start",
+                                              opacity: car.is_active ? 1 : 0.6 }}>
                                   <CarIcon size={26} strokeWidth={1.5} aria-hidden="true"
                                            style={{ flexShrink: 0, marginTop: 2, color: "#707774" }} />
                                   <div style={{ minWidth: 0, flex: 1 }}>
@@ -355,6 +383,8 @@ export default function Cars() {
       </Modal>
 
       {/* Delete confirm */}
+      {confirmDialog}
+
       <Confirm open={!!confirmPermanentDelete}
         message={`למחוק לצמיתות את "${confirmPermanentDelete?.name}"? הפעולה אינה ניתנת לביטול, וזמינה רק לרכב ללא היסטוריית הזמנות.`}
         confirmLabel="מחק לצמיתות"
@@ -413,6 +443,9 @@ const s = {
   card:       { background:"#fff", borderRadius:18, padding:18,
                 border:"1px solid #e3e7e5", boxShadow:"0 1px 2px rgba(20,24,22,0.04), 0 2px 8px rgba(20,24,22,0.04)",
                 transition:"transform 0.15s, box-shadow 0.15s" },
+  // רכב מושבת מסומן ברקע ובמסגרת מקווקוות — לא ב-opacity, שגורר איתו את
+  // תפריט הפעולות ויוצר הקשר ערימה שכולא אותו.
+  cardInactive: { background:"#fafbfa", borderStyle:"dashed", borderColor:"#ccd2cf", boxShadow:"none" },
   carName:    { fontWeight:800, fontSize:16, marginTop:8 },
   carSub:     { fontSize:12, color:"#8e9592", marginTop:2 },
   // price:      { fontSize:15, fontWeight:700, color:"#154038", marginTop:6, display: "flex", alignItems: "center", gap: 6 },

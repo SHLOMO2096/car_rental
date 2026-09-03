@@ -163,6 +163,65 @@ describe("App auth + mobile smoke", () => {
     expect(window.location.pathname).toBe("/");
   });
 
+  // השבתה והפעלה של רכב משנות את מה שכל מסך ההזמנות מציע, ומופעלות
+  // מפריט תפריט קטן. הן חייבות לעבור אישור, ותפריט הפעולות של רכב מושבת
+  // חייב להישאר קריא ולחיץ — הוא היה צבוע ב-55% מה-opacity של הכרטיס.
+  it("asks for confirmation before reactivating a car, and only then calls the API", async () => {
+    const user = userEvent.setup();
+    setViewport(1366);
+    carsAPI.list.mockResolvedValue([
+      { id: 7, name: "Hyundai Tucson", plate: "555-11-222", is_active: false, year: 2022, category: "" },
+    ]);
+    carsAPI.update.mockResolvedValue({});
+    localStorage.setItem("token", "good-token");
+    useAuthStore.setState({
+      token: "good-token",
+      user: { id: 1, full_name: "Admin", role: "admin" },
+      isAuthenticated: true,
+    });
+    setRoute("/cars");
+
+    render(<App />);
+    await screen.findByText("ניהול רכבים");
+
+    await user.click(await screen.findByRole("button", { name: /לא פעילים/ }));
+    await user.click(await screen.findByRole("button", { name: /פעולות עבור Hyundai Tucson/ }));
+    await user.click(await screen.findByRole("menuitem", { name: /הפעלת רכב/ }));
+
+    // האישור מופיע, וכלום עוד לא נשלח לשרת
+    expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
+    expect(carsAPI.update).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "הפעל רכב" }));
+    await waitFor(() => expect(carsAPI.update).toHaveBeenCalledWith(7, { is_active: true }));
+  });
+
+  it("lets you cancel the confirmation without changing the car", async () => {
+    const user = userEvent.setup();
+    setViewport(1366);
+    carsAPI.list.mockResolvedValue([
+      { id: 7, name: "Hyundai Tucson", plate: "555-11-222", is_active: false, year: 2022, category: "" },
+    ]);
+    localStorage.setItem("token", "good-token");
+    useAuthStore.setState({
+      token: "good-token",
+      user: { id: 1, full_name: "Admin", role: "admin" },
+      isAuthenticated: true,
+    });
+    setRoute("/cars");
+
+    render(<App />);
+    await screen.findByText("ניהול רכבים");
+
+    await user.click(await screen.findByRole("button", { name: /לא פעילים/ }));
+    await user.click(await screen.findByRole("button", { name: /פעולות עבור Hyundai Tucson/ }));
+    await user.click(await screen.findByRole("menuitem", { name: /הפעלת רכב/ }));
+    await user.click(await screen.findByRole("button", { name: "ביטול" }));
+
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(carsAPI.update).not.toHaveBeenCalled();
+  });
+
   it("blocks stale auth state without token on /cars", async () => {
     setViewport(1280);
     useAuthStore.setState({

@@ -194,4 +194,21 @@ if (params.get("selftest")) {
   }, 1000);
 }
 
-setTimeout(report, 1500);
+// ?click=<טקסט> לוחץ על כפתור לפי הטקסט שלו, ו-?open=menu פותח אחריו את
+// תפריט הפעולות הראשון — כדי לצלם מצבים שדורשים אינטראקציה.
+const clickText = params.get("click");
+if (clickText) {
+  setTimeout(() => {
+    const btn = [...document.querySelectorAll("button")].find((b) => (b.textContent || "").includes(clickText));
+    btn?.click();
+  }, 800);
+}
+
+if (params.get("open") === "menu") {
+  setTimeout(() => {
+    const t = [...document.querySelectorAll('button[aria-haspopup="menu"], .action-menu button')][0];
+    t?.click();
+  }, 1400);
+}
+
+setTimeout(report, 2400);
