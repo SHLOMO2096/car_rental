@@ -268,27 +268,8 @@ export function CalendarPage() {
         </div>
       )}
 
-      {/* Car type legend */}
-      <div style={{ marginTop:12, display:"flex", gap:12, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12 }}>
-          <div style={{ width:12, height:12, background:"#ede9fe", borderRadius:8 }} />
-          <span style={{ color:"#59605d" }}>שבת</span>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12 }}>
-          <div style={{ width:12, height:12, background:"#fee2e2", borderRadius:8 }} />
-          <span style={{ color:"#59605d" }}>חג</span>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12 }}>
-          <div style={{ width:12, height:12, background:"#fef3c7", borderRadius:8 }} />
-          <span style={{ color:"#59605d" }}>ערב חג (סגירה 12:00)</span>
-        </div>
-        {Object.entries(TYPE_COLORS).map(([type, color]) => (
-          <div key={type} style={{ display:"flex", alignItems:"center", gap:6, fontSize:12 }}>
-            <div style={{ width:12, height:12, background:color, borderRadius:8 }} />
-            <span style={{ color:"#59605d" }}>{type}</span>
-          </div>
-        ))}
-      </div>
+      {/* מקרא הצבעים הוסר — כמו ברשת הדשבורד. TYPE_COLORS עדיין צובע את
+          תגיות ההזמנות בתאים, ולכן הוא נשאר. */}
     </div>
   );
 }
