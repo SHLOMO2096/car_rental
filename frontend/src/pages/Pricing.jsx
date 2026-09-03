@@ -81,13 +81,16 @@ export default function Pricing() {
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             background: "none", border: "none", cursor: "pointer",
-            padding: isMobile ? "10px 12px" : "10px 18px",
+            padding: isMobile ? "10px 9px" : "10px 18px",
             fontSize: isMobile ? 13 : 14, fontWeight: 700, whiteSpace: "nowrap",
             color: tab === t.id ? "#154038" : "#707774",
             borderBottom: tab === t.id ? "3px solid #154038" : "3px solid transparent",
             marginBottom: -2, transition: "all 0.15s", flexShrink: 0,
           }}>
-            <t.Icon size={15} strokeWidth={1.9} aria-hidden="true" /> {t.label}
+            {/* בטלפון ארבע הלשוניות עם אייקונים אינן נכנסות, והרביעית
+                ("חגים") נחתכה בלי שום סימן שהיא קיימת. בלי האייקונים
+                כולן נכנסות — עדיף להסיר את הצורך בגלילה מלרמז עליה. */}
+            {!isMobile && <t.Icon size={15} strokeWidth={1.9} aria-hidden="true" />} {t.label}
           </button>
         ))}
       </div>
@@ -238,8 +241,10 @@ function SeasonsTab({ canManage, isMobile }) {
                 </div>
               </div>
 
-              {s.adjustment_type && s.adjustment_value != null && (
-                <div style={{ marginTop: 8 }}>
+              {/* ההתאמה והפעולות ישבו בשתי שורות נפרדות, כל אחת עם פריט בודד
+                  בקצה — שורה ריקה שלמה באמצע הכרטיס. עכשיו הן חולקות שורה. */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, minHeight: 30 }}>
+                {s.adjustment_type && s.adjustment_value != null && (
                   <span style={badgeStyle(
                     s.adjustment_direction === "add" ? "#f0fdf4" : "#fff1f2",
                     s.adjustment_direction === "add" ? "#15803d" : "#be123c",
@@ -248,21 +253,20 @@ function SeasonsTab({ canManage, isMobile }) {
                     {s.adjustment_value}
                     {s.adjustment_type === "percent" ? "%" : "₪"}
                   </span>
-                </div>
-              )}
-
-              {canManage && (
-                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                  <ActionMenu
-                    align="end"
-                    label={`פעולות עבור ${s.name}`}
-                    items={[
-                      { label: "עריכת עונה", Icon: Pencil, onSelect: () => openEdit(s) },
-                      { label: "מחיקת עונה", Icon: Trash2, danger: true, onSelect: () => remove(s) },
-                    ]}
-                  />
-                </div>
-              )}
+                )}
+                {canManage && (
+                  <div style={{ display: "flex", gap: 8, marginInlineStart: "auto" }}>
+                    <ActionMenu
+                      align="end"
+                      label={`פעולות עבור ${s.name}`}
+                      items={[
+                        { label: "עריכת עונה", Icon: Pencil, onSelect: () => openEdit(s) },
+                        { label: "מחיקת עונה", Icon: Trash2, danger: true, onSelect: () => remove(s) },
+                      ]}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

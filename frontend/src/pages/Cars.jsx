@@ -19,6 +19,15 @@ const EMPTY_FORM = {
   plate:"", color:"", test_date: "", description:"", image_url:""
 };
 
+// תאריך הטסט נשמר כמחרוזת חופשית שנשאבה מדוח, ולא בהכרח בפורמט ISO.
+// ערך שנפרס מוצג בעברית כמו בשאר המערכת; ערך שלא — מוצג כמות שהוא.
+function formatTestDate(value) {
+  if (!value) return value;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("he-IL", { day: "numeric", month: "numeric", year: "numeric" });
+}
+
 export default function Cars() {
   const navigate = useNavigate();
   const [cars, setCars]         = useState([]);
@@ -226,21 +235,25 @@ export default function Cars() {
 
                             return (
                               <div key={car.id} style={{ ...s.card, opacity: car.is_active ? 1 : 0.55 }}>
-                                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                                  <CarIcon size={30} strokeWidth={1.5} aria-hidden="true" />
+                                {/* האייקון ישב בשורה משלו מול התגית, והשם התחיל רק
+                                    מתחתיהם — שורה שלמה שאינה נושאת מידע, ומתחתיה
+                                    חצי כרטיס ריק. עכשיו האייקון, השם והתגית באותה
+                                    שורה, והשם הוא העוגן. */}
+                                <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                                  <CarIcon size={26} strokeWidth={1.5} aria-hidden="true"
+                                           style={{ flexShrink: 0, marginTop: 2, color: "#707774" }} />
+                                  <div style={{ minWidth: 0, flex: 1 }}>
+                                    <div style={s.carName}>{car.name}</div>
+                                    <div style={s.carSub}>{car.plate} • {car.color} • {car.year}</div>
+                                    {car.test_date && (
+                                      <div style={{ fontSize: 11, color: "#e11d48", fontWeight: 600, marginTop: 4 }}>
+                                        <CalendarCheck size={12} strokeWidth={1.9} aria-hidden="true" /> טסט עד: {formatTestDate(car.test_date)}
+                                      </div>
+                                    )}
+                                  </div>
                                   <Badge label={car.is_active ? "פעיל" : "לא פעיל"}
                                          color={car.is_active ? "green" : "gray"} />
                                 </div>
-                                <div style={s.carName}>{car.name}</div>
-                                <div style={s.carSub}>{car.plate} • {car.color} • {car.year}</div>
-                                
-                                {car.test_date && (
-                                  <div style={{ fontSize: 11, color: "#e11d48", fontWeight: 600, marginTop: 4 }}>
-                                    <CalendarCheck size={12} strokeWidth={1.9} aria-hidden="true" /> טסט עד: {car.test_date}
-                                  </div>
-                                )}
-                                
-                                 {/* מחיר ליום הוסר */}
 
                                 <div style={{ display:"flex", gap:6, marginTop:12,
                                               alignItems:"center", justifyContent:"space-between" }}>
