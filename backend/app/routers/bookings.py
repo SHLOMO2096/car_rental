@@ -12,6 +12,7 @@ from app.models.settings import SystemSetting
 from app.schemas.booking import BookingCreate, BookingUpdate, BookingOut, BookingDeleteRequest
 from app.schemas.audit_log import AuditLogOut
 from app.crud.booking import crud_booking
+from app.crud.car_block import crud_car_block
 from app.crud.customer import crud_customer
 from app.core.permissions import Permissions
 from app.core.security import (
@@ -179,6 +180,23 @@ def get_booking(
     return booking
 
 
+def _reject_if_blocked(db: Session, car_id: int, start, end) -> None:
+    """
+    השבתה זמנית חוסמת הזמנה בדיוק כמו הזמנה קיימת. הבדיקה כאן ולא ב-
+    has_overlap, כי השבתה היא ישות אחרת עם הודעת שגיאה משלה — הסוכן צריך
+    לדעת שהרכב במוסך ולא לחשוב שהוא מושכר.
+    """
+    blocks = crud_car_block.overlapping(db, car_id, start, end)
+    if not blocks:
+        return
+    labels = {"garage": "מוסך", "accident": "תאונה", "other": "השבתה"}
+    b = blocks[0]
+    raise HTTPException(
+        409,
+        f"הרכב מושבת בתאריכים אלו ({labels.get(b.reason, 'השבתה')}: {b.start_date} – {b.end_date})",
+    )
+
+
 @router.post("/", response_model=BookingOut, status_code=201)
 def create_booking(
     data: BookingCreate,
@@ -192,6 +210,7 @@ def create_booking(
         raise HTTPException(404, "רכב לא נמצא")
     if crud_booking.has_overlap(db, data.car_id, data.start_date, data.end_date, data.pickup_time, data.return_time):
         raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
+    _reject_if_blocked(db, data.car_id, data.start_date, data.end_date)
 
     customer = None
     if data.customer_id:
@@ -330,6 +349,7 @@ def update_booking(
             raise HTTPException(404, "רכב יעד לא נמצא או אינו פעיל")
         if crud_booking.has_overlap(db, data.car_id, b.start_date, b.end_date, b.pickup_time, b.return_time, exclude_id=b.id):
             raise HTTPException(409, "הרכב היעד כבר מושכר בתאריכים אלו")
+        _reject_if_blocked(db, data.car_id, b.start_date, b.end_date)
 
     # ── ולידציה: שינוי תאריכים ────────────────────────────────────────────────
     if data.start_date or data.end_date or data.pickup_time:
@@ -337,6 +357,7 @@ def update_booking(
             raise HTTPException(422, "תאריך סיום חייב להיות אחרי תאריך התחלה")
         if crud_booking.has_overlap(db, new_car_id, new_start, new_end, data.pickup_time or b.pickup_time, data.return_time or b.return_time, exclude_id=b.id):
             raise HTTPException(409, "הרכב כבר מושכר בתאריכים אלו")
+        _reject_if_blocked(db, new_car_id, new_start, new_end)
 
     if data.customer_id is not None:
         exists = db.query(Customer).filter(Customer.id == data.customer_id).first()

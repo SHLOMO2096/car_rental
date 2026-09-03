@@ -101,12 +101,16 @@ export default function BookingsList({
                     </span>
                   </td>
                   <td>
-                    <Badge label={st.label} color={st.color} />
-                    {b.email_sent && (
-                      <span title="אימייל נשלח" style={{ marginInlineStart: 4 }}>
-                        <Mail size={15} strokeWidth={1.9} aria-hidden="true" />
-                      </span>
-                    )}
+                    {/* התגית ואייקון המייל היו שני אלמנטים inline בתא צר, ולכן
+                        האייקון ירד לשורה שנייה מתחת לתגית ונראה תלוש. */}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+                      <Badge label={st.label} color={st.color} />
+                      {b.email_sent && (
+                        <span title="אימייל נשלח" style={{ color: "#8e9592", display: "inline-flex" }}>
+                          <Mail size={15} strokeWidth={1.9} aria-hidden="true" />
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td>
                     <div style={actionsToolbar}>

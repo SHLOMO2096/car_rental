@@ -9,6 +9,7 @@ import app.models.user  # noqa: F401
 import app.models.car  # noqa: F401
 import app.models.booking  # noqa: F401
 import app.models.customer  # noqa: F401
+import app.models.car_block  # noqa: F401
 
 config = context.config
 

@@ -6,6 +6,7 @@ stays free of raw SQL.
 """
 from datetime import date
 from sqlalchemy.orm import Session
+from app.crud.car_block import crud_car_block
 from app.models.booking import Booking, BookingStatus
 
 
@@ -16,7 +17,15 @@ def is_car_available(
     end: date,
     exclude_booking_id: int | None = None,
 ) -> bool:
-    """Return True if *car_id* has no active booking that overlaps [start, end]."""
+    """
+    Return True if *car_id* has no active booking that overlaps [start, end]
+    and is not under a temporary block (garage, accident) in that range.
+
+    השבתה זמנית נבדקת כאן ולא רק בראוטר, אחרת המנוע היה מציע להעביר הזמנה
+    לרכב שנמצא במוסך — וההצעה הייתה נדחית רק בשלב היישום.
+    """
+    if crud_car_block.has_overlap(db, car_id, start, end):
+        return False
     q = db.query(Booking).filter(
         Booking.car_id == car_id,
         Booking.status == BookingStatus.active,

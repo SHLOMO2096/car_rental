@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.session import engine, Base
 import app.models  # noqa: F401
-from app.routers import auth, cars, bookings, reports, suggestions, customers, settings as settings_router, attendance, payroll, pricing
+from app.routers import auth, cars, bookings, reports, suggestions, customers, settings as settings_router, attendance, payroll, pricing, car_blocks
 
 # יצירת טבלאות רק ב-DEV.
 # בפרודקשן חייבים לנהל סכימה רק דרך Alembic, אחרת נוצרים מצבים שבהם
@@ -36,6 +36,7 @@ app.include_router(settings_router.router, prefix="/api/settings", tags=["Settin
 app.include_router(attendance.router,   prefix="/api/attendance",  tags=["Attendance"])
 app.include_router(payroll.router,      prefix="/api/payroll",     tags=["Payroll"])
 app.include_router(pricing.router,      prefix="/api/pricing",     tags=["Pricing"])
+app.include_router(car_blocks.router,    prefix="/api/car-blocks",  tags=["Car Blocks"])
 
 @app.get("/health")
 def health():
