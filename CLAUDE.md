@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Hebrew (RTL) car-rental management system: FastAPI + SQLAlchemy + PostgreSQL backend, React 18 + Vite frontend, deployed via Docker Compose behind a shared Traefik `infra-proxy`. `README.md` is written in Hebrew and holds the deployment/ops details; `docs/` holds specs (`reassignment-engine-spec.md`, `rbac-v2-spec.md`, `gitops-runbook.md`).
+Hebrew (RTL) car-rental management system: FastAPI + SQLAlchemy + PostgreSQL backend, React 18 + Vite frontend, deployed via Docker Compose behind a shared Traefik `infra-proxy`. `README.md` is written in Hebrew and holds the deployment/ops details; `docs/` holds specs (`reassignment-engine-spec.md`, `rbac-v2-spec.md`, `incidents-media-spec.md`, `gitops-runbook.md`).
 
 ## Commands
 
